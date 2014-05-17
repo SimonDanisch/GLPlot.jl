@@ -1,3 +1,4 @@
+#version 110
 attribute vec3 position;
 
 varying float o_z;
