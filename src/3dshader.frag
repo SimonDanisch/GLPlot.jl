@@ -1,3 +1,4 @@
+#version 110
 varying float o_z;
 
 uniform int white;
