@@ -1,6 +1,7 @@
-attribute vec3 position;
+#version 150
+in vec3 position;
 
-varying float o_z;
+out float o_z;
 
 
 uniform mat4 mvp;

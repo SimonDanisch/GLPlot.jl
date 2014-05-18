@@ -2,6 +2,10 @@ using GLWindow, GLUtil, ModernGL, Meshes, Events, GLUT
 
 createWindow(name="Mesh Display")
 
+glsl_version = bytestring(glGetString(GL_SHADING_LANGUAGE_VERSION))
+shader = GLProgram("3dshader"*glsl_version)
+
+
 #Mesh creatin with Meshes.jl
 function createSampleMesh()
 	N = 10
@@ -33,7 +37,7 @@ function createSampleMesh()
 			:position		=> GLBuffer(verts, 3),
 		]
 	# The RenderObject combines the shader, and Integrates the buffer into a VertexArray
-	RenderObject(mesh, GLProgram("3dshader"))
+	RenderObject(mesh, shader)
 end
 #I use dicts to upload the attributes and buffer in a shader
 meshObject = createSampleMesh()

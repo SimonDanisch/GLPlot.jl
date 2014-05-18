@@ -1,4 +1,5 @@
-varying float o_z;
+#version 130
+in float o_z;
 
 uniform int white;
 void main(){
