@@ -2,9 +2,10 @@ using GLWindow, GLUtil, ModernGL, Meshes, Events, GLUT
 
 createWindow(name="Mesh Display")
 
-glsl_version = bytestring(glGetString(GL_SHADING_LANGUAGE_VERSION))
-shader = GLProgram("3dshader"*glsl_version)
+shader = GLProgram("3dshader1.30")
 
+println(bytestring(glGetString(GL_VERSION)))
+println(bytestring(glGetString(GL_SHADING_LANGUAGE_VERSION)))
 
 #Mesh creatin with Meshes.jl
 function createSampleMesh()
@@ -61,7 +62,7 @@ end
 
 
 #Setup the Camera, with some events for moving the camera
-perspectiveCam = PerspectiveCamera(horizontalAngle = deg2rad(180f0), verticalAngle = deg2rad(0f0), position = Float32[50, 50, 50])
+perspectiveCam = PerspectiveCamera(horizontalAngle = deg2rad(180f0), verticalAngle = deg2rad(0f0), position = Float32[0, 0, 30])
 registerEventAction(EventAction{WindowResized{0}}(x -> true, (), resize, (perspectiveCam,)))
 registerEventAction(EventAction{MouseDragged{0}}(x -> x.start.key == 0 && x.start.status == 0, (), move, (perspectiveCam,)))
 registerEventAction(EventAction{MouseDragged{0}}(x ->x.start.key == 2 && x.start.status == 0, (), mouseToRotate, (perspectiveCam,)))
