@@ -56,26 +56,29 @@ meshObject = createSampleMesh()
 perspectiveCam = PerspectiveCamera(horizontalAngle = deg2rad(180f0), verticalAngle = deg2rad(0f0), position = Float32[0, 0, 30])
 meshObject.uniforms[:mvp] = perspectiveCam
 
-# Loop until the user closes the window
-while !GLFW.WindowShouldClose(window)
 
-	glClearColor(1f0, 1f0, 1f0, 1f0)   
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-	glEnable(GL_DEPTH_TEST)
-	programID = meshObject.vertexArray.program.id
-	if programID!= glGetIntegerv(GL_CURRENT_PROGRAM)
-		glUseProgram(programID)
+function renderLoop()
+	# Loop until the user closes the window
+	while !GLFW.WindowShouldClose(window)
+
+		glClearColor(1f0, 1f0, 1f0, 1f0)   
+	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+		glEnable(GL_DEPTH_TEST)
+		programID = meshObject.vertexArray.program.id
+		if programID!= glGetIntegerv(GL_CURRENT_PROGRAM)
+			glUseProgram(programID)
+		end
+		#Upload the camera uniform
+		render(:mvp, meshObject.uniforms[:mvp], programID)
+		glBindVertexArray(meshObject.vertexArray.id)
+		glDrawElements(GL_TRIANGLES, meshObject.vertexArray.indexLength, GL_UNSIGNED_INT, GL_NONE)
+		glDisable(GL_DEPTH_TEST)
+		# Swap front and back buffers
+		GLFW.SwapBuffers(window)
+
+		# Poll for and process events
+		GLFW.PollEvents()
 	end
-	#Upload the camera uniform
-	render(:mvp, meshObject.uniforms[:mvp], programID)
-	glBindVertexArray(meshObject.vertexArray.id)
-	glDrawElements(GL_TRIANGLES, meshObject.vertexArray.indexLength, GL_UNSIGNED_INT, GL_NONE)
-	glDisable(GL_DEPTH_TEST)
-	# Swap front and back buffers
-	GLFW.SwapBuffers(window)
 
-	# Poll for and process events
-	GLFW.PollEvents()
-end
-
-GLFW.Terminate()
+	GLFW.Terminate()
+	end
