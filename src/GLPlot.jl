@@ -1,6 +1,6 @@
 using GLWindow, GLUtil, ModernGL, Meshes, Events, GLUT
 
-createWindow([1000, 1000], "Mesh Display")
+window = createWindow([1000, 1000], "Mesh Display")
 
 shader = GLProgram("3dshader1.30")
 
@@ -68,15 +68,7 @@ meshObject.uniforms[:mvp] = perspectiveCam
 #Display the object with some ID and a render function. Could be deleted or overwritten with that ID
 glDisplay(:testObject, (FuncWithArgs(renderObject, (meshObject,)),))
 
-
-
-sleep(22222222222)
-
-
-
-
-
-
+renderloop(window)
 
 #=
 mesh =
