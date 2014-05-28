@@ -95,73 +95,71 @@ function renderObject(renderObject::RenderObject)
 	glDrawElements(GL_TRIANGLES, renderObject.vertexArray.indexLength, GL_UNSIGNED_INT, GL_NONE)
 
 end
-function renderObject2(renderObject::RenderObject)
-	 glDepthFunc(GL_LESS)
-	programID = renderObject.vertexArray.program.id
-	if programID!= glGetIntegerv(GL_CURRENT_PROGRAM)
-		glUseProgram(programID)
-	end
-	#Upload the camera uniform
-	render(:mvp, renderObject.uniforms[:mvp], programID)
-	render(renderObject.uniforms, programID)
-	glBindVertexArray(renderObject.vertexArray.id)
-	glDrawElements(GL_TRIANGLES, renderObject.vertexArray.indexLength, GL_UNSIGNED_INT, GL_NONE)
 
+
+function gencube(x, y, z)
+	Float32[
+		0.0, 0.0, 0.0,
+		0.0, y, 0.0,
+		x, y, 0.0,
+		x, 0.0, 0.0,
+
+		0.0, 0.0, z,
+		x, 0.0, z,
+		x, y, z,
+		0.0, y, z,
+
+		0.0, y, 0.0,
+		0.0, y, z,
+	    x, y, z,
+		x, y, 0.0,
+
+		0.0, 0.0, 0.0,
+		x, 0.0, 0.0,
+		x, 0.0, z,
+		0.0, 0.0, z,
+
+		0.0, 0.0, 0.0,
+		0.0, 0.0, z,
+		0.0, y, z,
+		0.0, y, 0.0,
+
+		x, 0.0, 0.0,
+		x, y, 0.0,
+		x, y, z,
+		x, 0.0, z
+	]
 end
-function createSampleMesh()
-	x_min, x_max = -1, 15
-	y_min, y_max = -1, 5
-	z_min, z_max = -1, 5
-	scale = 8
-	a = 3
-	b = 5
-	c = 8
-	d = 10
-	e = 13
-	b1(x,y,z) = box(   x,y,z, 0,0,0,a,a,a)
-	s1(x,y,z) = sphere(x,y,z, a,a,a,sqrt(a))
-	f1(x,y,z) = min(b1(x,y,z), s1(x,y,z))  # UNION
-	b2(x,y,z) = box(   x,y,z, b,0,0,c,a,a)
-	s2(x,y,z) = sphere(x,y,z, c,a,a,sqrt(a))
-	f2(x,y,z) = max(b2(x,y,z), -s2(x,y,z)) # NOT
-	b3(x,y,z) = box(   x,y,z, d,0,0,e,a,a)
-	s3(x,y,z) = sphere(x,y,z, e,a,a,sqrt(a))
-	f3(x,y,z) = max(b3(x,y,z), s3(x,y,z))  # INTERSECTION
-	f(x,y,z) = min(f1(x,y,z), f2(x,y,z), f3(x,y,z))
 
-	vol = volume(f, x_min,y_min,z_min,x_max,y_max,z_max, scale)
-	msh = isosurface(vol, 0.0)
-	#A conversion is necessary so far, as the Mesh DataType is not parametrized and uses Float64+Int64
+cube = gencube(1f0,1f0,1f0)
 
-	verts = Array(Float32, length(msh.vertices) * 3)
-	indices = Array(GLuint, length(msh.faces) * 3)
-
-	index = 1
-	for elem in msh.vertices
-		verts[index:index+2] = Float32[elem.e1, elem.e2, elem.e3] .* 5f0 .+ 50f0
-		index += 3
-	end
-	index = 1
-	for elem in msh.faces
-		indices[index:index+2] = GLuint[elem.v1 - 1, elem.v2 - 1, elem.v3 - 1]
-		index += 3
-	end
-	mesh =
-		[
-			:indexes		=> GLBuffer(indices, 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
-			:position		=> GLBuffer(verts, 3),
-			:mvp			=> perspectiveCam,
-			:camPosition	=> perspectiveCam.position
-		]
-	# The RenderObject combines the shader, and Integrates the buffer into a VertexArray
-	RenderObject(mesh, shader2)
+sz = [201, 301, 31]
+center = iceil(sz/2)
+C3 = Bool[(i-center[1])^2 + (j-center[2])^2 <= k^2 for i = 1:sz[1], j = 1:sz[2], k = sz[3]:-1:1]
+cmap1 = uint32(linspace(0,255,60))
+cmap = Array(Uint32, length(cmap1))
+for i = 1:length(cmap)
+    cmap[i] = cmap1[i]<<16 + cmap1[end-i+1]<<8 + cmap1[i]
 end
-sampleMesh = createSampleMesh()
+C4 = Array(Uint32, sz..., length(cmap))
+for i = 1:length(cmap)
+    C4[:,:,:,i] = C3*cmap[i]
+end
+
+tex = Texture(C4, textureType=GL_TEXTURE_3D)
+
+
+
+
+
+
+
+
+
 #Display the object with some ID and a render function. Could be deleted or overwritten with that ID
 glDisplay(:xy, (FuncWithArgs(renderObject, (xyPlane,)),))
 glDisplay(:zy, (FuncWithArgs(renderObject, (yzPlane,)),))
 glDisplay(:zx, (FuncWithArgs(renderObject, (xzPlane,)),))
-glDisplay(:zzzzzzzzz, (FuncWithArgs(renderObject2, (sampleMesh,)),))
 
 glEnable(GL_DEPTH_TEST)
 
