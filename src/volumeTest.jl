@@ -146,7 +146,7 @@ for i = 1:length(cmap)
     C4[:,:,:,i] = C3*cmap[i]
 end
 
-tex = Texture(C4, textureType=GL_TEXTURE_3D)
+tex = Texture(C4, GL_TEXTURE_3D, )
 
 
 

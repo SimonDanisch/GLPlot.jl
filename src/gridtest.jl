@@ -6,8 +6,44 @@ import GLUtil.move
 
 window = createWindow([1500, 1300], "Mesh Display")
 
+
+shaderDepthVert = """
+#version 130
+in vec3 position;
+
+out float o_z;
+out vec3 xyz;
+
+uniform mat4 mvp;
+
+void main(){
+	xyz = position;	
+
+	gl_Position =  mvp * vec4(position, 1.0);
+	o_z = position.z;
+}
+
+"""
+shaderDepthfrag = """
+#version 130
+in vec3 xyz;
+out vec4 colourV;
+
+uniform vec3 camPosition;
+
+void main(){
+	float distance = length(xyz - camPosition) / 1000.0;
+	vec4 color1 = vec4(1.0,0.0,0.0,1.0);
+	vec4 color2 = vec4(1.0,1.0,0.0,1.0);
+	colourV = mix(color1, color2, xyz.y / 500.0);
+}
+"""
+
+
+
+
 shader = GLProgram("gridShader")
-shader2 = GLProgram("3dshader1.30")
+shader2 = GLProgram(shaderDepthVert, shaderDepthfrag, "shaderDepth")
 
 
 #Setup the Camera, with some events for moving the camera
