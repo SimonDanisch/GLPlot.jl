@@ -4,7 +4,7 @@ import GLWindow.EVENT_HISTORY
 import GLUtil.rotate
 import GLUtil.move
 
-window = createWindow([1500, 1300], "Mesh Display")
+window = createWindow([1000, 1000], "Mesh Display")
 
 
 shaderDepthVert = """
