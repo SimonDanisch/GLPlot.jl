@@ -39,9 +39,6 @@ void main(){
 }
 """
 
-
-
-
 shader = GLProgram("gridShader")
 shader2 = GLProgram(shaderDepthVert, shaderDepthfrag, "shaderDepth")
 
