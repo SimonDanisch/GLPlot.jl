@@ -7,7 +7,7 @@ uniform vec3 xyz;
 uniform vec3 uvw;
 
 
-out vec4 colourV;
+out vec4 color_output;
 void main()
 {
     
@@ -35,5 +35,5 @@ void main()
         break; // terminate if opacity > 1 or the ray is outside the volume
     }
 
-    colourV =  col_acc;
+    color_output =  col_acc;
 }
