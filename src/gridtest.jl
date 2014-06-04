@@ -191,9 +191,7 @@ function createSampleMesh()
 end
 sampleMesh = createSampleMesh()
 #Display the object with some ID and a render function. Could be deleted or overwritten with that ID
-glDisplay(:xy, (FuncWithArgs(renderObject, (xyPlane,)),))
-glDisplay(:zy, (FuncWithArgs(renderObject, (yzPlane,)),))
-glDisplay(:zx, (FuncWithArgs(renderObject, (xzPlane,)),))
+
 glDisplay(:zzzzzzzzz, (FuncWithArgs(renderObject2, (sampleMesh,)),))
 
 glEnable(GL_DEPTH_TEST)

@@ -1,16 +1,14 @@
 #version 130
 
 in vec3 position;
-in vec3 uvw;
-out vec3 UVW;
-out vec3 xyz;
+out vec3 uvw;
+out vec3 normed_dir;
+uniform float stepsize;
 
 uniform mat4 mvp;
 
 void main()
 {
+    uvw = position;
     gl_Position =  mvp * vec4(position, 1.0);
-    xyz =  position;
-    //gl_FrontColor = gl_Color;
-    UVW = uvw;
 }

@@ -2,35 +2,43 @@
 
 uniform sampler3D volume_tex;
 uniform float stepsize;
-uniform vec3 camPosition;
-uniform mat4 mvp;
 
-in vec3 xyz;
-in vec3 UVW;
+in vec3 normed_dir;
+in vec3 uvw;
 
 out vec4 colour_output;
+
+uniform vec3 camposition;
+
 void main()
 {
-    vec3 dir =  ((xyz - (mvp * vec4(camPosition, 1)).xyz) - vec3(50,50,50) ) / vec3(300,300,300);
-    vec3 norm_dir = normalize(dir);
-    vec3 delta_dir = norm_dir * stepsize;
-    vec4 col_acc = vec4(0,0,0,0); // The dest color
-    float alpha_acc = 0.0;                // The  dest alpha for blending
-    vec4 color_sample; // The src color 
+    vec3  normed_dir    = normalize(uvw - camposition) * stepsize;
+    vec4  colorsample   = vec4(0.0);
+    float alphasample   = 0.0;
+    vec4  coloraccu     = vec4(0.0);
+    float alphaaccu     = 0.0;
+    vec3  start         = uvw;
+    float maximum       = 0;
+    float alpha_acc     = 0.0;  
     float alpha_sample; // The src alpha
-    vec3 uvw = UVW;
-    for(int i = 0; i < 450; i++)
+    for(int i = 0; i < 10000; i++)
     {
-      color_sample = texture3D(volume_tex, uvw);
-      color_sample = vec4(color_sample.r, 0, 0, color_sample.r);
-      //  why multiply the stepsize?
-      alpha_sample = color_sample.a*stepsize;
-      // why multply 3?
-      col_acc   += (1.0 - alpha_acc) * color_sample * alpha_sample*3.0;
-      alpha_acc += alpha_sample;
-      uvw += delta_dir;
-      if(!all(lessThanEqual(uvw, vec3(1,1,1))) || alpha_acc > 1.0) 
-        break; // terminate if opacity > 1 or the ray is outside the volume
+      colorsample = texture(volume_tex, start);
+      if(colorsample.r > 0.5)
+      {
+        colorsample = vec4(0, 0, 0, colorsample.r);
+        alpha_sample = colorsample.a*stepsize;
+        // why multply 3?
+        coloraccu += (1.0 - alpha_acc) * colorsample * alpha_sample*3;
+        alpha_acc += alpha_sample;
+      }
+      
+      start += normed_dir;
+
+      if( start.x <= 0 || start.x >= 1 || start.y <= 0 || start.y >= 1 || start.z <= 0 || start.z >= 1)
+      {
+        break;
+      } 
     }
-    colour_output = col_acc;
+    colour_output = coloraccu;
 }
