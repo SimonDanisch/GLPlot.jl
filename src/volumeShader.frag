@@ -24,21 +24,28 @@ void main()
     for(int i = 0; i < 10000; i++)
     {
       colorsample = texture(volume_tex, start);
-      if(colorsample.r > 0.5)
-      {
-        colorsample = vec4(0, 0, 0, colorsample.r);
+
+        
+        if(colorsample.r > coloraccu.r)
+        {
+          coloraccu = vec4(colorsample.r,colorsample.r,colorsample.r, 1);
+        }
+         
+        /*
+                colorsample = vec4(colorsample.r);
         alpha_sample = colorsample.a*stepsize;
         // why multply 3?
         coloraccu += (1.0 - alpha_acc) * colorsample * alpha_sample*3;
         alpha_acc += alpha_sample;
-      }
-      
+             
+      */
       start += normed_dir;
 
       if( start.x <= 0 || start.x >= 1 || start.y <= 0 || start.y >= 1 || start.z <= 0 || start.z >= 1)
       {
         break;
-      } 
+      }
     }
-    colour_output = coloraccu;
+    //
+    colour_output =vec4(smoothstep(0.0, 0.4, coloraccu.r),  smoothstep(0.4, 0.7, coloraccu.r), smoothstep(0.7, 0.8, coloraccu.r), smoothstep(0.4, 0.5, coloraccu.r));
 }

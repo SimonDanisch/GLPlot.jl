@@ -95,9 +95,10 @@ function gencube()
 
 end
 
-cone = uint8(restrict(imread("small.nrrd"), [1]).data)
+cone = restrict(imread("small.nrrd"), [1]).data
 
-cone = (cone .- minimum(cone)) ./ maximum(cone)
+cone = float32((cone .- 100.0) ./ (2400.0)) .+ 0.41f0
+
 tex = Texture(cone, GL_TEXTURE_3D)
 position, indexes = gencube()
 
@@ -194,9 +195,9 @@ xzPlane = RenderObject(
 		, gridShader)
 
 
-glDisplay(:xyPlane, (FuncWithArgs(renderObject2, (xyPlane,)),))
-glDisplay(:yzPlane, (FuncWithArgs(renderObject2, (yzPlane,)),))
-glDisplay(:xzPlane, (FuncWithArgs(renderObject2, (xzPlane,)),))
+#glDisplay(:xyPlane, (FuncWithArgs(renderObject2, (xyPlane,)),))
+#glDisplay(:yzPlane, (FuncWithArgs(renderObject2, (yzPlane,)),))
+#glDisplay(:xzPlane, (FuncWithArgs(renderObject2, (xzPlane,)),))
 glDisplay(:zz, (FuncWithArgs(renderObject, (cone3D,)),))
 
 
