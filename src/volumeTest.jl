@@ -142,7 +142,6 @@ cone3D = RenderObject(merge(cube, [
 	]), volumeShader)
 
 
-
 defaults = [
 	:indexes			=> GLBuffer(GLuint[0, 1, 2, 2, 3, 0], 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
 	:grid_color 		=> Float32[0.1,.1,.1,0.5],
