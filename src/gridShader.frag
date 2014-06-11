@@ -2,7 +2,6 @@
 uniform vec4 bg_color;
 uniform vec4 grid_color;
 uniform vec3 grid_size;
-uniform vec3 grid_offset;
 uniform vec3 grid_thickness;
 
 

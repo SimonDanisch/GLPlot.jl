@@ -41,11 +41,14 @@ void main()
       */
       start += normed_dir;
 
-      if( start.x <= 0 || start.x >= 1 || start.y <= 0 || start.y >= 1 || start.z <= 0 || start.z >= 1)
+      if(coloraccu.r >= 0.999 || start.x <= 0 || start.x >= 1 || start.y <= 0 || start.y >= 1 || start.z <= 0 || start.z >= 1)
       {
         break;
       }
     }
-    //
-    colour_output =vec4(smoothstep(0.0, 0.4, coloraccu.r),  smoothstep(0.4, 0.7, coloraccu.r), smoothstep(0.7, 0.8, coloraccu.r), smoothstep(0.4, 0.5, coloraccu.r));
+    colour_output = vec4(coloraccu.rgb , smoothstep(0.0, 0.1, coloraccu.r));
+    //colour_output = coloraccu;
+
+    //colour_output =vec4(smoothstep(0.0, 0.4, coloraccu.r),  smoothstep(0.4, 0.7, coloraccu.r), smoothstep(0.7, 0.8, coloraccu.r), smoothstep(0.4, 0.5, coloraccu.r));
+    //colour_output =vec4(normed_dir, 1);
 }

@@ -3,9 +3,10 @@ import Base.merge
 import GLWindow.EVENT_HISTORY
 import GLUtil.rotate
 import GLUtil.move
+import GLUtil.render
 width = 514
 height = 514
-window = createWindow([width, height], "Mesh Display")
+window = createWindow(:VolumeRender, width, height)
 
 
 #Setup the Camera, with some events for moving the camera
@@ -24,43 +25,30 @@ registerEventAction(MouseDragged{Window}, rightbuttondragged, move, (perspective
 registerEventAction(MouseDragged{Window}, middlebuttondragged, rotate, (perspectiveCam,))
 
 
-function renderlines(renderObject::RenderObject)
-	glDisable(GL_DEPTH_TEST)
-	enableTransparency()
+function render(renderObject::RenderObject)
 	programID = renderObject.vertexArray.program.id
-	if programID!= glGetIntegerv(GL_CURRENT_PROGRAM)
-		glUseProgram(programID)
-	end
-	render(renderObject.uniforms, programID)
-	glBindVertexArray(renderObject.vertexArray.id)
-	glDrawArrays(GL_LINES, 0,renderObject.vertexArray.length)
+	glUseProgram(programID)
+	render(renderObject.uniforms)
+	render(renderObject.vertexArray)
 end
 
 function renderObject(renderObject::RenderObject)
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 	glEnable(GL_DEPTH_TEST)
 	glEnable(GL_CULL_FACE)
 	glCullFace(GL_BACK)
 	enableTransparency()
 	programID = renderObject.vertexArray.program.id
-	if programID!= glGetIntegerv(GL_CURRENT_PROGRAM)
-		glUseProgram(programID)
-	end
-	render(:camposition, renderObject.uniforms[:mvp].position, programID)
-	render(renderObject.uniforms, programID)
-	glBindVertexArray(renderObject.vertexArray.id)
-	glDrawElements(GL_TRIANGLES, renderObject.vertexArray.indexLength, GL_UNSIGNED_INT, GL_NONE)
+	glUseProgram(programID)
+	render(:camposition, perspectiveCam.position, programID)
+	render(renderObject.uniforms)
+	render(renderObject.vertexArray)
 end
 function renderObject2(renderObject::RenderObject)
 	glDisable(GL_DEPTH_TEST)
 	glDisable(GL_CULL_FACE)
 	enableTransparency()
-	programID = renderObject.vertexArray.program.id
-	if programID!= glGetIntegerv(GL_CURRENT_PROGRAM)
-		glUseProgram(programID)
-	end
-	render(renderObject.uniforms, programID)
-	glBindVertexArray(renderObject.vertexArray.id)
-	glDrawElements(GL_TRIANGLES, renderObject.vertexArray.indexLength, GL_UNSIGNED_INT, GL_NONE)
+	render(renderObject)
 end
 
 function gencube()
@@ -95,113 +83,37 @@ function gencube()
 
 end
 
-cone = restrict(imread("small.nrrd"), [1]).data
+cone = imread("small.nrrd").data
+cone = cone[1:256, :, :]
 
-cone = float32((cone .- 100.0) ./ (2400.0)) .+ 0.41f0
+
+max = maximum(cone)
+min = minimum(cone)
+
+cone = float32((cone .- min) ./ (max - min))
 
 tex = Texture(cone, GL_TEXTURE_3D)
 position, indexes = gencube()
 
-volumeShader 	= GLProgram("volumeShader")
-lineShader 		= GLProgram("lineShader")
-gridShader 		= GLProgram("gridShader")
-volumeExplorer 	= GLProgram("volumeExplorer")
-
-function scaleuvw(event, uvw)
-	if event.key == GLFW.KEY_UP
-		uvw[1] += 0.05f0
-	elseif event.key == GLFW.KEY_DOWN
-		uvw[1] -= 0.05f0
-	elseif event.key == GLFW.KEY_RIGHT
-		uvw[2] += 0.05f0
-	elseif event.key == GLFW.KEY_LEFT
-		uvw[2] -= 0.05f0
-	elseif event.key == GLFW.KEY_O
-		uvw[3] += 0.05f0
-	elseif event.key == GLFW.KEY_P
-		uvw[3] -= 0.05f0
-	end
-end
+volumeShader = GLProgram("volumeShader")
 
 
-cube =   
-[
-	:position 		=> GLBuffer(position, 3),
-	:indexes 		=> GLBuffer(indexes, 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
-	:mvp 			=> perspectiveCam
-]
-
-scaleUVW =  Float32[0, 0, 0]
-
-registerEventAction(KeyPressed{Window}, x -> true, scaleuvw, (scaleUVW,))
-
-cone3D = RenderObject(merge(cube, [
-		:volue_tex => tex,
-		:stepsize => 0.001f0
-		#:scaleUVW => scaleUVW
-	]), volumeShader)
+cone3D = RenderObject([
+		:volume_tex 	=> tex,
+		:stepsize 		=> 0.001f0,
+		:position 		=> GLBuffer(position, 3),
+		:indexes 		=> GLBuffer(indexes, 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
+		:mvp 			=> perspectiveCam
+	], volumeShader)
 
 
-defaults = [
-	:indexes			=> GLBuffer(GLuint[0, 1, 2, 2, 3, 0], 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
-	:grid_color 		=> Float32[0.1,.1,.1,0.5],
-	:grid_size 			=> Float32[0.0,0.0,0.0],
-	:grid_offset 		=> Float32[0.1,0.1,0.1],
-	:grid_thickness  	=> Float32[0.1,0.1,0.1],
-	:mvp 				=> perspectiveCam
-]
 
-xyPlane = RenderObject(
-			merge(defaults, Dict{Symbol, Any}(
-				[
-					:position => GLBuffer(Float32[
-					    0, 0, 0,
-					    2, 0, 0,
-					    2, 2, 0,
-					    0,  2, 0
-				    ], 3),
-				    :bg_color => Float32[1,0,0, 0.01]
-				])
-			)
-		, gridShader)
-	
-yzPlane = RenderObject(
-			merge(defaults, Dict{Symbol, Any}(
-				[
-					:position => GLBuffer(Float32[
-					    0, 0, 0,
-					    0, 2, 0,
-					    0, 2, 2,
-					    0,  0, 2
-				    ], 3),
-				    :bg_color => Float32[0,0,1, 0.01]
-				])
-			)
-		, gridShader)
-
-xzPlane = RenderObject(
-			merge(defaults, Dict{Symbol, Any}(
-				[
-					:position => GLBuffer(Float32[
-					    0, 0, 0,
-					    0, 0, 2,
-					    2, 0, 2,
-					    2,  0, 0
-				    ], 3),
-				    :bg_color => Float32[0,1,0, 0.05]
-				])
-			)
-		, gridShader)
-
-
-#glDisplay(:xyPlane, (FuncWithArgs(renderObject2, (xyPlane,)),))
-#glDisplay(:yzPlane, (FuncWithArgs(renderObject2, (yzPlane,)),))
-#glDisplay(:xzPlane, (FuncWithArgs(renderObject2, (xzPlane,)),))
-glDisplay(:zz, (FuncWithArgs(renderObject, (cone3D,)),))
+glDisplay(:zz, renderObject, cone3D)
 
 
 
 
+glClearColor(1,1,1,0)
 
 renderloop(window)
 

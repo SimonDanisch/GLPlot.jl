@@ -2,8 +2,6 @@
 
 in vec3 position;
 out vec3 uvw;
-out vec3 normed_dir;
-uniform float stepsize;
 
 uniform mat4 mvp;
 
