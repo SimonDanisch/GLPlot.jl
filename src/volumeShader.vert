@@ -1,13 +1,14 @@
 #version 130
 
+
 in vec3 position;
-in vec3 uv;
-out vec3 uvw;
+
+out vec3 position_o;
 
 uniform mat4 mvp;
 
 void main()
 {
-    uvw = uv;
-    gl_Position =  mvp * vec4(position, 1.0);
+    position_o 	= position;
+    gl_Position = mvp * vec4(position, 1.0);
 }
