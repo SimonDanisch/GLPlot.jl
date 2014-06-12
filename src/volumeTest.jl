@@ -4,8 +4,8 @@ import GLWindow.EVENT_HISTORY
 import GLUtil.rotate
 import GLUtil.move
 import GLUtil.render
-width = 514
-height = 514
+width = 1024
+height = 1024
 window = createWindow(:VolumeRender, width, height)
 
 
@@ -18,7 +18,7 @@ function rotate(event::MouseDragged, cam::PerspectiveCamera)
 	lastPosition = get(EVENT_HISTORY, MouseMoved{Window}, event.start)
 	rotate(lastPosition.x - event.x, lastPosition.y - event.y, cam)
 end
-perspectiveCam = PerspectiveCamera(position = Float32[2, 0, 0])
+perspectiveCam = PerspectiveCamera(position = Float32[2, 2, 0])
 registerEventAction(WindowResized{Window}, x -> true, resize, (perspectiveCam,))
 registerEventAction(WindowResized{Window}, x -> true, x -> glViewport(0,0,x.w, x.h))
 registerEventAction(MouseDragged{Window}, rightbuttondragged, move, (perspectiveCam,))
@@ -51,8 +51,8 @@ function renderObject2(renderObject::RenderObject)
 	render(renderObject)
 end
 
-function gencube()
-	(Float32[
+function gencube(x,y,z)
+	vertices = Float32[
     0.0, 0.0,  1.0,
      1.0, 0.0,  1.0,
      1.0,  1.0,  1.0,
@@ -62,7 +62,19 @@ function gencube()
      1.0, 0.0, 0.0,
      1.0,  1.0, 0.0,
     0.0,  1.0, 0.0
-	], GLuint[
+	]
+	uv = Float32[
+    0.0, 0.0,  1.0,
+     1.0, 0.0,  1.0,
+     1.0,  1.0,  1.0,
+    0.0,  1.0,  1.0,
+    # back
+    0.0, 0.0, 0.0,
+     1.0, 0.0, 0.0,
+     1.0,  1.0, 0.0,
+    0.0,  1.0, 0.0
+	]
+	indexes = GLuint[
 	 0, 1, 2,
     2, 3, 0,
     # top
@@ -79,29 +91,37 @@ function gencube()
     3, 7, 4,
     # right
     1, 5, 6,
-    6, 2, 1])
+    6, 2, 1]
+    return (vertices, uv, indexes)
 
 end
 
-cone = imread("small.nrrd").data
-cone = cone[1:256, :, :]
+cone = imread("danisch.nrrd")
+#cone = cone[1:256, :, :]
+x,y,z = cone.properties["pixelspacing"]
+pspacing = [float64(x), float64(y), float64(z)]
+spacing = float32(pspacing .* Float64[size(cone)...] * 2000.0)
 
+println(spacing)
 
+cone = cone.data
 max = maximum(cone)
 min = minimum(cone)
 
 cone = float32((cone .- min) ./ (max - min))
-
+stepsize = [size(cone)...]
+stepsize = float32(1 / dot(stepsize, stepsize))
 tex = Texture(cone, GL_TEXTURE_3D)
-position, indexes = gencube()
+position, uv, indexes = gencube(spacing...)
 
 volumeShader = GLProgram("volumeShader")
 
 
 cone3D = RenderObject([
 		:volume_tex 	=> tex,
-		:stepsize 		=> 0.001f0,
+		:stepsize 		=> 0.0001f0,
 		:position 		=> GLBuffer(position, 3),
+		:uv 			=> GLBuffer(uv, 3),
 		:indexes 		=> GLBuffer(indexes, 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
 		:mvp 			=> perspectiveCam
 	], volumeShader)

@@ -21,7 +21,7 @@ void main()
     float maximum       = 0;
     float alpha_acc     = 0.0;  
     float alpha_sample; // The src alpha
-    for(int i = 0; i < 10000; i++)
+    for(int i = 0; i < 100000; i++)
     {
       colorsample = texture(volume_tex, start);
 
