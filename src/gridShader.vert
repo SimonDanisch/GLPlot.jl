@@ -1,6 +1,6 @@
 #version 130
 
-in vec3 position;
+in vec3 vertexes;
 
 out vec3 vposition;
 
@@ -8,6 +8,6 @@ uniform mat4 mvp;
 
 void main()
 {
-    vposition   = position; 
-    gl_Position = mvp * vec4(position, 1.0); 
+    vposition   = vertexes; 
+    gl_Position = mvp * vec4(vertexes, 1.0); 
 }

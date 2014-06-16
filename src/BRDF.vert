@@ -1,32 +1,33 @@
-#version 110
+#version 130
 
-attribute vec3 Tangent;
-attribute vec3 Binormal;
-attribute vec3  position;
+in vec3 tangent;
+in vec3 binormal;
+in vec3 normal;
+in vec3 vertex;
 
-uniform vec3    LightDir;  // Light direction in eye coordinates
-uniform vec4    ViewPosition;
-uniform vec4    ViewPosition;
+uniform vec3    lightdirection;  // Light direction in eye coordinates
+uniform vec3    viewposition;
 
 uniform mat4    mvp;
+uniform mat4    normalmatrix;
 
-varying vec3 N, L, H, R, T, B;
+out vec3 N, L, H, R, T, B, xyz;
 
 void main()
 {
     vec3 V, eyeDir;
     vec4 pos;
-
-    pos    = mvp * position;
+    xyz    = vertex / 500.0;
+    pos    = mvp * vec4(vertex, 1.0);
     eyeDir = pos.xyz;
 
-    N = normalize(gl_NormalMatrix * gl_Normal);
-    L = normalize(LightDir);
-    V = normalize((gl_ModelViewMatrix * ViewPosition).xyz - pos.xyz);
+    N = normalize(normalmatrix * vec4(normal, 0.0)).xyz;
+    L = normalize(lightdirection);
+    V = normalize((mvp * vec4(viewposition, 1.0)).xyz - pos.xyz);
     H = normalize(L + V);
     R = normalize(reflect(eyeDir, N));
-    T = normalize(gl_NormalMatrix * Tangent);
-    B = normalize(gl_NormalMatrix * Binormal);
+    T = normalize(normalmatrix * vec4(tangent, 0.0)).xyz;
+    B = normalize(normalmatrix * vec4(binormal, 0.0)).xyz;
 
     gl_Position = pos;
 }

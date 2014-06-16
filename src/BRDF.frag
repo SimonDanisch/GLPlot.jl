@@ -8,7 +8,7 @@ uniform vec2 P;            // Diffuse (x) and specular reflectance (y)
 uniform vec2 A;            // Slope distribution in x and y
 uniform vec3 Scale;        // Scale factors for intensity computation
 
-varying vec3 N, L, H, R, T, B;
+varying vec3 N, L, H, R, T, B, xyz;
 
 void main()
 {
@@ -29,7 +29,7 @@ void main()
                 Scale[1] * P.y * cosThetaI * brdf +
                 Scale[2] * dot(H, N) * P.y;
 
-    vec3 color = intensity * SurfaceColor.rgb;
+    vec3 color =  max(intensity, 0.2) * vec3(0.95, xyz.z + 0.5, 0.05);
 
     gl_FragColor = vec4(color, 1.0);
 }

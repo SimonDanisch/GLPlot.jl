@@ -50,6 +50,7 @@ function renderObject2(renderObject::RenderObject)
 	render(renderObject)
 end
 
+
 function gencube(x,y,z)
 	vertices = Float32[
     0.0, 0.0,  z,
