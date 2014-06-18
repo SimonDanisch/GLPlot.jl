@@ -42,7 +42,7 @@ What should work pretty well now is supplying the z information for a grid.
 ```Julia
 glDisplay(xyz::Array; attributes...)
 ```
-![Surface](/docs/surface.png "Surface with Phong shader")
+![Surface](/doc/surface.png "Surface with Phong shader")
 #Next steps:
 
 - Improve Camera
@@ -56,4 +56,4 @@ glDisplay(xyz::Array; attributes...)
 - Along the way, improve GLUtil.jl with better OpenGL debugging and better API
 
 
-![Volume](/docs/volume1.png "Maximum intensity projection with basic transfer function")
+![Volume](/doc/volume1.png "Maximum intensity projection with basic transfer function")
