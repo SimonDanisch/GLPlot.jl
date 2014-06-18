@@ -1,86 +1,5 @@
-using GLWindow, GLUtil, ModernGL, Meshes, Events, ImmutableArrays, React
-import Base.merge
-import GLUtil.rotate, GLUtil.update
-import GLUtil.move
+using GLWindow, GLUtil, ModernGL, Meshes, Events, ImmutableArrays, React, GLFW
 
-GLUtil.render(location::GLint, signal::Signal) = render(location, signal.value)
-
-rotate(point::Vector3{Float32}, angleaxis::(Vector3{Float32}, Int64)) = rotate(point, angleaxis[2], angleaxis[1])
-function rotate(point, angle, axis)
-
-	if angle > 0
-		rotation = rotationmatrix(float32(deg2rad(angle)), axis)
-	else
-		rotation = rotationmatrix(float32(deg2rad(abs(angle))), axis)
-
-		tmp 	 	= zeros(Float32, 4,4)
-		tmp[1:4, 1] = [rotation.c1...]
-		tmp[1:4, 2] = [rotation.c2...]
-		tmp[1:4, 3] = [rotation.c3...]
-		tmp[1:4, 4] = [rotation.c4...]
-		rotation = inv(tmp)
-		rotation = Matrix4x4(rotation)
-
-	end
-	Vector3(rotation * Vector4(point..., 0f0))
-end
-
-
-immutable Cam{T}
-	window_size::Signal{Vector2{Int}}
-	window_ratio::Signal{T}
-	nearclip::Signal{T}
-    farclip::Signal{T}
-    fov::Signal{T}
-	view::Signal{Matrix4x4{T}}
-	projection::Signal{Matrix4x4{T}} 
-	modelview::Signal{Matrix4x4{T}} 
-	eyeposition::Signal{Vector3{T}} 
-	lookat::Signal{Vector3{T}} 
-	direction::Signal{Vector3{T}}
-	right::Signal{Vector3{T}}
-	up::Signal{Vector3{T}}
-end
-
-
-function Cam{T}(window_size::Input{Vector2{Int}}, xdiff::Input{Int}, eyeposition::Vector3{T}, _lookat::Input{Vector3{T}})
-	
-	nearclip 		= Input{T}(convert(T, 1))
-	farclip 		= Input{T}(convert(T, 30))
-	up 				= Input(Vector3{T}(0, 0, 1))
-	fov 			= Input{T}(convert(T, 76))
-	upvectorangle 	= lift(tuple, up, xdiff)
-
-	_position 		= foldl(rotate, eyeposition, upvectorangle)
-
-	direction 		= lift(-, Vector3{T}, _position, _lookat)
-	right 			= lift((a,b) -> unit(cross(a,b)), Vector3{T}, direction, up)
-
-	rightvectorangle = lift(tuple, right, xdiff)
-
-	window_ratio 	= lift(x -> x[1] / x[2], T, window_size)
-
-	_view 			= lift(lookat, Matrix4x4{T}, _position, _lookat, up)
-
-	projection 		= lift(perspectiveprojection, Matrix4x4{T}, fov, window_ratio, nearclip, farclip)
-	modelview 		= lift(*, Matrix4x4{T}, projection, _view)
-
-	Cam{T}(
-			window_size, 
-			window_ratio,
-			nearclip,
-			farclip,
-			fov,
-			_view, 
-			projection,
-			modelview,
-			_position,
-			_lookat,
-			direction,
-			right,
-			up
-		)
-end
 
 const phongvert = """
 #version 130
@@ -163,26 +82,39 @@ void main()
 
 
 window = createWindow("Mesh Display", 1000, 1000 )
-#dragging = window.inputs[:mousedragged]
-#println(dragging)
-#lift(println,Nothing, dragging)
+#=
+dragging 			= window.inputs[:mousedragged]
 
-cam = Cam(window.inputs[:window_size], window.inputs[:scroll_y], Vector3(500f0,500f0,250f0), Input(Vector3(250f0,250f0, 0f0)))
+leftclicked 		= lift(x-> x == 0, window.inputs[:mousebutton])
+rightclicked	 	= lift(x-> x == 1, window.inputs[:mousebutton])
 
-dragged = window.inputs[:mousedragged]
 
-function diff(statea, stateb)
-	if length(statea) == 2
-		statea[2] = stateb
-		statea
-	else	
-		push!(statea, stateb)
-		statea
-	end
-end
+leftdragged 		= filter(_ -> leftclicked.value, Vector2(0.0), window.inputs[:mouseposition])
+rightdragged 		= filter(_ -> rightclicked.value, Vector2(0.0), window.inputs[:mouseposition])
 
-draggeddiff = foldl(diff, {}, dragged)
-lift(println, draggeddiff)
+leftdraggedlast 	= lift(x -> x[1], foldl((a,b) -> (a[2], b), (Vector2(0.0), Vector2(0.0)), leftdragged))
+rightdraggedlast 	= lift(x -> x[1], foldl((a,b) -> (a[2], b), (Vector2(0.0), Vector2(0.0)), rightdragged))
+
+leftdraggdelta 		= lift(-, leftdragged, leftdraggedlast)
+rightdraggdelta 	= lift(-, rightdragged, rightdraggedlast)
+
+
+leftdraggdeltax 	= lift(x -> float32(x[1]), Float32, leftdraggdelta)
+leftdraggdeltay 	= lift(x -> float32(x[2]), Float32, leftdraggdelta)
+
+rightdraggdeltay 	= lift(x -> float32(x[2]), Float32, rightdraggdelta)
+
+=#
+dragging = window.inputs[:mousedragged]
+clicked = window.inputs[:mousepressed]
+zoom = window.inputs[:scroll_y]
+draggedlast = lift(x -> x[1], foldl((a,b) -> (a[2], b), (Vector2(0.0), Vector2(0.0)), dragging))
+dragdiff = lift(-, dragging, draggedlast)
+dragdiffx = lift(x -> float32(x[1]), Float32, dragdiff)
+dragdiffy = lift(x -> float32(x[2]), Float32, dragdiff)
+cam = Cam(window.inputs[:window_size], dragdiffx, dragdiffy, zoom, Vector3(500f0,500f0,250f0), Input(Vector3(0f0)))
+
+
 shader 		= GLProgram(gridvert, gridfrag, "grid shader")
 phongshader = GLProgram(phongvert, phongfrag, "phong shader")
 
@@ -212,7 +144,7 @@ axis = RenderObject(
 	:bg_color 			=> Float32[0.0,.0,.0,0.04],
 	:grid_thickness  	=> Float32[1,1,1],
 	:grid_size  		=> Float32[0.05,0.05,0.05],
-	:mvp 				=> cam.modelview
+	:mvp 				=> cam.projectionview
 ], shader)
 
 
@@ -290,7 +222,7 @@ function createSampleMesh()
 									tmp[2, 1:3] = [m.c2...]
 									tmp[3, 1:3] = [m.c3...]
 									inv(tmp)'
-								end , Array{Float32, 2}, cam.modelview),
+								end , Array{Float32, 2}, cam.projectionview),
 			:light_position		=> Float32[1,1,0],
 			#:SurfaceColor	=> Float32[0.9, 0.2, 0.1, 1.0],
 			#:P 				=> Float32[0.2, 0.9],
