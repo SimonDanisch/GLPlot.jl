@@ -10,13 +10,18 @@ Volume rendering and surface rendering prototype finished, but not really usable
 
 ###Volume Rendering
 ![Volume](/doc/volume1.png "Maximum intensity projection with basic transfer function")
+Dataset from:
+http://www.osirix-viewer.com/datasets/
+You can just download a dateset, unpack it, and then call `createvolum("path_to_dir"[, cropdimension = 1:256])`
+Cropping of dimension is needed for some graphic cards, which don't support textures bigger than 256*256*256.
 
-Currently creating a volume rendering looks something like this:
+
+Internally, a volume is represented by something like this:
 
 ```Julia
 volumeRenderObject = RenderObject(
 	[
-		:volume_tex 	=> tex,
+		:volume_tex 	=> texture,
 		:stepsize 		=> 0.001f0,
 		:normalizer 	=> spacing, 
 		:vertice 		=> GLBuffer(vertices, 3),
