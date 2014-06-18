@@ -45,7 +45,11 @@ void main()
         break;
       }
     }
-    colour_output = vec4(coloraccu.rgb , smoothstep(0.05, 0.06, coloraccu.r));
+    float r = smoothstep(0.3, 0.8, coloraccu.r);
+    float g = smoothstep(0.6, 1.0, coloraccu.r);
+    float b = smoothstep(0.0, 0.5, coloraccu.r);
+    float a = smoothstep(0.0, 0.1, coloraccu.r);
+    colour_output = vec4(r, g, b, a);
     //colour_output = vec4(start,1);
 
     //colour_output =vec4(smoothstep(0.0, 0.4, coloraccu.r),  smoothstep(0.4, 0.7, coloraccu.r), smoothstep(0.7, 0.8, coloraccu.r), smoothstep(0.4, 0.5, coloraccu.r));

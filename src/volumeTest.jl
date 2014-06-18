@@ -1,35 +1,88 @@
-using GLWindow, GLUtil, ModernGL, Meshes, Events, React, Images
+using GLWindow, GLUtil, ModernGL, Meshes, Events, React, Images, ImmutableArrays
 import Base.merge
-import GLWindow.EVENT_HISTORY
 import GLUtil.rotate
 import GLUtil.move
 import GLUtil.render
-width = 1024
-height = 1024
-window = createWindow(:VolumeRender, width, height)
+width 	= 1024
+height 	= 1024
 
+render(location::GLint, signal::Signal) = render(location, signal.value)
 
-#Setup the Camera, with some events for moving the camera
-function move(event::MouseDragged, cam::PerspectiveCamera)
-	lastPosition = get(EVENT_HISTORY, MouseMoved{Window}, event.start)
-	move(0, lastPosition.y - event.y, cam)
+rotate(point::Vector3{Float32}, angleaxis::(Vector3{Float32}, Int64)) = rotate(point, angleaxis[2], angleaxis[1])
+function rotate(point, angle, axis)
+
+	if angle > 0
+		rotation = rotationmatrix(float32(deg2rad(angle)), axis)
+	else
+		rotation = rotationmatrix(float32(deg2rad(abs(angle))), axis)
+
+		tmp 	 	= zeros(Float32, 4,4)
+		tmp[1:4, 1] = [rotation.c1...]
+		tmp[1:4, 2] = [rotation.c2...]
+		tmp[1:4, 3] = [rotation.c3...]
+		tmp[1:4, 4] = [rotation.c4...]
+		rotation = inv(tmp)
+		rotation = Matrix4x4(rotation)
+
+	end
+	Vector3(rotation * Vector4(point..., 0f0))
 end
-function rotate(event::MouseDragged, cam::PerspectiveCamera)
-	lastPosition = get(EVENT_HISTORY, MouseMoved{Window}, event.start)
-	rotate(lastPosition.x - event.x, lastPosition.y - event.y, cam)
+
+
+immutable Cam{T}
+	window_size::Signal{Vector2{Int}}
+	window_ratio::Signal{T}
+	nearclip::Signal{T}
+    farclip::Signal{T}
+    fov::Signal{T}
+	view::Signal{Matrix4x4{T}}
+	projection::Signal{Matrix4x4{T}} 
+	projectionview::Signal{Matrix4x4{T}} 
+	eyeposition::Signal{Vector3{T}} 
+	lookat::Signal{Vector3{T}} 
+	direction::Signal{Vector3{T}}
+	right::Signal{Vector3{T}}
+	up::Signal{Vector3{T}}
 end
-perspectiveCam = PerspectiveCamera(position = Float32[2, 2, 2], lookAt=Float32[0.5, 0.5, 0.5])
-registerEventAction(WindowResized{Window}, x -> true, resize, (perspectiveCam,))
-registerEventAction(WindowResized{Window}, x -> true, x -> glViewport(0,0,x.w, x.h))
-registerEventAction(MouseDragged{Window}, rightbuttondragged, move, (perspectiveCam,))
-registerEventAction(MouseDragged{Window}, middlebuttondragged, rotate, (perspectiveCam,))
 
 
-function render(renderObject::RenderObject)
-	programID = renderObject.vertexArray.program.id
-	glUseProgram(programID)
-	render(renderObject.uniforms)
-	render(renderObject.vertexArray)
+function Cam{T}(window_size::Input{Vector2{Int}}, xdiff::Input{Int}, eyeposition::Vector3{T}, _lookat::Input{Vector3{T}})
+	
+	nearclip 		= Input{T}(convert(T, 1))
+	farclip 		= Input{T}(convert(T, 30))
+	up 				= Input(Vector3{T}(0, 0, 1))
+	fov 			= Input{T}(convert(T, 76))
+	upvectorangle 	= lift(tuple, up, xdiff)
+
+	_position 		= foldl(rotate, eyeposition, upvectorangle)
+
+	direction 		= lift(-, Vector3{T}, _position, _lookat)
+	right 			= lift((a,b) -> unit(cross(a,b)), Vector3{T}, direction, up)
+
+	rightvectorangle = lift(tuple, right, xdiff)
+
+	window_ratio 	= lift(x -> x[1] / x[2], T, window_size)
+
+	_view 			= lift(lookat, Matrix4x4{T}, _position, _lookat, up)
+
+	projection 		= lift(perspectiveprojection, Matrix4x4{T}, fov, window_ratio, nearclip, farclip)
+	projectionview 		= lift(*, Matrix4x4{T}, projection, _view)
+
+	Cam{T}(
+			window_size, 
+			window_ratio,
+			nearclip,
+			farclip,
+			fov,
+			_view, 
+			projection,
+			projectionview,
+			_position,
+			_lookat,
+			direction,
+			right,
+			up
+		)
 end
 
 function renderObject(renderObject::RenderObject)
@@ -39,10 +92,10 @@ function renderObject(renderObject::RenderObject)
 	enableTransparency()
 	programID = renderObject.vertexArray.program.id
 	glUseProgram(programID)
-	render(:camposition, perspectiveCam.position, programID)
 	render(renderObject.uniforms)
 	render(renderObject.vertexArray)
 end
+
 function renderObject2(renderObject::RenderObject)
 	glDisable(GL_DEPTH_TEST)
 	glDisable(GL_CULL_FACE)
@@ -93,46 +146,69 @@ function gencube(x,y,z)
     1, 5, 6,
     6, 2, 1]
     return (vertices, uv, indexes)
-
 end
+
+
+window = createWindow("Volume Display", 1000, 1000 )
+#dragging = window.inputs[:mousedragged]
+#println(dragging)
+#lift(println,Nothing, dragging)
+
+cam = Cam(window.inputs[:window_size], window.inputs[:scroll_y], Vector3(1f0, 0f0, 0f0), Input(Vector3(0.5f0,0.5f0, 0.5f0)))
+
 
 volumeShader = GLProgram("volumeShader")
 
-cone = imread("small.nrrd")
-x,y,z = cone.properties["pixelspacing"]
-pspacing = [float64(x), float64(y), float64(z)]
 
-cone = cone.data[1:256, :, :]
-spacing = float32(pspacing .* Float64[size(cone)...] * 2000.0)
-println(spacing)
 
-max = maximum(cone)
-min = minimum(cone)
+files 		= readdir("example")
+imgSlice1 	= imread("example/"*files[1])
+volumeScan 	= Array(Uint16, size(imgSlice1)[1], size(imgSlice1)[2], length(files))
+i = 1
+for elem in files
+	img = imread("example/"*elem)
+	volumeScan[:,:, i] = img.data
+	i+=1
+end
 
-cone = float32((cone .- min) ./ (max - min))
+volumeScan = volumeScan[1:256, 1:256, 1:256]
 
-tex = Texture(cone, GL_TEXTURE_3D)
+max = maximum(volumeScan)
+min = minimum(volumeScan)
 
-spacing = Float32[1,1,1]
+volumeScan = float32((volumeScan .- min) ./ (max - min))
+
+tex = Texture(volumeScan, GL_TEXTURE_3D)
+
+volumeScan = 0
+spacing = [1f0, 1f0, 1f0]
 position, uv, indexes = gencube(spacing...)
 
-cone3D = RenderObject([
+cone3D = RenderObject(
+	[
 		:volume_tex 	=> tex,
 		:stepsize 		=> 0.001f0,
 		:normalizer 	=> spacing, 
 		:position 		=> GLBuffer(position, 3),
 		:indexes 		=> GLBuffer(indexes, 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
-		:mvp 			=> perspectiveCam
-	], volumeShader)
-
+		:mvp 			=> cam.projectionview,
+		:camposition	=> cam.eyeposition
+	]
+	, volumeShader)
 
 
 glDisplay(:zz, renderObject, cone3D)
-
-
 
 
 glClearColor(0,0,0,0)
 
 renderloop(window)
 
+#= 
+x,y,z = cone.properties["pixelspacing"]
+pspacing = [float64(x), float64(y), float64(z)]
+
+cone = cone.data[1:256, :, :]
+spacing = float32(pspacing .* Float64[size(cone)...] * 2000.0)
+println(spacing)
+=#
