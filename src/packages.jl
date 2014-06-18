@@ -1,6 +1,7 @@
 Pkg.update()
 Pkg.add("Meshes")
 Pkg.add("Images")
+Pkg.add("React")
 Pkg.clone("https://github.com/jayschwa/GLFW.jl.git")
 Pkg.clone("https://github.com/SimonDanisch/Events.jl.git")
 Pkg.clone("https://github.com/SimonDanisch/GLUtil.jl.git")

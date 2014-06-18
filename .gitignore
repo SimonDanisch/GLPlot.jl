@@ -1,2 +1,3 @@
 *.nrrd
 *.rawb
+/src/example
