@@ -47,8 +47,8 @@ void main()
     }
     float r = smoothstep(0.3, 0.8, coloraccu.r);
     float g = smoothstep(0.6, 1.0, coloraccu.r);
-    float b = smoothstep(0.0, 0.5, coloraccu.r);
-    float a = smoothstep(0.0, 0.1, coloraccu.r);
+    float b = smoothstep(0.0, 0., coloraccu.r);
+    float a = smoothstep(0.05, 0.1, coloraccu.r);
     colour_output = vec4(r, g, b, a);
     //colour_output = vec4(start,1);
 
