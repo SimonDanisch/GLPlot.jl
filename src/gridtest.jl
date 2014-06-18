@@ -1,37 +1,127 @@
-using GLWindow, GLUtil, ModernGL, Meshes, Events, ImmutableArrays
+using GLWindow, GLUtil, ModernGL, Meshes, Events, ImmutableArrays, React
 import Base.merge
-import GLWindow.EVENT_HISTORY
-import GLUtil.rotate
+import GLUtil.rotate, GLUtil.update
 import GLUtil.move
 
-window = createWindow("Mesh Display", 1000, 1000 )
+GLUtil.render(location::GLint, signal::Signal) = render(location, signal.value)
 
-const depthvert = """
+rotate(point::Vector3{Float32}, angleaxis::(Vector3{Float32}, Int64)) = rotate(point, angleaxis[2], angleaxis[1])
+function rotate(point, angle, axis)
+
+	if angle > 0
+		rotation = rotationmatrix(float32(deg2rad(angle)), axis)
+	else
+		rotation = rotationmatrix(float32(deg2rad(abs(angle))), axis)
+
+		tmp 	 	= zeros(Float32, 4,4)
+		tmp[1:4, 1] = [rotation.c1...]
+		tmp[1:4, 2] = [rotation.c2...]
+		tmp[1:4, 3] = [rotation.c3...]
+		tmp[1:4, 4] = [rotation.c4...]
+		rotation = inv(tmp)
+		rotation = Matrix4x4(rotation)
+
+	end
+	Vector3(rotation * Vector4(point..., 0f0))
+end
+
+
+immutable Cam{T}
+	window_size::Signal{Vector2{Int}}
+	window_ratio::Signal{T}
+	nearclip::Signal{T}
+    farclip::Signal{T}
+    fov::Signal{T}
+	view::Signal{Matrix4x4{T}}
+	projection::Signal{Matrix4x4{T}} 
+	modelview::Signal{Matrix4x4{T}} 
+	eyeposition::Signal{Vector3{T}} 
+	lookat::Signal{Vector3{T}} 
+	direction::Signal{Vector3{T}}
+	right::Signal{Vector3{T}}
+	up::Signal{Vector3{T}}
+end
+
+
+function Cam{T}(window_size::Input{Vector2{Int}}, xdiff::Input{Int}, eyeposition::Vector3{T}, _lookat::Input{Vector3{T}})
+	
+	nearclip 		= Input{T}(convert(T, 1))
+	farclip 		= Input{T}(convert(T, 30))
+	up 				= Input(Vector3{T}(0, 0, 1))
+	fov 			= Input{T}(convert(T, 76))
+	upvectorangle 	= lift(tuple, up, xdiff)
+
+	_position 		= foldl(rotate, eyeposition, upvectorangle)
+
+	direction 		= lift(-, Vector3{T}, _position, _lookat)
+	right 			= lift((a,b) -> unit(cross(a,b)), Vector3{T}, direction, up)
+
+	rightvectorangle = lift(tuple, right, xdiff)
+
+	window_ratio 	= lift(x -> x[1] / x[2], T, window_size)
+
+	_view 			= lift(lookat, Matrix4x4{T}, _position, _lookat, up)
+
+	projection 		= lift(perspectiveprojection, Matrix4x4{T}, fov, window_ratio, nearclip, farclip)
+	modelview 		= lift(*, Matrix4x4{T}, projection, _view)
+
+	Cam{T}(
+			window_size, 
+			window_ratio,
+			nearclip,
+			farclip,
+			fov,
+			_view, 
+			projection,
+			modelview,
+			_position,
+			_lookat,
+			direction,
+			right,
+			up
+		)
+end
+
+const phongvert = """
 #version 130
-in vec3 position;
-out vec3 xyz;
+in vec3 vertex;
+in vec3 normal;
+out vec3 N;
+out vec3 v;
+out vec3 vertpos;
 
-uniform mat4 mvp;
+uniform mat4 view, projection;
+uniform mat3 normalmatrix;
 
 void main(){
 
-	gl_Position =  mvp * vec4(position, 1.0);
-	xyz = position;	
+	v = vec3(view  * vec4(vertex,1.0));       
+	vertpos = vertex / 500.0;       
+   	N = normalize(normalmatrix * normal);
+
+   	gl_Position = projection * view * vec4(vertex, 1.0);
 }
 
 """
-const depthfrag = """
+const phongfrag = """
 #version 130
-in vec3 xyz;
-out vec4 colourV;
+in vec3 N;
+in vec3 v;
+in vec3 vertpos;
+out vec4 fragment_color;
+uniform vec3 light_position;
 
 void main(){
-	float distance = xyz.y / 1000.0;
-	vec4 color1 = vec4(1.0,0.0,0.0,1.0);
-	vec4 color2 = vec4(1.0,1.0,0.0,1.0);
-	colourV = mix(color1, color2, xyz.y / 500.0);
+	vec3 L 		= normalize(light_position - v);
+	vec3 a 		= vec3(1.0, 0.0, 0.1);
+   	vec3 b 		= vec3(0.0, 1.0, 0.1);
+	vec4 color 	= vec4(mix(a, b, vertpos.z + 0.5), 1.0);
+   	vec4 Idiff 	= color * max(dot(N,L), 0.0); 
+   	Idiff 		= clamp(Idiff, 0.0, 1.0); 
+   fragment_color = vec4(Idiff.rgb, 1.0);
 }
 """
+
 const gridvert = """
 #version 130
 
@@ -71,24 +161,30 @@ void main()
 }
 """
 
-shader 	= GLProgram(gridvert, gridfrag, "gridShader")
-brdf 	= GLProgram("BRDF")
 
+window = createWindow("Mesh Display", 1000, 1000 )
+#dragging = window.inputs[:mousedragged]
+#println(dragging)
+#lift(println,Nothing, dragging)
 
-#Setup the Camera, with some events for moving the camera
-function move(event::MouseDragged, cam::PerspectiveCamera)
-	lastPosition = get(EVENT_HISTORY, MouseMoved{Window}, event.start)
-	move(0, lastPosition.y - event.y, cam)
+cam = Cam(window.inputs[:window_size], window.inputs[:scroll_y], Vector3(500f0,500f0,250f0), Input(Vector3(250f0,250f0, 0f0)))
+
+dragged = window.inputs[:mousedragged]
+
+function diff(statea, stateb)
+	if length(statea) == 2
+		statea[2] = stateb
+		statea
+	else	
+		push!(statea, stateb)
+		statea
+	end
 end
-function rotate(event::MouseDragged, cam::PerspectiveCamera)
-	lastPosition = get(EVENT_HISTORY, MouseMoved{Window}, event.start)
-	rotate(lastPosition.x - event.x, lastPosition.y - event.y, cam)
-end
-perspectiveCam = PerspectiveCamera(position = Float32[500, 500, 500])
-registerEventAction(WindowResized{Window}, x -> true, resize, (perspectiveCam,))
-registerEventAction(WindowResized{Window}, x -> true, x -> glViewport(0,0,x.w, x.h))
-registerEventAction(MouseDragged{Window}, rightbuttondragged, move, (perspectiveCam,))
-registerEventAction(MouseDragged{Window}, middlebuttondragged, rotate, (perspectiveCam,))
+
+draggeddiff = foldl(diff, {}, dragged)
+lift(println, draggeddiff)
+shader 		= GLProgram(gridvert, gridfrag, "grid shader")
+phongshader = GLProgram(phongvert, phongfrag, "phong shader")
 
 
 gridPlanes = GLBuffer(Float32[
@@ -116,7 +212,7 @@ axis = RenderObject(
 	:bg_color 			=> Float32[0.0,.0,.0,0.04],
 	:grid_thickness  	=> Float32[1,1,1],
 	:grid_size  		=> Float32[0.05,0.05,0.05],
-	:mvp 				=> perspectiveCam
+	:mvp 				=> cam.modelview
 ], shader)
 
 
@@ -127,19 +223,17 @@ function renderObject(renderObject::RenderObject)
 	render(renderObject)
 end
 function renderObject2(renderObject::RenderObject)
+	glEnable(GL_DEPTH_TEST)
+	#glDisable(GL_BLEND)
 	glDepthFunc(GL_LESS)
 	vao = renderObject.vertexArray
 	programID = vao.program.id
     glUseProgram(programID)
     render(renderObject.uniforms)
-    render(:normalmatrix, inv(perspectiveCam.mvp)', programID)
-    render(:viewposition, perspectiveCam.position, programID)
     glBindVertexArray(vao.id)
     glDrawElements(GL_TRIANGLES, vao.indexLength, GL_UNSIGNED_INT, GL_NONE)
 
 end
-P = Float32[0.9, 0.2]
-A = Float32[0.1, 0.1]
 
 function createSampleMesh()
 	const N = 100
@@ -148,7 +242,7 @@ function createSampleMesh()
 	for x=1:N, y=1:N
 		x1 = (x / N) * 500f0
 		y1 = (y / N) * 500f0
-		xyz[index] = Vector3{Float32}(x1,y1, (sin(x1 / 100f0) + cos(y1 / 100f0)) * 100f0)
+		xyz[index] = Vector3{Float32}(x1,y1, (sin(x1 / 30f0) + cos(y1 / 30f0)) * 50f0)
 		index += 1
 	end
 	normals 	= Array(Vector3{Float32}, N*N)
@@ -183,18 +277,28 @@ function createSampleMesh()
 
 			:vertex			=> GLBuffer{Float32}(convert(Ptr{Float32}, pointer(xyz)), sizeof(xyz), 3,GL_ARRAY_BUFFER, GL_STATIC_DRAW),
 			:normal			=> GLBuffer{Float32}(convert(Ptr{Float32}, pointer(normals)), sizeof(normals), 3,GL_ARRAY_BUFFER, GL_STATIC_DRAW),
-			:tangent		=> GLBuffer{Float32}(convert(Ptr{Float32}, pointer(tangents)), sizeof(tangents), 3,GL_ARRAY_BUFFER, GL_STATIC_DRAW),
-			:binormal		=> GLBuffer{Float32}(convert(Ptr{Float32}, pointer(binormals)), sizeof(binormals), 3,GL_ARRAY_BUFFER, GL_STATIC_DRAW),
+			#:tangent		=> GLBuffer{Float32}(convert(Ptr{Float32}, pointer(tangents)), sizeof(tangents), 3,GL_ARRAY_BUFFER, GL_STATIC_DRAW),
+			#:binormal		=> GLBuffer{Float32}(convert(Ptr{Float32}, pointer(binormals)), sizeof(binormals), 3,GL_ARRAY_BUFFER, GL_STATIC_DRAW),
 
-			:mvp			=> perspectiveCam,
-			:lightdirection	=> Float32[1,1,0],
+			:view			=> cam.view,
+			:projection		=> cam.projection,
+			#:viewposition 	=> cam.eyeposition,
+			:normalmatrix 	=> lift( x -> begin
+									m = Matrix3x3(x)
+									tmp 	 = zeros(Float32, 3,3)
+									tmp[1, 1:3] = [m.c1...]
+									tmp[2, 1:3] = [m.c2...]
+									tmp[3, 1:3] = [m.c3...]
+									inv(tmp)'
+								end , Array{Float32, 2}, cam.modelview),
+			:light_position		=> Float32[1,1,0],
 			#:SurfaceColor	=> Float32[0.9, 0.2, 0.1, 1.0],
-			:P 				=> Float32[0.2, 0.9],
-			:A 				=> Float32[0.8, 0.8],
-			:Scale 			=> Float32[0.5, 0.5, 0.5],
+			#:P 				=> Float32[0.2, 0.9],
+			#:A 				=> Float32[0.8, 0.8],
+			#:Scale 			=> Float32[0.5, 0.5, 0.5],
 		]
 	# The RenderObject combines the shader, and Integrates the buffer into a VertexArray
-	RenderObject(mesh, brdf)
+	RenderObject(mesh, phongshader)
 end
 sampleMesh = createSampleMesh()
 
@@ -204,10 +308,9 @@ glDisplay(:axis, renderObject, axis)
 glDisplay(:mesh, renderObject2, sampleMesh)
 
 
-glEnable(GL_DEPTH_TEST)
 
 glClearColor(1,1,1,0)
-
+glEnable(GL_DEPTH_TEST)
 renderloop(window)
 
 
