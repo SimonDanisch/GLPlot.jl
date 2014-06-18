@@ -10,6 +10,7 @@ Volume rendering and surface rendering prototype finished, but not really usable
 
 ###Volume Rendering
 ![Volume](/doc/volume1.png "Maximum intensity projection with basic transfer function")
+
 Dataset from:
 http://www.osirix-viewer.com/datasets/
 You can just download a dateset, unpack it, and then call `createvolum("path_to_dir"[, cropdimension = 1:256])`
