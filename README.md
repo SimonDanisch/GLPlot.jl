@@ -9,6 +9,7 @@ If you want to try this package, I advice to wait a few more days, as I plan on 
 Volume rendering and surface rendering prototype finished, but not really usable for plotting, as there is no api.
 
 ###Volume Rendering
+![Volume](/doc/volume1.png "Maximum intensity projection with basic transfer function")
 
 Currently creating a volume rendering looks something like this:
 
@@ -56,4 +57,3 @@ glDisplay(xyz::Array; attributes...)
 - Along the way, improve GLUtil.jl with better OpenGL debugging and better API
 
 
-![Volume](/doc/volume1.png "Maximum intensity projection with basic transfer function")
