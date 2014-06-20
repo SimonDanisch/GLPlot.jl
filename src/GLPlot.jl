@@ -3,7 +3,7 @@ using GLWindow, GLUtil, ModernGL, Meshes, Events, ImmutableArrays, React, GLFW, 
 export gldisplay, createSampleMesh, createvolume, startplot
 
 
-const window = createwindow("Mesh Display", 1000, 1000 )
+global const window = createwindow("Mesh Display", 1000, 1000 )
 
 
 const cam = Cam(window.inputs, Vector3(1.5f0, 1.5f0, 1.0f0))
