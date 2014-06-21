@@ -118,8 +118,13 @@ brdfshader  = GLProgram(brdfvert, brdffrag,     "BRDF shader")
 
 
 
-function creategrid(x, y, z)
-   
+function creategrid{T}(x::AbstractArray{T}, y::AbstractArray{T}, z::AbstractArray{T}, color::AbstractArray{T},)
+    combined = [x, y, z, color]
+    dims     = map(ndims, combined)
+    @assert all(x-> x<=2, dims) #can't handle 3D arrays
+    sizes    = map(size,  combined)
+    dim2d    = filter(x-> lenght(x) == 2, sizes)
+
 end
 function creategrid(;dim = (250,250), x = 1:dim[1], y = 1:dim[1], z = zeros(Float32, dim...), color = Vector4(0.4,0.4,0.4,1))
 
@@ -130,9 +135,9 @@ function createSampleMesh()
    xyz = Array(Vector3{Float32}, N*N)
    index = 1
    for x=1:N, y=1:N
-      x1 = (x / N) * 1f0
-      y1 = (y / N) * 1f0
-      xyz[index] = Vector3{Float32}(x1,y1, (sin(x1 * 10f0) + cos(y1 * 10f0)) * 0.2f0)
+      x1 = (x / N) 
+      y1 = (y / N)
+      xyz[index] = Vector3{Float32}(x1, y1, sin(10f0*((((x1- 0.5f0) * 2)^2) + ((y1 - 0.5f0) * 2)^2))/10f0)
       index += 1
    end
    normals     = Array(Vector3{Float32}, N*N)
