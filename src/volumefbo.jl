@@ -7,7 +7,7 @@ cam = Cam(window.inputs, Vector3(1.5f0, 1.5f0, 1.0f0))
 shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
-shader              = GLProgram(shaderdir*"simple.vert", shaderdir*"mip.frag")
+shader              = GLProgram(shaderdir*"simple.vert", shaderdir*"iso.frag")
 uvwshader           = GLProgram(shaderdir*"uvwposition")
 
 
@@ -69,25 +69,44 @@ function genuvwcube(x,y,z)
 end
 
 cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0 )
-cube2,frontf2, backf2 = genuvwcube(0.5f0, 1f0, 1f0)
+cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0)
 
 
 delete!(cubedata, :uvw)
-
-volume = float32(imread("C:/Users/Sim/Downloads/danisch.nrrd").data)
-volume = map(x-> x >= 0f0 ? x : 0, volume)
+N = 128
+volume = Float32[sin(x / 4f0)+sin(y / 4f0)+sin(z / 4f0) for x=1:N, y=1:N, z=1:N]
 max = maximum(volume)
 min = minimum(volume)
-
 volume = (volume .- min) ./ (max .- min)
+texparams = [
+   (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
+  (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
+  (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
+  (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
+  (GL_TEXTURE_WRAP_R,  GL_CLAMP_TO_EDGE)
+
+]
+keypressed = keepwhen(lift(x-> x==1 ,Bool, window.inputs[:keypressedstate]) ,0,window.inputs[:keypressed])
+isovalue 	= foldl((a,b) -> begin
+				if b == GLFW.KEY_O
+					return a-0.01f0
+				elseif b == GLFW.KEY_P
+					return a+0.01f0
+				end
+				a
+			end, 0.5f0,keypressed)
 
 cubedata[:frontface1]    = frontf1
 cubedata[:backface1]     = backf1
 cubedata[:backface2]     = backf2
-cubedata[:frontface2]     = frontf2
+cubedata[:frontface2]    = frontf2
 
-cubedata[:volume_tex]   = Texture(volume, 1)
-cubedata[:stepsize]     = 0.001f0
+cubedata[:volume_tex]     = Texture(volume, 1, parameters=texparams)
+cubedata[:stepsize]       = 0.001f0
+cubedata[:isovalue]       = isovalue
+
+cubedata[:light_position] = Float32[2, 2, -2]
+
 cube = RenderObject(cubedata, shader)
 prerender!(cube, glDisable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK)
 postrender!(cube, render, cube.vertexarray)
@@ -97,15 +116,15 @@ glClearDepth(1)
 
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
-    render(cube1)
-    render(cube2)
-    glClearColor(1,1,1,1)
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    enabletransparency()
-    render(cube)
+  render(cube1)
+  render(cube2)
+  glClearColor(1,1,1,1)
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  enabletransparency()
+  render(cube)
 
-    GLFW.SwapBuffers(window.glfwWindow)
-    GLFW.PollEvents()
-    sleep(0.01)
+  GLFW.SwapBuffers(window.glfwWindow)
+  GLFW.PollEvents()
+  sleep(0.01)
 end
 GLFW.Terminate()
