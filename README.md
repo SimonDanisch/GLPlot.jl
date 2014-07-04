@@ -26,7 +26,7 @@ volumeRenderObject = RenderObject(
 		:stepsize 		=> 0.001f0,
 		:normalizer 	=> spacing, 
 		:vertice 		=> GLBuffer(vertices, 3),
-		:indexes 		=> GLBuffer(indexes, 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
+		:indexes 		=> GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
 		:mvp 			=> cam.projectionview,
 		:camposition	=> cam.eyeposition
 	]
