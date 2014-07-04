@@ -1,69 +1,6 @@
 using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
 
-vert = "
-#version $(GLWindow.GLSL_VERSION)
-in vec3 vertex;
-in vec3 normal;
 
-out vec3 N;
-out vec3 vert;
-out vec4 color;
-
-uniform sampler2D ztex;
-uniform sampler2D colortex;
-uniform vec2 texsize;
-
-uniform mat4 view, projection;
-uniform mat3 normalmatrix;
-
-mat4 getmodelmatrix(vec3 xyz, float xscale, float yscale, float zscale)
-{
-   return mat4(
-      vec4(xscale, 0, 0, 0),
-      vec4(0, yscale, 0, 0),
-      vec4(0, 0, zscale, 0),
-      vec4(xyz, 1));
-}
-
-vec2 getuv(vec2 texdim, int index)
-{
-  float u = float((index % int(texdim.x))) / texdim.x;
-  float v = float((index / int(texdim.y))) / texdim.y;
-  return vec2(u,v);
-}
-vec2 getxy(vec2 uv, vec2 from, vec2 to)
- {
-   return from + (uv * (to - from));
- }
-void main(){
-
-    vec2 uv = getuv(texsize, gl_InstanceID);
-    vec2 xy = getxy(uv, vec2(-1,-1), vec2(1,2));
-    float z = texture(ztex, uv).r;
-    color   = texture(colortex, uv);
-
-    N = normalize(normalmatrix * normal);
-    vert = vec3(view  * vec4(vertex, 1.0));
-
-    gl_Position = projection * view *  getmodelmatrix(vec3(xy, 0), 1.0, 1.0, z) * vec4(vertex, 1.0);
-}
-"
-
-phongfrag = "
-#version $(GLWindow.GLSL_VERSION)
-in vec3 N;
-in vec3 vert;
-out vec4 fragment_color;
-uniform vec3 light_position;
-in vec4 color;
-void main(){
-  vec3 L       = normalize(light_position - vert);
-  vec4 Idiff   = color * max(dot(N, L), 0.0);
-  Idiff        = clamp(Idiff, 0.0, 1.0);
-
-  fragment_color = vec4(Idiff.rgb, 1.0);
-}
-"
 
 
 global const window = createwindow("Mesh Display", 1000, 1000, debugging = false)

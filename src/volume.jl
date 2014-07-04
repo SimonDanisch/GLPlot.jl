@@ -113,8 +113,8 @@ void main()
     float g = smoothstep(0.6, 1.0, coloraccu.r);
     float b = smoothstep(0.0, 1.0, coloraccu.r);
     float a = smoothstep(0.01, 1.0, coloraccu.r);
-    colour_output = vec4(r, g, b, a);
-    //colour_output = vec4(start,1);
+    //colour_output = vec4(r, g, b, a);
+    colour_output = coloraccu;
 
     //colour_output =vec4(smoothstep(0.0, 0.4, coloraccu.r),  smoothstep(0.4, 0.7, coloraccu.r), smoothstep(0.7, 0.8, coloraccu.r), smoothstep(0.4, 0.5, coloraccu.r));
     //colour_output =vec4(normed_dir, 1);
@@ -125,7 +125,7 @@ global const mipshader = GLProgram(volumevert, volumeMIPfrag, "volumeMipShader")
 export volumeshader,mipshader 
 
 function createvolume(img::Image; cropDimension=1:256, shader = volumeshader )
-	volume = img.data[cropDimension, cropDimension, 1:end]
+	volume = img.data
 	max = maximum(volume)
 	min = minimum(volume)
 
@@ -141,7 +141,7 @@ function createvolume(img::Array; spacing = [1f0, 1f0, 1f0], shader = volumeshad
 			:stepsize 		=> 0.001f0,
 			:normalizer 	=> spacing, 
 			:position 		=> GLBuffer(position, 3),
-			:indexes 		=> GLBuffer(indexes, 1, bufferType = GL_ELEMENT_ARRAY_BUFFER),
+			:indexes 		=> GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
 			:mvp 			=> cam.projectionview,
 			:camposition	=> cam.eyeposition
 		]

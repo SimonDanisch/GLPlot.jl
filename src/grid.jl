@@ -9,8 +9,8 @@ uniform mat4 mvp;
 
 void main()
 {
-    vposition   = vertexes; 
-    gl_Position = mvp * vec4(vertexes, 1.0); 
+    vposition   = vertexes;
+    gl_Position = mvp * vec4(vertexes, 1.0);
 }
 """
 const gridfrag = """
@@ -27,48 +27,47 @@ out vec4 fragment_color;
 
 void main()
 {
- 	vec3  v  	= vec3(vposition.xyz) * grid_size;
-    vec3  f  	= abs(fract(v) - 0.5);
-    vec3  df 	= fwidth(v);
-    vec3  g  	= smoothstep(-grid_thickness * df, +grid_thickness * df, f);
-    float c  	= (1.0-g.x * g.y * g.z);
-    fragment_color = mix(bg_color, vec4(vposition.xyz, 1), c);
+ 	vec3  v  		= vec3(vposition.xyz) * grid_size;
+    vec3  f  		= abs(fract(v) - 0.5);
+    vec3  df 		= fwidth(v);
+    vec3  g  		= smoothstep(-grid_thickness * df, +grid_thickness * df, f);
+    float c  		= (1.0-g.x * g.y * g.z);
+    fragment_color 	= mix(bg_color, vec4(vposition.xyz, 1), c);
 }
 """
 
 global const shader = GLProgram(gridvert, gridfrag, "grid shader")
 
 
-
-
 gridPlanes = GLBuffer(Float32[
-					    0, 0, 0, 		
+					    0, 0, 0,
 					    1, 0, 0,
 					    1, 1, 0,
 					    0,  1, 0,
 
-					    0, 1, 1, 
+					    0, 1, 1,
 					    0,  0, 1,
 
 					    1, 0, 1,
-					    ], 3)
+					    ] .* 100f0, 3)
 
 gridPlaneIndexes = GLBuffer(GLuint[
 									0, 1, 2, 2, 3, 0,   #xy PLane
 									0, 3, 4, 4, 5, 0,	#yz Plane
 									0, 5, 6, 6, 1, 0 	#xz Plane
-								  ], 1, bufferType = GL_ELEMENT_ARRAY_BUFFER)
+								  ], 1, buffertype = GL_ELEMENT_ARRAY_BUFFER)
+
 global const axis = RenderObject(
 [
-	:vertexes 			=> gridPlanes,
-	:indexes			=> gridPlaneIndexes,
-	#:grid_color 		=> Float32[0.1,.1,.1, 1.0],
-	:bg_color 			=> Float32[0.0,.0,.0,0.04],
-	:grid_thickness  	=> Float32[1,1,1],
-	:grid_size  		=> Float32[50,50,50],
-	:mvp 				=> cam.projectionview
+	:vertexes 			  => gridPlanes,
+	:indexes			    => gridPlaneIndexes,
+	#:grid_color 		  => Float32[0.1,.1,.1, 1.0],
+	:bg_color 			  => Float32[1, 1, 1, 0.5],
+	:grid_thickness  	=> Float32[2, 2, 2],
+	:grid_size  		  => Float32[10,10,10],
+	:mvp 				      => cam.projectionview
 ], shader)
 
 
-prerender!(axis, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL)
-
+prerender!(axis, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, enabletransparency)
+postrender!(axis, render, axis.vertexarray)

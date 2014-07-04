@@ -4,18 +4,16 @@ in vec3 vertex;
 in vec3 normal;
 out vec3 N;
 out vec3 v;
-out vec3 vertpos;
 
 uniform mat4 view, projection;
 uniform mat3 normalmatrix;
 
 void main(){
 
-	v = vec3(view  * vec4(vertex,1.0));       
-	vertpos = vertex / 500.0;       
-   	N = normalize(normalmatrix * normal);
+	 v = vec3(view  * vec4(vertex,1.0));       
+   N = normalize(normalmatrix * normal);
 
-   	gl_Position = projection * view * vec4(vertex, 1.0);
+   gl_Position = projection * view * vec4(vertex, 1.0);
 }
 
 "
@@ -23,7 +21,6 @@ const phongfrag = "
 #version $(GLWindow.GLSL_VERSION)
 in vec3 N;
 in vec3 v;
-in vec3 vertpos;
 out vec4 fragment_color;
 uniform vec3 light_position;
 

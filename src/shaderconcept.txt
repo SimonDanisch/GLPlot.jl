@@ -1,0 +1,14 @@
+What needs to be achieved:
+	* render same data with different shader
+	* switch attributes around
+	* handle data as if its inside julia
+
+
+ mustache for templates?
+
+ Alpha blending problem - depth sorting -
+   * have depth buffer for every object (does not work inside one render call)
+   * kbuffer
+   * depth peeling
+   * a-buffer
+ Rotations
