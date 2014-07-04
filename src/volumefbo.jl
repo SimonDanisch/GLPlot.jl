@@ -18,8 +18,10 @@ lift(windowsize -> begin
     glTexImage(0, frontface.internalformat, windowsize..., 0, frontface.format, frontface.pixeltype, C_NULL)
 end, window.inputs[:window_size])
 =#
-
-
+immutable Pivot
+  position
+  rotation
+end
 v, uvw, indexes = gencube(1f0, 1f0, 1f0)
 cubedata = [
     :vertex         => GLBuffer(v, 3),
