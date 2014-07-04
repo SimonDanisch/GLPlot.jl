@@ -12,6 +12,10 @@ uniform vec3 light_position;
 in vec4 vertpos;
 //in vec3 frag_uvw;
 uniform float isovalue;
+
+out vec4 fragment_color;
+
+
 vec3 gennormal(vec3 uvw, vec3 gradient_delta)
 {
     vec3 a,b;
@@ -47,98 +51,151 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
             Ks * vec3(0.7, 0.7, 0.9) * spec_coeff ;
 }
 
-out vec4 fragment_color;
 
+/*
+
+vec3 frontsurface(vec3 afront, vec3 aback, vec3 bfront, vec3 bback)
+{
+  bool aback_infront_bback    = length(bback.rgb  - aback.rgb)  >= 0.0;
+  bool bfront_infront_afront  = length(bfront.rgb - afront.rgb) <= 0.0;
+  bool afront_infront_bback   = length(bback.rgb  - afront.rgb) >= 0.0;
+  bool aback_infront_bfront   = length(bfront.rgb - aback.rgb)  >= 0.0;
+
+  vec4 front = afront;
+  vec4 back  = aback;
+
+  if(
+    !aback_infront_bback && //if A's backface is behind B's backface
+     bfront_infront_afront // and B sticks out of A, we cutted the whole volume
+  )
+  {
+    front = vec4(0);
+    back  = vec4(0);
+  }
+  else if(bfront.a != 0.0) // only modify, if B is present
+  {
+    if(
+      aback_infront_bback &&
+      bfront_infront_afront && //if volume B has a frontface outside A
+      afront_infront_bback
+    ){
+      front = bback;
+    }
+    if(
+      aback_infront_bfront &&
+      !bfront_infront_afront
+    ){
+      back = bfront;
+    }
+  }
+  return back;
+}
+
+*/
+
+vec4 isosurface(vec3 front, vec3 back, float stepsize)
+{
+  vec3  dir            = vec3(back - front);
+  float lengthdir      = length(dir);
+  vec3  stepsize_dir   = normalize(dir) * stepsize;
+  float colorsample    = 0.0;
+  vec3  start          = front;
+  float length_acc     = 0.0;
+  vec4  lol           = vec4(0);
+  for(int i; i < 1; i++)
+  {
+
+    colorsample = texture(volume_tex, start).r;
+    if(abs(colorsample - isovalue) < 0.01)
+    {
+      //vec3 N = gennormal(start, vec3(stepsize));
+      //vec3 L =  normalize(light_position - start);
+      lol = vec4(0,0,1, 1);
+    }
+    start        += stepsize_dir;
+    length_acc   += stepsize;
+  }
+  return lol;
+}
+
+vec4 mip(vec3 front, vec3 back, float stepsize)
+{
+  vec3  dir            = vec3(back - front);
+  float lengthdir      = length(dir);
+  vec3  stepsize_dir   = normalize(dir) * stepsize;
+  float colorsample    = 0.0;
+  vec3  start          = front;
+  float length_acc     = 0.0;
+  float maximum        = 0.0;
+  int i = 0;
+  for(i; i < 1000; i++)
+  {
+    if(length_acc >= lengthdir)
+    {
+      break;
+    }
+    colorsample = texture(volume_tex, start).r;
+    if(maximum < colorsample)
+    {
+      //vec3 N = gennormal(start, vec3(stepsize));
+      //vec3 L =  normalize(light_position - start);
+      maximum = colorsample;
+    }
+    start        += stepsize_dir;
+    length_acc   += stepsize;
+  }
+  return vec4(maximum);
+}
 void main()
 {
-    vec2 texc            = ((vertpos.xy / vertpos.w) + 1) / 2;
+  //get vertex position in screen space
+  vec2 texc            = ((vertpos.xy / vertpos.w) + 1) / 2;
 
-    vec4 back1           = texture(backface1, texc);
-    vec4 back2           = texture(backface2, texc);
+  vec4 aback           = texture(backface1, texc);
+  vec4 bback           = texture(backface2, texc);
+
+  vec4 afront          = texture(frontface1, texc);
+  vec4 bfront          = texture(frontface2, texc);
 
 
-    vec4 front1          = texture(frontface1, texc);
-    vec4 front2          = texture(frontface2, texc);
+  vec4 coloraccu       = vec4(0);
 
-    vec4  coloraccu     = vec4(0);
+  bool aback_infront_bback    = length(bback.rgb  - aback.rgb)  >= 0.0;
+  bool bfront_infront_afront  = length(bfront.rgb - afront.rgb) <= 0.0;
+  bool afront_infront_bback   = length(bback.rgb  - afront.rgb) >= 0.0;
+  bool aback_infront_bfront   = length(bfront.rgb - aback.rgb)  >= 0.0;
 
-    vec3 front = vec3(0);
-    vec3 back = vec3(0);
 
-    bool dontskip = true;
-    if(back2.a < 1.0)
-    {
-      front = vec3(front1);
-    }
-    else if(
-      (length(back2 - back1) > 0.001) &&
-      ((length(front2 - front1) <= 0.001)) &&
-      ((length(back2 - front1) >= -0.001))
+  vec4 front = afront;
+  vec4 back  = aback;
+
+  if(
+    !aback_infront_bback && //if A's backface is behind B's backface
+     bfront_infront_afront // and B sticks out of A, we cutted the whole volume
+  )
+  {
+    front = vec4(0);
+    back  = vec4(0);
+  }
+  else if(bfront.a != 0.0) // only modify, if B is present
+  {
+    if(
+      aback_infront_bback &&
+      bfront_infront_afront && //if volume B has a frontface outside A
+      afront_infront_bback
     ){
-      front = vec3(back2);
+      front = bback;
     }
-    else if(
-      (length(back2 - back1) <= 0.001) &&
-       ((length(front2 - front1) <= 0.001))
-    )
-    {
-      dontskip = false;
-    }else
-    {
-      front = vec3(front1);
+    if(
+      aback_infront_bfront &&
+      !bfront_infront_afront
+    ){
+      back = bfront;
     }
-
-    if(dontskip)
-    {
-      if(back2.a < 1.0 )
-      {
-        back = vec3(back1);
-      }
-      else if(
-        ((length(front2 - back1) >= -0.001)) &&
-        ((length(front2 - front1) >= 0.001))
-      ){
-        back = vec3(front2);
-      }
-      else if(
-        (length(back2 - back1) <= 0.001) &&
-         ((length(front2 - front1) <= 0.001))
-      )
-      {
-        back = vec3(1);
-      }else
-      {
-        back = vec3(back1);
-      }
-
-      vec3 dir            = vec3(back - front);
-      float lengthdir     = length(dir);
-      vec3  stepsize_dir  = normalize(dir) * stepsize;
-      vec3  colorsample   = vec3(0.0);
-
-      vec3  start         = front;
-      float length_acc    = 0.0;
-
-      for(int i; i < 10000; i++)
-      {
-        if(length_acc >= lengthdir)
-        {
-          break;
-        }
-        colorsample = texture(volume_tex, start).rgb;
-        if(abs(colorsample.r - isovalue) < 0.01)
-        {
-          vec3 N = gennormal(start, vec3(stepsize));
-          vec3 L =  normalize(light_position - start);
-          coloraccu = vec4(blinn_phong(N, start, L, vec3(0,0,1)), 1);
-          break;
-        }
-        start        += stepsize_dir;
-        length_acc   += stepsize;
-      }
-    }
-
-
-
-    fragment_color = coloraccu;
+  }
+  if(front.a != 0.0)
+  {
+    coloraccu = isosurface(front.rgb, back.rgb, stepsize);
+  }
+  fragment_color = coloraccu;
 }

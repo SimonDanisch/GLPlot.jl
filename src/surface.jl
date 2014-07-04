@@ -1,5 +1,4 @@
 const phongvert = "
-#version $(GLWindow.GLSL_VERSION)
 in vec3 vertex;
 in vec3 normal;
 out vec3 N;
@@ -18,7 +17,6 @@ void main(){
 
 "
 const phongfrag = "
-#version $(GLWindow.GLSL_VERSION)
 in vec3 N;
 in vec3 v;
 out vec4 fragment_color;
@@ -28,7 +26,7 @@ void main(){
 	vec3 L 		= normalize(light_position - v);
 	vec3 a 		= vec3(1.0, 0.0, 0.1);
    vec3 b 		= vec3(0.0, 1.0, 0.1);
-	vec4 color 	= vec4(mix(a, b, vertpos.z + 0.5), 1.0);
+	vec4 color 	= vec4(mix(a, b, v.z + 0.5), 1.0);
    vec4 Idiff 	= color * max(dot(N,L), 0.0); 
    Idiff 		= clamp(Idiff, 0.0, 1.0); 
 
@@ -36,8 +34,6 @@ void main(){
 }
 "
 const brdfvert = "
-#version $(GLWindow.GLSL_VERSION)
-
 in vec3 tangent;
 in vec3 binormal;
 in vec3 normal;
@@ -72,9 +68,7 @@ void main()
 }
 "
 const brdffrag = "
-#version $(GLWindow.GLSL_VERSION)
-
-const float PI = 3.14159;
+sconst float PI = 3.14159;
 const float ONE_OVER_PI = 1.0 / PI;
 
 uniform vec4 surfacecolor; // Base color of surface
@@ -111,7 +105,7 @@ void main()
 "
 
 phongshader = GLProgram(phongvert, phongfrag,   "phong shader")
-brdfshader  = GLProgram(brdfvert, brdffrag,     "BRDF shader")
+#brdfshader  = GLProgram(brdfvert, brdffrag,     "BRDF shader")
 
 
 
@@ -190,6 +184,7 @@ function createSampleMesh()
       ]
    # The RenderObject combines the shader, and Integrates the buffer into a VertexArray
    mesh = RenderObject(mesh, phongshader)
-   prerender!(mesh, enableTransparency)
+   prerender!(mesh, enabletransparency)
+   postrender!(mesh, render, mesh.vertexarray)
    mesh
 end

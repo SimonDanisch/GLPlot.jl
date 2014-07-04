@@ -74,7 +74,7 @@ const data = RenderObject([
     :offset         => GLBuffer(Float32[0,0, 0,1, 1,1, 1,0], 2),
     :index          => GLBuffer(GLuint[0,1,2,2,3,0], 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
     :ztex           => ztex,
-    :colortex       => colortex,
+    #:colortex       => colortex,
     #:texsize        => convert(Vector2{Float32}, texsize),
     :projection     => cam.projection,
     :view           => cam.view,
@@ -84,7 +84,7 @@ const data = RenderObject([
 
 function renderinstanced(vao::GLVertexArray, amount)
     glBindVertexArray(vao.id)
-    glDrawElementsInstanced(GL_TRIANGLES, vao.indexlength, GL_UNSIGNED_INT, C_NULL, amount)
+    glDrawElementsInstancedEXT(GL_TRIANGLES, vao.indexlength, GL_UNSIGNED_INT, C_NULL, amount)
 end
 postrender!(data, renderinstanced, data.vertexarray, N*N)
 

@@ -1,7 +1,4 @@
 const volumevert = "
-#version $(GLWindow.GLSL_VERSION)
-
-
 in vec3 position;
 
 out vec3 position_o;
@@ -16,8 +13,6 @@ void main()
 
 "
 global const volumeMIPfrag = "
-#version $(GLWindow.GLSL_VERSION)
-
 uniform sampler3D volume_tex;
 uniform float stepsize;
 uniform vec3 normalizer;
@@ -69,8 +64,6 @@ void main()
 
 
 global const volumefrag = "
-#version $(GLWindow.GLSL_VERSION)
-
 uniform sampler3D volume_tex;
 uniform float stepsize;
 uniform vec3 normalizer;
@@ -120,8 +113,8 @@ void main()
     //colour_output =vec4(normed_dir, 1);
 }
 "
-global const volumeshader = GLProgram(volumevert, volumefrag, "volumeShader")
-global const mipshader = GLProgram(volumevert, volumeMIPfrag, "volumeMipShader")
+global const volumeshader   = GLProgram(volumevert, volumefrag, "volumeShader")
+global const mipshader      = GLProgram(volumevert, volumeMIPfrag, "volumeMipShader")
 export volumeshader,mipshader 
 
 function createvolume(img::Image; cropDimension=1:256, shader = volumeshader )

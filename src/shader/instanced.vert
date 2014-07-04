@@ -1,3 +1,4 @@
+#extension GL_ARB_draw_instanced : enable
 in vec2 offset;
 out vec3 N;
 out vec3 vert;

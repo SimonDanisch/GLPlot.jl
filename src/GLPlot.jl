@@ -9,8 +9,6 @@ global const window = createwindow("Mesh Display", 1000, 1000 )
 const cam = Cam(window.inputs, Vector3(1.5f0, 1.5f0, 1.0f0))
 
 include("surface.jl")
-include("grid.jl")
-include("volume.jl")
 
 GLWindow.gldisplay(x::Image) 		= gldisplay(:glplot, x)  
 GLWindow.gldisplay(x::RenderObject) = gldisplay(:glplot, x)  
