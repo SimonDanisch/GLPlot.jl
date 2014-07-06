@@ -1,37 +1,9 @@
 const phongvert = "
-in vec3 vertex;
-in vec3 normal;
-out vec3 N;
-out vec3 v;
 
-uniform mat4 view, projection;
-uniform mat3 normalmatrix;
-
-void main(){
-
-	 v = vec3(view  * vec4(vertex,1.0));       
-   N = normalize(normalmatrix * normal);
-
-   gl_Position = projection * view * vec4(vertex, 1.0);
-}
 
 "
 const phongfrag = "
-in vec3 N;
-in vec3 v;
-out vec4 fragment_color;
-uniform vec3 light_position;
 
-void main(){
-	vec3 L 		= normalize(light_position - v);
-	vec3 a 		= vec3(1.0, 0.0, 0.1);
-   vec3 b 		= vec3(0.0, 1.0, 0.1);
-	vec4 color 	= vec4(mix(a, b, v.z + 0.5), 1.0);
-   vec4 Idiff 	= color * max(dot(N,L), 0.0); 
-   Idiff 		= clamp(Idiff, 0.0, 1.0); 
-
-   fragment_color = vec4(Idiff.rgb, 1.0);
-}
 "
 const brdfvert = "
 in vec3 tangent;
@@ -184,7 +156,7 @@ function createSampleMesh()
       ]
    # The RenderObject combines the shader, and Integrates the buffer into a VertexArray
    mesh = RenderObject(mesh, phongshader)
-   prerender!(mesh, enabletransparency)
+   prerender!(mesh, glEnable, GL_DEPTH_TEST)
    postrender!(mesh, render, mesh.vertexarray)
    mesh
 end

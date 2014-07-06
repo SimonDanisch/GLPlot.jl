@@ -1,5 +1,5 @@
 in vec3 N;
-in vec3 vert;
+in vec3 V;
 uniform vec3 light_position;
 in vec4 color;
 
@@ -33,8 +33,8 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L)
 
 
 void main(){
-  vec3 L       = normalize(light_position - vert);
 
+  vec3 L = normalize(light_position - V);
 
-  fragment_color = vec4(blinn_phong(N, vert, L), 1.0);
+  fragment_color = vec4(blinn_phong(N, V, L), 1.0);
 }

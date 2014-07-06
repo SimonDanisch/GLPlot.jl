@@ -101,23 +101,23 @@ vec4 isosurface(vec3 front, vec3 back, float stepsize)
   float colorsample    = 0.0;
   vec3  start          = front;
   float length_acc     = 0.0;
-  vec4  lol           = vec4(0);
-  for(int i; i < 1; i++)
+  vec4  result         = vec4(0);
+  int i = 0;
+  for(i; i < 1000; i++)
   {
 
     colorsample = texture(volume_tex, start).r;
     if(abs(colorsample - isovalue) < 0.01)
     {
-      //vec3 N = gennormal(start, vec3(stepsize));
-      //vec3 L =  normalize(light_position - start);
-      lol = vec4(0,0,1, 1);
+      vec3 N = gennormal(start, vec3(stepsize));
+      vec3 L = normalize(light_position - start);
+      result = vec4(blinn_phong(N, start, L, vec3(0,1,1)), 1.0);
     }
     start        += stepsize_dir;
     length_acc   += stepsize;
   }
-  return lol;
+  return result;
 }
-
 vec4 mip(vec3 front, vec3 back, float stepsize)
 {
   vec3  dir            = vec3(back - front);
@@ -158,13 +158,13 @@ void main()
   vec4 bfront          = texture(frontface2, texc);
 
 
-  vec4 coloraccu       = vec4(0);
+  vec4 color       = vec4(0);
 
-  bool aback_infront_bback    = length(bback.rgb  - aback.rgb)  >= 0.0;
-  bool bfront_infront_afront  = length(bfront.rgb - afront.rgb) <= 0.0;
-  bool afront_infront_bback   = length(bback.rgb  - afront.rgb) >= 0.0;
-  bool aback_infront_bfront   = length(bfront.rgb - aback.rgb)  >= 0.0;
-
+  bool aback_infront_bback        = length(bback.rgb  - aback.rgb)  >= 0.0;
+  bool bfront_infront_afront      = length(bfront.rgb - afront.rgb) <= 0.0;
+  bool not_bfront_infront_afront  = length(bfront.rgb - afront.rgb) >= 0.0;
+  bool afront_infront_bback       = length(bback.rgb  - afront.rgb) >= 0.0;
+  bool aback_infront_bfront       = length(bfront.rgb - aback.rgb)  >= 0.0;
 
   vec4 front = afront;
   vec4 back  = aback;
@@ -188,14 +188,14 @@ void main()
     }
     if(
       aback_infront_bfront &&
-      !bfront_infront_afront
+      not_bfront_infront_afront
     ){
       back = bfront;
     }
   }
   if(front.a != 0.0)
   {
-    coloraccu = isosurface(front.rgb, back.rgb, stepsize);
+    color = isosurface(front.rgb, back.rgb, 0.001);
   }
-  fragment_color = coloraccu;
+  fragment_color = color;
 }

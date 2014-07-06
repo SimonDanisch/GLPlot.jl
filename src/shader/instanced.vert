@@ -1,7 +1,7 @@
 #extension GL_ARB_draw_instanced : enable
 in vec2 offset;
 out vec3 N;
-out vec3 vert;
+out vec3 V;
 out vec4 color;
 
 uniform sampler2D ztex;
@@ -55,7 +55,7 @@ void main(){
     N = normalize(normalmatrix * zdata.yzw);
     //N = zdata.yzw;
 
-    vert = vec3(view  * vec4(xyz, 1.0));
+    V = vec3(view  * vec4(xyz, 1.0));
 
     gl_Position = projection * view *  getmodelmatrix(xyz, 1.0, 1.0, 1.0) * vec4(0,0,0, 1.0);
 }

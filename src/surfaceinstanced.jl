@@ -26,7 +26,7 @@ function zcolor(z)
 end
 
 
-N = 150
+N = 1000
 texsize = Vector2(N)
 texdata = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 
@@ -70,7 +70,7 @@ ztex       = Texture(texdata, internalformat = GL_RGBA32F, format=GL_RGBA, param
 colortex   = Texture(colordata, parameters = texparams)
 
 
-const data = RenderObject([
+const datainstanced = RenderObject([
     :offset         => GLBuffer(Float32[0,0, 0,1, 1,1, 1,0], 2),
     :index          => GLBuffer(GLuint[0,1,2,2,3,0], 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
     :ztex           => ztex,
@@ -80,29 +80,85 @@ const data = RenderObject([
     :view           => cam.view,
     :normalmatrix   => cam.normalmatrix,
     :light_position => Float32[800, 800, -800]
-], GLProgram(shaderdir*"instanced"))
+], GLProgram(shaderdir*"instanced.vert", shaderdir*"phongblinn.frag"))
 
 function renderinstanced(vao::GLVertexArray, amount)
     glBindVertexArray(vao.id)
     glDrawElementsInstancedEXT(GL_TRIANGLES, vao.indexlength, GL_UNSIGNED_INT, C_NULL, amount)
 end
-postrender!(data, renderinstanced, data.vertexarray, N*N)
+prerender!(datainstanced, glEnable, GL_DEPTH_TEST)
+postrender!(datainstanced, renderinstanced, datainstanced.vertexarray, N*N)
+
+xyz = Array(Vector3{Float32}, N*N)
+index = 1
+for x=1:N, y=1:N
+  x1 = (x / N) 
+  y1 = (y / N)
+  xyz[index] = Vector3{Float32}(x1, y1, sin(10f0*((((x1- 0.5f0) * 2)^2) + ((y1 - 0.5f0) * 2)^2))/10f0)
+  index += 1
+end
+normals     = Array(Vector3{Float32}, N*N)
+binormals   = Array(Vector3{Float32}, N*N)
+tangents    = Array(Vector3{Float32}, N*N)
+indices     = Vector3{GLuint}[]
+for i=1:(N*N) - N - 1
+  if i%N != 0
+     a = Vector3{GLuint}(i    , i+N, i+N+1) - 1
+     b = Vector3{GLuint}(i+N+1, i+1, i   ) - 1
+     push!(indices, a)
+     push!(indices, b)
+  end
+end
+for i=1:length(normals)
+  #indices = [i-1, i+1, i-N, i+N, i-1 + N, i+1 +N, i-1 - N, i+1-N]
+  a = xyz[i]
+  b = i > 1 ? xyz[i-1] : xyz[i+1]
+  c = i + N > N*N ? xyz[i-N] : xyz[i+N]
+
+  Tt = a-b
+  Bt = a-c
+  Nt = cross(Tt, Bt)
+
+  tangents[i]    = Tt / norm(Tt)
+  binormals[i]   = Bt / norm(Bt)
+  normals[i]     = Nt / norm(Nt)
+end
+mesh =
+[
+   :indexes       => GLBuffer{GLuint}(convert(Ptr{GLuint},   pointer(indices)),   sizeof(indices),    1, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW),
+   :vertex        => GLBuffer{Float32}(convert(Ptr{Float32}, pointer(xyz)),       sizeof(xyz),        3, GL_ARRAY_BUFFER, GL_STATIC_DRAW),
+   :normal        => GLBuffer{Float32}(convert(Ptr{Float32}, pointer(normals)),   sizeof(normals),    3, GL_ARRAY_BUFFER, GL_STATIC_DRAW),
+
+   :view          => cam.view,
+   :projection    => cam.projection,
+   :normalmatrix  => lift( x -> begin
+                           m = Matrix3x3(x)
+                           tmp    = zeros(Float32, 3,3)
+                           tmp[1, 1:3] = [m.c1...]
+                           tmp[2, 1:3] = [m.c2...]
+                           tmp[3, 1:3] = [m.c3...]
+                           inv(tmp)'
+                        end , Array{Float32, 2}, cam.projectionview),
+   :light_position   => Float32[-800, -800, 0],
+]
+# The RenderObject combines the shader, and Integrates the buffer into a VertexArray
+mesh = RenderObject(mesh, GLProgram(shaderdir*"standard.vert", shaderdir*"phongblinn.frag"))
+prerender!(mesh, glEnable, GL_DEPTH_TEST)
+postrender!(mesh, render, mesh.vertexarray)
+
 
 
 glClearColor(1,1,1,0)
 
-glEnable(GL_DEPTH_TEST)
-glDepthFunc(GL_LESS)
-
-glDisable(GL_CULL_FACE)
 while !GLFW.WindowShouldClose(window.glfwWindow)
-
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-  render(data)
+  tic()
+  render(mesh)
+  toc()
+  #render(datainstanced)
 
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()
-
 end
 GLFW.Terminate()

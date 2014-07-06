@@ -15,5 +15,5 @@ GLWindow.gldisplay(x::RenderObject) = gldisplay(:glplot, x)
 
 startplot() = renderloop(window)
 
-glClearColor(0,0,0,0)
+glClearColor(1,1,1,0)
 end

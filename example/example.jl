@@ -1,9 +1,13 @@
-using GLPlot, React, ModernGL, Images
+using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
+
+
+global const window = createwindow("Mesh Display", 1000, 1000, debugging = false)
+const cam = Cam(window.inputs, Vector3(1.9f0, 1.9f0, 1.0f0))
+include("../src/surface.jl")
 
 function screenshot(size, key)
 	local imgdata = Array(Uint8, 3, size...)
 	local imgprops = {"colorspace" => "RGB", "spatialorder" => ["x", "y"], "colordim" => 1}
-	println(key)
 	if key == 83
 		glReadPixels(0, 0, size..., GL_RGB, GL_UNSIGNED_BYTE, imgdata)
 		img = Image(imgdata, imgprops)
@@ -13,16 +17,29 @@ function screenshot(size, key)
 		println("written test.png")
 	end
 end
-size = GLPlot.window.inputs[:window_size]
-key = GLPlot.window.inputs[:keypressed]
+size = window.inputs[:window_size]
+key =  window.inputs[:keypressed]
 lift(screenshot, size, key)
 
 
 sampleMesh = createSampleMesh()
-gldisplay(sampleMesh)
 
+glClearColor(1,1,1,0)
+glEnable(GL_DEPTH_TEST)
+glDepthFunc(GL_LESS)
+glClearDepth(1)
 
+while !GLFW.WindowShouldClose(window.glfwWindow)
 
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+  render(sampleMesh)
+
+  GLFW.SwapBuffers(window.glfwWindow)
+  GLFW.PollEvents()
+
+end
+GLFW.Terminate()
 #=
 Volume rendering
 sz 		= [256, 256, 256]
@@ -59,5 +76,3 @@ inputs = [
 	]
 =#
 
-
-startplot()
