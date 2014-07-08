@@ -10,12 +10,12 @@ uniform sampler2D colortex;
 uniform mat4 view, projection;
 uniform mat3 normalmatrix;
 
-mat4 getmodelmatrix(vec3 xyz, float xscale, float yscale, float zscale)
+mat4 getmodelmatrix(vec3 xyz, vec3 scale)
 {
    return mat4(
-      vec4(xscale, 0, 0, 0),
-      vec4(0, yscale, 0, 0),
-      vec4(0, 0, zscale, 0),
+      vec4(scale.x, 0, 0, 0),
+      vec4(0, scale.x, 0, 0),
+      vec4(0, 0, scale.x, 0),
       vec4(xyz, 1));
 }
 
@@ -57,5 +57,5 @@ void main(){
 
     V = vec3(view  * vec4(xyz, 1.0));
 
-    gl_Position = projection * view *  getmodelmatrix(xyz, 1.0, 1.0, 1.0) * vec4(0,0,0, 1.0);
+    gl_Position = projection * view *  getmodelmatrix(xyz, vec3(1)) * vec4(0,0,0, 1.0);
 }
