@@ -1,15 +1,26 @@
 #version 130
+
 #extension GL_ARB_draw_instanced : enable
-in vec2 offset;
+
+in vec2 offset;	//offset for texture look up. Needed to get neighbouring vertexes, when rendering the surface
+
+uniform vec3 xrange;	
+uniform vec3 yrange; 	
+uniform float zposition;	
+		
+uniform float xscale;	
+uniform float yscale;		
+uniform sampler2D zscale;		
+uniform vec4 color;
+
+
+uniform sampler2D normal_vector; // normal might not be an uniform, whereas the other will be allways uniforms
+uniform mat3 normalmatrix;
+uniform mat4 projection, view;
+
 out vec3 N;
 out vec3 V;
-out vec4 color;
-
-uniform sampler2D ztex;
-uniform sampler2D colortex;
-
-uniform mat4 view, projection;
-uniform mat3 normalmatrix;
+out vec4 out_color;
 
 mat4 getmodelmatrix(vec3 xyz, vec3 scale)
 {
@@ -47,25 +58,32 @@ vec3 getxy(vec3 uv, vec3 from, vec3 to)
 
 float rangewidth(vec3 range)
 {
-  return abs(range.x - range.z) / range.y;
+  return abs(range.x - range.z)/range.y;
 }
 float maptogridcoordinates(int index, vec3 range)
 {
   return range.x + float((index % int(rangewidth(range) - range.x )));
 }
+
 void main(){
-    ivec2 texsize = textureSize(ztex, 0);
-    vec2 uv = getuv(texsize, gl_InstanceID, offset);
-    vec2 xy = stretch(uv, vec2(0,0), vec2(1,1));
-    vec4 zdata = texture(ztex, uv);
-    vec3 xyz = vec3(xy, zdata.x);
 
-    color = texture(colortex, uv);
+	vec3  xyz, scale, normal;
 
-    N = normalize(normalmatrix * zdata.yzw);
-    //N = zdata.yzw;
+	xyz.x 	= maptogridcoordinates(gl_InstanceID, xrange);
+	xyz.y 	= maptogridcoordinates(gl_InstanceID, yrange);
+	xyz.z 	= zposition;
+	
+	scale.x = xscale;
+	scale.y = yscale;
+	scale.z = texture(zscale, xyz.xy / vec2(rangewidth(xrange), rangewidth(yrange))).r;
 
+    out_color = color;
+
+    normal = 
+
+    N = normalize(normalmatrix * normal);
     V = vec3(view  * vec4(xyz, 1.0));
 
-    gl_Position = projection * view *  getmodelmatrix(xyz, vec3(1)) * vec4(0,0,0, 1.0);
+    gl_Position = projection * view *  getmodelmatrix(xyz, scale) * vec4(0,0,0, 1.0);
+
 }

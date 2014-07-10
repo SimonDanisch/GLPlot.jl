@@ -26,7 +26,7 @@ function zcolor(z)
 end
 
 
-N = 1000
+N = 50
 texsize = Vector2(N)
 texdata = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 
@@ -82,10 +82,7 @@ const datainstanced = RenderObject([
     :light_position => Float32[800, 800, -800]
 ], GLProgram(shaderdir*"instanced.vert", shaderdir*"phongblinn.frag"))
 
-function renderinstanced(vao::GLVertexArray, amount)
-    glBindVertexArray(vao.id)
-    glDrawElementsInstancedEXT(GL_TRIANGLES, vao.indexlength, GL_UNSIGNED_INT, C_NULL, amount)
-end
+
 prerender!(datainstanced, glEnable, GL_DEPTH_TEST)
 postrender!(datainstanced, renderinstanced, datainstanced.vertexarray, N*N)
 
@@ -142,9 +139,9 @@ mesh =
    :light_position   => Float32[-800, -800, 0],
 ]
 # The RenderObject combines the shader, and Integrates the buffer into a VertexArray
-mesh = RenderObject(mesh, GLProgram(shaderdir*"standard.vert", shaderdir*"phongblinn.frag"))
-prerender!(mesh, glEnable, GL_DEPTH_TEST)
-postrender!(mesh, render, mesh.vertexarray)
+ #mesh = RenderObject(mesh, GLProgram(shaderdir*"standard.vert", shaderdir*"phongblinn.frag"))
+#prerender!(mesh, glEnable, GL_DEPTH_TEST)
+#postrender!(mesh, render, mesh.vertexarray)
 
 
 
@@ -153,10 +150,10 @@ glClearColor(1,1,1,0)
 while !GLFW.WindowShouldClose(window.glfwWindow)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-  tic()
-  render(mesh)
-  toc()
-  #render(datainstanced)
+  #tic()
+  #render(mesh)
+  #toc()
+  render(datainstanced)
 
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()

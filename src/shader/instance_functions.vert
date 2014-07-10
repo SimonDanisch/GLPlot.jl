@@ -1,16 +1,3 @@
-#version 130
-#extension GL_ARB_draw_instanced : enable
-in vec2 offset;
-out vec3 N;
-out vec3 V;
-out vec4 color;
-
-uniform sampler2D ztex;
-uniform sampler2D colortex;
-
-uniform mat4 view, projection;
-uniform mat3 normalmatrix;
-
 mat4 getmodelmatrix(vec3 xyz, vec3 scale)
 {
    return mat4(
@@ -47,25 +34,9 @@ vec3 getxy(vec3 uv, vec3 from, vec3 to)
 
 float rangewidth(vec3 range)
 {
-  return abs(range.x - range.z) / range.y;
+  return abs(range.x - range.z)/range.y;
 }
 float maptogridcoordinates(int index, vec3 range)
 {
   return range.x + float((index % int(rangewidth(range) - range.x )));
-}
-void main(){
-    ivec2 texsize = textureSize(ztex, 0);
-    vec2 uv = getuv(texsize, gl_InstanceID, offset);
-    vec2 xy = stretch(uv, vec2(0,0), vec2(1,1));
-    vec4 zdata = texture(ztex, uv);
-    vec3 xyz = vec3(xy, zdata.x);
-
-    color = texture(colortex, uv);
-
-    N = normalize(normalmatrix * zdata.yzw);
-    //N = zdata.yzw;
-
-    V = vec3(view  * vec4(xyz, 1.0));
-
-    gl_Position = projection * view *  getmodelmatrix(xyz, vec3(1)) * vec4(0,0,0, 1.0);
 }

@@ -1,3 +1,5 @@
+//{{GLSL_VERSION}}
+#version 130
 in vec3 N;
 in vec3 V;
 uniform vec3 light_position;
