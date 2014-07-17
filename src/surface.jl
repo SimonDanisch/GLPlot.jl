@@ -1,162 +1,222 @@
-const phongvert = "
+using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
+import Mustache
+global const window = createwindow("Mesh Display", 1000, 1000, debugging = true)
+const cam = Cam(window.inputs, Vector3(1.9f0, 1.9f0, 1.0f0))
+shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
-"
-const phongfrag = "
+function normal(A, xrange, yrange)
+  w,h = size(A)
+  result = Array(Vector3{eltype(A[1])}, w,h)
+  for x=1:w, y=1:h
+    xs = stretch(float32(x), xrange, w)
+    ys = stretch(float32(y), yrange, h)
+    zs = A[x,y][1]
 
-"
-const brdfvert = "
-in vec3 tangent;
-in vec3 binormal;
-in vec3 normal;
-in vec3 vertex;
+    current = Vector3(xs, ys, zs)
+    #calculate indexes for surrounding zvalues
+    indexes = [(x+1,y), (x,y+1), (x+1,y+1),
+               (x-1,y), (x,y-1), (x-1,y-1)]
+    #Remove out of bounds
+    map!(elem -> begin
+      xx = elem[1] < 1 ? 1 : elem[1] 
+      xx = elem[1] > w ? w : xx 
 
-uniform vec3    light_position;  // Light direction in eye coordinates
-uniform vec3    viewposition;
+      yy = elem[2] < 1 ? 1 : elem[2] 
+      yy = elem[2] > h ? h : yy 
+      (xx,yy)
+    end, indexes)
+    #Construct the full surrounding difference Vectors with x,y,z coordinates
+    differenceVecs = map(elem -> begin
+      xx = stretch(float32(elem[1]), xrange, w) # treat indexes as coordinates by stretching them to the correct range
+      yy = stretch(float32(elem[2]), yrange, h)
+      cVec = current - Vector3(xx, yy, A[elem...][1])
+    end, indexes)
+    #normals = reduce((v0, a) -> push!(v0, cross(a,v0[end])), Vector3{Float32}[kdiffs[end]], kdiffs[1:end-1])
 
-uniform mat4    projectionview;
+    #get the some of the cross with the current Vector and normalize
+    #normal = unit(sum(map(x -> cross(current,x), kneighbours)))
+    normalVec = unit(reduce((v0, a) -> begin
+      a1 = a[2]
+      a2 = differenceVecs[mod1(a[1] + 1, length(differenceVecs))]
 
-uniform mat3    normalmatrix;
-
-out vec3 N, L, H, R, T, B, xyz;
-
-void main()
-{
-    vec3 V, eyeDir;
-    vec4 pos;
-    xyz    = vertex / 500.0;
-    pos    = projectionview * vec4(vertex, 1.0);
-    eyeDir = pos.xyz;
-
-    N = normalize(normalmatrix * normal);
-    L = normalize(light_position);
-    V = normalize((projectionview * vec4(viewposition, 1.0)).xyz - pos.xyz);
-    H = normalize(L + V);
-    R = normalize(reflect(eyeDir, N));
-    T = normalize(normalmatrix * tangent);
-    B = normalize(normalmatrix * binormal);
-
-    gl_Position = pos;
-}
-"
-const brdffrag = "
-sconst float PI = 3.14159;
-const float ONE_OVER_PI = 1.0 / PI;
-
-uniform vec4 surfacecolor; // Base color of surface
-uniform vec2 P;            // Diffuse (x) and specular reflectance (y)
-uniform vec2 A;            // Slope distribution in x and y
-uniform vec3 Scale;        // Scale factors for intensity computation
-
-varying vec3 N, L, H, R, T, B, xyz;
-
-void main()
-{
-    float e1, e2, E, cosThetaI, cosThetaR, brdf, intensity;
-
-    e1 = dot(H, T) / A.x;
-    e2 = dot(H, B) / A.y;
-    E = -2.0 * ((e1 * e1 + e2 * e2) / (1.0 + dot(H, N)));
-
-    cosThetaI = dot(N, L);
-    cosThetaR = dot(N, R);
-
-    brdf = P.x * ONE_OVER_PI +
-           P.y * (1.0 / sqrt(cosThetaI * cosThetaR)) *
-           (1.0 / (4.0 * PI * A.x * A.y)) * exp(E);
-
-    intensity = Scale[0] * P.x * ONE_OVER_PI +
-                Scale[1] * P.y * cosThetaI * brdf +
-                Scale[2] * dot(H, N) * P.y;
-
-    vec3 color = max(intensity, 0.2) * vec3(0.95, xyz.z + 0.5, 0.05);
-
-    gl_FragColor = vec4(color, 1.0);
-}
-
-"
-
-phongshader = GLProgram(phongvert, phongfrag,   "phong shader")
-#brdfshader  = GLProgram(brdfvert, brdffrag,     "BRDF shader")
-
-
-
-function creategrid{T}(x::AbstractArray{T}, y::AbstractArray{T}, z::AbstractArray{T}, color::AbstractArray{T},)
-    combined = [x, y, z, color]
-    dims     = map(ndims, combined)
-    @assert all(x-> x<=2, dims) #can't handle 3D arrays
-    sizes    = map(size,  combined)
-    dim2d    = filter(x-> lenght(x) == 2, sizes)
-
-end
-function creategrid(;dim = (250,250), x = 1:dim[1], y = 1:dim[1], z = zeros(Float32, dim...), color = Vector4(0.4,0.4,0.4,1))
-
+      v0 + cross(a1, a2)
+    end, Vec3(0), enumerate(differenceVecs)))
+    result[x,y] = normalVec
+  end  
+  result       
 end
 
-function createSampleMesh()
-   const N = 100
-   xyz = Array(Vector3{Float32}, N*N)
-   index = 1
-   for x=1:N, y=1:N
-      x1 = (x / N) 
-      y1 = (y / N)
-      xyz[index] = Vector3{Float32}(x1, y1, sin(10f0*((((x1- 0.5f0) * 2)^2) + ((y1 - 0.5f0) * 2)^2))/10f0)
-      index += 1
-   end
-   normals     = Array(Vector3{Float32}, N*N)
-   binormals   = Array(Vector3{Float32}, N*N)
-   tangents    = Array(Vector3{Float32}, N*N)
-   indices  = Vector3{GLuint}[]
-   for i=1:(N*N) - N - 1
-      if i%N != 0
-         a = Vector3{GLuint}(i    , i+N, i+N+1) - 1
-         b = Vector3{GLuint}(i+N+1, i+1, i   ) - 1
-         push!(indices, a)
-         push!(indices, b)
-      end
-   end
-   for i=1:length(normals)
-      #indices = [i-1, i+1, i-N, i+N, i-1 + N, i+1 +N, i-1 - N, i+1-N]
-      a = xyz[i]
-      b = i > 1 ? xyz[i-1] : xyz[i+1]
-      c = i + N > N*N ? xyz[i-N] : xyz[i+N]
-
-      Tt = a-b
-      Bt = a-c
-      Nt = cross(Tt, Bt)
-
-      tangents[i]    = Tt / norm(Tt)
-      binormals[i]   = Bt / norm(Bt)
-      normals[i]     = Nt / norm(Nt)
-   end
-   mesh =
-      [
-         :indexes       => GLBuffer{GLuint}(convert(Ptr{GLuint},   pointer(indices)),   sizeof(indices),    1, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW),
-         :vertex        => GLBuffer{Float32}(convert(Ptr{Float32}, pointer(xyz)),       sizeof(xyz),        3, GL_ARRAY_BUFFER, GL_STATIC_DRAW),
-         :normal        => GLBuffer{Float32}(convert(Ptr{Float32}, pointer(normals)),   sizeof(normals),    3, GL_ARRAY_BUFFER, GL_STATIC_DRAW),
-         #:tangent       => GLBuffer{Float32}(convert(Ptr{Float32}, pointer(tangents)),  sizeof(tangents),   3, GL_ARRAY_BUFFER, GL_STATIC_DRAW),
-         #:binormal      => GLBuffer{Float32}(convert(Ptr{Float32}, pointer(binormals)), sizeof(binormals),  3, GL_ARRAY_BUFFER, GL_STATIC_DRAW),
-
-         :view          => cam.view,
-         :projection    => cam.projection,
-         #:projectionview=> cam.projectionview,
-         #:viewposition  => cam.eyeposition,
-         :normalmatrix  => lift( x -> begin
-                                 m = Matrix3x3(x)
-                                 tmp    = zeros(Float32, 3,3)
-                                 tmp[1, 1:3] = [m.c1...]
-                                 tmp[2, 1:3] = [m.c2...]
-                                 tmp[3, 1:3] = [m.c3...]
-                                 inv(tmp)'
-                              end , Array{Float32, 2}, cam.projectionview),
-         :light_position   => Float32[-800, -800, 0],
-         #:P                => Float32[0.9, 0.9],
-         #:A                => Float32[0.8, 0.8],
-         #:Scale            => Float32[0.9, 0.9, 0.9],
-      ]
-   # The RenderObject combines the shader, and Integrates the buffer into a VertexArray
-   mesh = RenderObject(mesh, phongshader)
-   prerender!(mesh, glEnable, GL_DEPTH_TEST)
-   postrender!(mesh, render, mesh.vertexarray)
-   mesh
+function stretch(x, r::Range, normalizer = 1)
+  T = typeof(x)
+  convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
 end
+
+glsl_variable_access(keystring, ::Texture{Float32, 1, 2}) = "texture($(keystring), uv).r;"
+glsl_variable_access(keystring, ::Texture{Float32, 2, 2}) = "texture($(keystring), uv).rg;"
+glsl_variable_access(keystring, ::Texture{Float32, 3, 2}) = "texture($(keystring), uv).rgb;"
+glsl_variable_access(keystring, ::Texture{Float32, 4, 2}) = "texture($(keystring), uv).rgba;"
+glsl_variable_access(keystring, ::Texture{Float32, 4, 2}) = "texture($(keystring), uv).rgba;"
+
+glsl_variable_access(keystring, ::Union(Real, GLBuffer, AbstractArray)) = keystring*";"
+
+glsl_variable_access(keystring, s::Signal) = glsl_variable_access(keystring, s.value)
+glsl_variable_access(keystring, t::Any) = error("no glsl variable calculation available for ",keystring, " and type ", typeof(t))
+
+ 
+function createview(x::Dict{Symbol, Any}, keys)
+  view = (ASCIIString => ASCIIString)[]
+  for (key,value) in x
+    keystring = string(key)
+    typekey = keystring*"_type"
+    calculationkey = keystring*"_calculation"
+    if in(typekey, keys)
+      view[keystring*"_type"] = toglsltype_string(value)
+    end
+    if in(calculationkey, keys)
+        view[keystring*"_calculation"] = glsl_variable_access(keystring, value)
+    end
+  end
+  view
+end
+mustachekeys(mustache::Mustache.MustacheTokens) = map(x->x[2], filter(x-> x[1] == "name", mustache.tokens))
+
+const environment = [
+    :projection     => cam.projection,
+    :view           => cam.view,
+    :normalmatrix   => cam.normalmatrix,
+    :light_position => Vec3(20, 20, -20)
+]
+
+glsl_attributes = [
+  "out"                 => get_glsl_out_qualifier_string(),
+  "in"                  => get_glsl_in_qualifier_string(),
+  "GLSL_VERSION"        => get_glsl_version_string(),
+  #"GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable",
+  "instance_functions"  => readall(open("shader/instance_functions.vert"))
+]
+SURFACE(scale=1) = [
+    :vertex         => Vec3(0),
+    :offset         => GLBuffer(Float32[0,0, 0,1, 1,1, 1,0] * scale, 2),
+    :index          => indexbuffer(GLuint[0,1,2,2,3,0]),
+    :xscale         => 1f0,  
+    :yscale         => 1f0, 
+    :zscale         => 1f0,
+    :z              => 0f0,
+    :drawingmode    => GL_TRIANGLES
+]
+
+CIRCLE(r=0.4, x=0, y=0, points=6) = [
+    :vertex         => Vec3(0),
+    :offset         => GLBuffer(gencircle(r, x, y, points) , 2),
+    :index          => indexbuffer(GLuint[i for i=0:points + 1]),
+    :xscale         => 1f0,  
+    :yscale         => 1f0, 
+    :zscale         => 1f0,
+    :z              => 0f0,
+    :drawingmode    => GL_TRIANGLE_FAN
+]
+const vertexes, uv, normals, indexes = gencubenormals(Vector3{Float32}(0,0,0), Vector3{Float32}(1, 0, 0), Vector3{Float32}(0, 1, 0), Vector3{Float32}(0,0,1))
+CUBE() = [
+  :vertex         => GLBuffer(vertexes, 3),
+  :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
+  :index          => indexbuffer(indexes),
+  :normal_vector  => GLBuffer(normals, 3),
+  :zscale         => 1f0,
+  :z              => 0f0,
+  :drawingmode    => GL_TRIANGLES
+]
+
+
+function mix(x,y,a)
+  return (x * (1-a[1])) + (y * a[1])
+end
+function zgrid{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange::Range=0:0.01:1, yrange::Range=0:1, color=Vec4(1))
+  if isa(xrange, StepRange)
+    xn = length(xrange)
+  else
+    xn = size(attributevalue, 1)
+  end
+  if isa(yrange, StepRange)
+    yn = length(yrange)
+  else
+    yn = size(attributevalue, 2)
+  end
+  if isa(color, Matrix)
+    color = Texture(color)
+  end
+  data = [
+    :color          => color,
+    attribute       => Texture(attributevalue),
+    :xrange         => Vec3(first(xrange), xn, last(xrange)),
+    :yrange         => Vec3(first(yrange), yn, last(yrange)),
+  ]
+  if !haskey(primitive, :normal_vector)
+    normaldata = normal(attributevalue, xrange, yrange)
+    primitive[:normal_vector] = Texture(normaldata)
+  end
+  if !haskey(primitive, :xscale)
+    primitive[:xscale] = float32(1 / xn)
+  end
+  if !haskey(primitive, :yscale)
+    primitive[:yscale] = float32(1 / yn)
+  end
+  merged = merge(primitive, environment, data)
+  template = Mustache.parse(readall(open("shader/instance_template.vert"))) 
+
+  templatekeys = mustachekeys(template)
+  view = createview(merged, templatekeys)
+  merge!(view, glsl_attributes)
+
+  vert = replace(Mustache.render(template, view), "&#x2F;", "/")
+  frag = readall(open(shaderdir*"phongblinn.frag"))
+  write(open("test.vert", "w"), vert)
+
+  program = GLProgram(vert, frag, "vert", "frag")
+
+  instancedobject(merged, program, xn*yn, primitive[:drawingmode])
+
+end
+
+
+function gldisplay(obj::RenderObject, window)
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  render(obj)
+  GLFW.SwapBuffers(window.glfwWindow)
+end
+
+
+function zdata(x1, y1, factor)
+    x = (x1 - 0.5) * 15
+    y = (y1 - 0.5) * 15
+
+    Vec1((sin(x) + cos(y)) / 10)
+end
+function zcolor(z)
+    a = Vec4(0,1,0,1)
+    b = Vec4(1,0,0,1)
+    return mix(a,b,z[1]*5)
+end
+
+N = 100
+texdata = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
+
+
+colordata = map(zcolor , texdata)
+
+color = lift(x-> Vec4(sin(x), 0,0,1), Vec4, Timing.every(0.1))
+
+mesh = zgrid(texdata, primitive=SURFACE(), color=color)
+
+
+glClearColor(1,1,1,0)
+while !GLFW.WindowShouldClose(window.glfwWindow)
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+  render(mesh)
+
+  GLFW.SwapBuffers(window.glfwWindow)
+  GLFW.PollEvents()
+  sleep(0.001)
+end
+GLFW.Terminate()

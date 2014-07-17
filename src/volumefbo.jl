@@ -1,6 +1,6 @@
 using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
 
-framebuffdims = [1024, 512]
+framebuffdims = [1500, 1500]
 window  = createwindow("Mesh Display", framebuffdims..., debugging = false)
 cam     = Cam(window.inputs, Vector3(1.5f0, 1.5f0, 1.0f0))
 
@@ -51,18 +51,18 @@ function genuvwcube(x,y,z)
   v, uvw, indexes = gencube(x,y,z)
   cubeobj = RenderObject([
     :vertex         => GLBuffer(v, 3),
-    :uvw            => GLBuffer(v, 3),
+    :uvw            => GLBuffer(uvw, 3),
     :indexes        => indexbuffer(indexes),
     :projectionview => cam.projectionview
   ], uvwshader)
 
-  frontface = Texture(convert(Ptr{Float32}, C_NULL), 4, framebuffdims, GL_RGBA32F, GL_RGBA, (GLenum, GLenum)[])
-  backface = Texture(convert(Ptr{Float32}, C_NULL), 4, framebuffdims, GL_RGBA32F, GL_RGBA, (GLenum, GLenum)[])
+  frontface = Texture(GLfloat, 4, framebuffdims)
+  backface = Texture(GLfloat, 4, framebuffdims)
 
   lift(windowsize -> begin
-    glBindTexture(frontface.texturetype, frontface.id)
+    glBindTexture(texturetype(frontface), frontface.id)
     glTexImage(0, frontface.internalformat, windowsize..., 0, frontface.format, frontface.pixeltype, C_NULL)
-    glBindTexture(backface.texturetype, backface.id)
+    glBindTexture(texturetype(backface), backface.id)
     glTexImage(0, backface.internalformat, windowsize..., 0, backface.format, backface.pixeltype, C_NULL)
   end, window.inputs[:window_size])
 
@@ -131,18 +131,17 @@ cubedata[:frontface2]    = frontf2
 
 cubedata[:volume_tex]    = Texture(volume, 1, parameters=texparams)
 cubedata[:stepsize]      = 0.001f0
-#cubedata[:isovalue]      = isovalue
+cubedata[:isovalue]      = isovalue
 
-#cubedata[:light_position] = Float32[2, 2, -2]
+cubedata[:light_position] = Vec3(2, 2, -2)
 
 cube = RenderObject(cubedata, shader)
-loc = glGetUniformLocation(shader.id, "isovalue")
-prerender!(cube, glDisable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
-postrender!(cube,render, loc, 0.5f0, render, cube.vertexarray)
 
-glClearColor(1,1,1,1)
+prerender!(cube, glDisable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
+postrender!(cube, render, cube.vertexarray)
+
+glClearColor(0,0,0,1)
 glClearDepth(1)
-render(glGetUniformLocation(shader.id, "isovalue"), 0.8f0)
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   render(cube1)
@@ -154,6 +153,6 @@ while !GLFW.WindowShouldClose(window.glfwWindow)
 
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()
-  sleep(0.01)
+  sleep(0.1)
 end
 GLFW.Terminate()

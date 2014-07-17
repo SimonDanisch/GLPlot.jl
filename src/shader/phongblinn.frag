@@ -3,13 +3,13 @@
 in vec3 N;
 in vec3 V;
 uniform vec3 light_position;
-in vec4 color;
+in vec4 vert_color;
 
 out vec4 fragment_color;
 
 
 
-vec3 blinn_phong(vec3 N, vec3 V, vec3 L)
+vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 {
     // material properties
     // you might want to put this into a bunch or uniforms
@@ -29,7 +29,7 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L)
 
     // final lighting model
     return  Ka * vec3(0.2) +
-            Kd * vec3(0.9, 0.1, 0.1)  * diff_coeff +
+            Kd * diffuse * diff_coeff +
             Ks * vec3(0.7, 0.7, 0.9) * spec_coeff ;
 }
 
@@ -38,5 +38,5 @@ void main(){
 
   vec3 L = normalize(light_position - V);
 
-  fragment_color = vec4(blinn_phong(N, V, L), 1.0);
+  fragment_color = vec4(blinn_phong(N, V, L, vec3(vert_color)), 1.0);
 }

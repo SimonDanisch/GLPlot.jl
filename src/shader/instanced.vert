@@ -1,12 +1,13 @@
-#version 130
-#extension GL_ARB_draw_instanced : enable
+#version 410
+//#extension GL_ARB_draw_instanced : enable
 in vec2 offset;
 out vec3 N;
 out vec3 V;
-out vec4 color;
+out vec4 color_out;
 
-uniform sampler2D ztex;
-uniform sampler2D colortex;
+uniform sampler2D zposition;
+uniform sampler2D normal_vector;
+uniform sampler2D color;
 
 uniform mat4 view, projection;
 uniform mat3 normalmatrix;
@@ -54,17 +55,14 @@ float maptogridcoordinates(int index, vec3 range)
   return range.x + float((index % int(rangewidth(range) - range.x )));
 }
 void main(){
-    ivec2 texsize = textureSize(ztex, 0);
+    ivec2 texsize = ivec2(200,200);
     vec2 uv = getuv(texsize, gl_InstanceID, offset);
     vec2 xy = stretch(uv, vec2(0,0), vec2(1,1));
-    vec4 zdata = texture(ztex, uv);
-    vec3 xyz = vec3(xy, zdata.x);
+    float z = texture(zposition, uv).r;
+    vec3 xyz = vec3(xy, z);
 
-    color = texture(colortex, uv);
-
-    N = normalize(normalmatrix * zdata.yzw);
-    //N = zdata.yzw;
-
+    color_out = texture(color, uv);
+    N = normalize(normalmatrix * texture(normal_vector, uv).rgb);
     V = vec3(view  * vec4(xyz, 1.0));
 
     gl_Position = projection * view *  getmodelmatrix(xyz, vec3(1)) * vec4(0,0,0, 1.0);

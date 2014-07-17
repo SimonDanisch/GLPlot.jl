@@ -19,8 +19,25 @@ const ZMAP_KEY_ARGUMENTS = Input([
 	#:primitive 	=> "SURFACE" # Possible are CUBE, POINT, any custom Mesh, 
 ])
 
-
-
+function checkandtransform(shaderattributes::Dict{Symbol, Any}, shaderkeys, templatekeys)
+	resultshaderdict = (Symbol => Any)[]
+	resulttemplateview = (String => Any)[]
+	for (key, value) in shaderattributes
+		if in(shaderkeys, key)
+			if isa(value, Range)
+				value = vec3(first(value), step(value), last(value))
+				shaderattributes[key] = value
+			elseif !isa(value, AbstractArray) || !isa(value, Real)
+				error("not able to upload this value to video memory. Value: ", value)
+			end
+			if in(templatekeys, key)
+				resulttemplateview[string(key)] = value
+			end
+			resultshaderdict[key] = value
+		end
+	end
+	resultshaderdict, resulttemplateview
+end
 function createview(x::Dict{Symbol, Any})
 	view = (ASCIIString => ASCIIString)[]
 	for (key,value) in x
@@ -34,11 +51,12 @@ function createview(x::Dict{Symbol, Any})
 		elseif isa(value, Texture{Float32, 4, 2})
 			view[keystring*"_calculation"] = "texture($(keystring), xyz.xy / vec2(rangewidth(xrange), rangewidth(yrange)));"
 		elseif isa(value, AbstractArray) || isa(value, Real)
-			view[keystring*"_calculation"] = keystring *";"
+			view[keystring*"_calculation"] = keystring*";"
 		end
 	end
 	view
 end
+mustachekeys(mustache::Mustache.MustacheTokens) = map(x->x[2], filter(x-> x[1] == "name", mustache.tokens))
 
 
 
@@ -76,7 +94,6 @@ ZMAP_KEY_ARGUMENTS2 = [
 push!(ZMAP_KEY_ARGUMENTS, ZMAP_KEY_ARGUMENTS2)
 
 test = Mustache.parse(readall(open("instance_template.vert"))) 
-mustachekeys(mustache::Mustache.MustacheTokens) = map(x->x[2], filter(x-> x[1] == "name", mustache.tokens))
 
 
 global const SURFACE = [
@@ -100,25 +117,7 @@ environment = [
     :normalmatrix   => cam.normalmatrix,
     :light_position => Float32[20, 20, 20]
 ]
-function checkandtransform(shaderattributes::Dict{Symbol, Any}, shaderkeys, templatekeys)
-	resultshaderdict = (Symbol => Any)[]
-	resulttemplateview = (String => Any)[]
-	for (key, value) in shaderattributes
-		if in(shaderkeys, key)
-			if isa(value, Range)
-				value = vec3(first(value), step(value), last(value))
-				shaderattributes[key] = value
-			elseif !isa(value, AbstractArray) || !isa(value, Real)
-				error("not able to upload this value to video memory. Value: ", value)
-			end
-			if in(templatekeys, key)
-				resulttemplateview[string(key)] = value
-			end
-			resultshaderdict[key] = value
-		end
-	end
-	resultshaderdict, resulttemplateview
-end
+
 function gldipslay(x::Matrix{Float32}, primtive=SURFACE; keyargs...) = gldisplay(:zposition, x, primitive; keyargs...)
 
 

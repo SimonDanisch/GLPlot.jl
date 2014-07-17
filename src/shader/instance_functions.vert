@@ -2,8 +2,8 @@ mat4 getmodelmatrix(vec3 xyz, vec3 scale)
 {
    return mat4(
       vec4(scale.x, 0, 0, 0),
-      vec4(0, scale.x, 0, 0),
-      vec4(0, 0, scale.x, 0),
+      vec4(0, scale.y, 0, 0),
+      vec4(0, 0, scale.z, 0),
       vec4(xyz, 1));
 }
 

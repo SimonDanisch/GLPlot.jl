@@ -105,7 +105,10 @@ vec4 isosurface(vec3 front, vec3 back, float stepsize)
   int i = 0;
   for(i; i < 1000; i++)
   {
-
+    if(length_acc >= lengthdir)
+    {
+      break;
+    }
     colorsample = texture(volume_tex, start).r;
     if(abs(colorsample - isovalue) < 0.01)
     {
@@ -158,7 +161,7 @@ void main()
   vec4 bfront          = texture(frontface2, texc);
 
 
-  vec4 color       = vec4(0);
+  vec4 color           = vec4(0);
 
   bool aback_infront_bback        = length(bback.rgb  - aback.rgb)  >= 0.0;
   bool bfront_infront_afront      = length(bfront.rgb - afront.rgb) <= 0.0;
@@ -195,7 +198,7 @@ void main()
   }
   if(front.a != 0.0)
   {
-    color = isosurface(front.rgb, back.rgb, 0.001);
+    color = mip(afront.rgb, aback.rgb, 0.001);
   }
   fragment_color = color;
 }

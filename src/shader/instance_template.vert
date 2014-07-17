@@ -8,12 +8,12 @@
 
 uniform vec3 xrange;	
 uniform vec3 yrange; 	
-uniform {{zposition_type}} zposition;	
+{{z_type}} z;	
 		
-uniform {{xscale_type}} xscale;	
-uniform {{yscale_type}} yscale;		
-uniform {{zscale_type}} zscale;		
-uniform {{color_type}} color;
+{{xscale_type}} xscale;	
+{{yscale_type}} yscale;		
+{{zscale_type}} zscale;		
+{{color_type}} color;
 
 
 uniform mat3 normalmatrix;
@@ -21,29 +21,29 @@ uniform mat4 projection, view;
 
 {{out}} vec3 N;
 {{out}} vec3 V;
-{{out}} vec4 out_color;
+{{out}} vec4 vert_color;
 
 {{instance_functions}}
 
 void main(){
 
-	vec3  xyz, scale, normal;
-
-	xyz.x 	= maptogridcoordinates(gl_InstanceID, xrange);
-	xyz.y 	= maptogridcoordinates(gl_InstanceID, yrange);
-	xyz.z 	= {{zposition_calculation}}
+	vec3  xyz, scale, normal, vert;
+	vec2 uv;
+	uv 		= getuv(vec2(xrange.y, yrange.y), gl_InstanceID, offset);
+	xyz.xy 	= stretch(uv, vec2(xrange.x, yrange.x), vec2(xrange.z, yrange.z));
+	xyz.z 	= {{z_calculation}}
 	
 	scale.x = {{xscale_calculation}}
 	scale.y = {{yscale_calculation}}
 	scale.z = {{zscale_calculation}}
 
-    out_color = {{color_calculation}}
+    vert_color = {{color_calculation}}
 
     normal = {{normal_vector_calculation}}
 
     N = normalize(normalmatrix * normal);
     V = vec3(view  * vec4(xyz, 1.0));
-
-    gl_Position = projection * view *  getmodelmatrix(xyz, scale) * {{vertex_calculation};
+    vert = {{vertex_calculation}}
+    gl_Position = projection * view * getmodelmatrix(xyz, scale) * vec4(vert.xyz, 1.0);
 
 }
