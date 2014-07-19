@@ -1,3 +1,5 @@
+#version 130
+
 uniform sampler2D frontface1;
 uniform sampler2D backface1;
 
@@ -7,6 +9,7 @@ uniform sampler2D frontface2;
 
 uniform sampler3D volume_tex;
 
+uniform float algorithm;
 uniform float stepsize;
 uniform vec3 light_position;
 in vec4 vertpos;
@@ -115,6 +118,7 @@ vec4 isosurface(vec3 front, vec3 back, float stepsize)
       vec3 N = gennormal(start, vec3(stepsize));
       vec3 L = normalize(light_position - start);
       result = vec4(blinn_phong(N, start, L, vec3(0,1,1)), 1.0);
+      break;
     }
     start        += stepsize_dir;
     length_acc   += stepsize;
@@ -198,7 +202,13 @@ void main()
   }
   if(front.a != 0.0)
   {
-    color = mip(afront.rgb, aback.rgb, 0.001);
+    if(algorithm==1.0)
+    {
+      color = mip(afront.rgb, aback.rgb, stepsize);
+    }else  
+    {
+      color = isosurface(afront.rgb, aback.rgb, stepsize);
+    }
   }
   fragment_color = color;
 }

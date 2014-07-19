@@ -6,7 +6,7 @@ cam     = Cam(window.inputs, Vector3(1.5f0, 1.5f0, 1.0f0))
 
 shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 vert = "
-#version 420
+#version 130
 in vec2 vertex;
 in vec2 uv;
 
@@ -20,7 +20,7 @@ void main(){
 
 "
 frag = "
-#version 420
+#version 130
 in vec2 uv_frag;
 
 out vec4 frag_color;

@@ -1,3 +1,5 @@
+#version 130
+
 in vec3 vertex;
 out vec4 vertpos;
 //out vec3 frag_uvw;

@@ -1,5 +1,5 @@
 const gridvert = """
-#version $(GLWindow.GLSL_VERSION)
+#version 130
 
 in vec3 vertexes;
 
@@ -14,7 +14,7 @@ void main()
 }
 """
 const gridfrag = """
-#version $(GLWindow.GLSL_VERSION)
+#version 130
 uniform vec4 bg_color;
 uniform vec4 grid_color;
 uniform vec3 grid_thickness;
@@ -36,7 +36,7 @@ void main()
 }
 """
 
-global const shader = GLProgram(gridvert, gridfrag, "grid shader")
+global const legridshader = GLProgram(gridvert, gridfrag, "vert", "frag")
 
 
 gridPlanes = GLBuffer(Float32[
@@ -49,7 +49,7 @@ gridPlanes = GLBuffer(Float32[
 					    0,  0, 1,
 
 					    1, 0, 1,
-					    ] .* 100f0, 3)
+					    ], 3)
 
 gridPlaneIndexes = GLBuffer(GLuint[
 									0, 1, 2, 2, 3, 0,   #xy PLane
@@ -59,14 +59,14 @@ gridPlaneIndexes = GLBuffer(GLuint[
 
 global const axis = RenderObject(
 [
-	:vertexes 			  => gridPlanes,
-	:indexes			    => gridPlaneIndexes,
+	:vertexes 			  	=> gridPlanes,
+	:indexes			   	=> gridPlaneIndexes,
 	#:grid_color 		  => Float32[0.1,.1,.1, 1.0],
-	:bg_color 			  => Float32[1, 1, 1, 0.5],
-	:grid_thickness  	=> Float32[2, 2, 2],
-	:grid_size  		  => Float32[10,10,10],
-	:mvp 				      => cam.projectionview
-], shader)
+	:bg_color 			  	=> Vec4(1, 1, 1, 0.5),
+	:grid_thickness  		=> Vec3(2, 2, 2),
+	:grid_size  		  	=> Vec3(10,10,10),
+	:mvp 				    => cam.projectionview
+], legridshader)
 
 
 prerender!(axis, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, enabletransparency)

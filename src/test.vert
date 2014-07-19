@@ -1,10 +1,10 @@
-#version 420
+#version 130
 
+#extension GL_ARB_draw_instanced : enable
 
-
-uniform vec3 vertex;
-uniform sampler2D normal_vector; // normal might not be an uniform, whereas the other will be allways uniforms
-in vec2 offset;	//offset for texture look up. Needed to get neighbouring vertexes, when rendering the surface
+in vec3 vertex;
+in vec3 normal_vector; // normal might not be an uniform, whereas the other will be allways uniforms
+uniform vec2 offset;	//offset for texture look up. Needed to get neighbouring vertexes, when rendering the surface
 
 
 uniform vec3 xrange;	
@@ -81,7 +81,7 @@ void main(){
 
     vert_color = color;
 
-    normal = texture(normal_vector, uv).rgb;
+    normal = normal_vector;
 
     N = normalize(normalmatrix * normal);
     V = vec3(view  * vec4(xyz, 1.0));

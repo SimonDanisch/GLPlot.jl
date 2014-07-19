@@ -1,7 +1,7 @@
 using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
 import Mustache
 global const window = createwindow("Mesh Display", 1000, 1000, debugging = true)
-const cam = Cam(window.inputs, Vector3(1.9f0, 1.9f0, 1.0f0))
+const cam = Cam(window.inputs, Vector3(1.9f0, 0f0, 0f0))
 shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
@@ -92,7 +92,7 @@ glsl_attributes = [
   "out"                 => get_glsl_out_qualifier_string(),
   "in"                  => get_glsl_in_qualifier_string(),
   "GLSL_VERSION"        => get_glsl_version_string(),
-  #"GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable",
+  "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable",
   "instance_functions"  => readall(open("shader/instance_functions.vert"))
 ]
 SURFACE(scale=1) = [
@@ -206,7 +206,7 @@ colordata = map(zcolor , texdata)
 
 color = lift(x-> Vec4(sin(x), 0,0,1), Vec4, Timing.every(0.1))
 
-mesh = zgrid(texdata, primitive=SURFACE(), color=color)
+mesh = zgrid(texdata, primitive=CUBE(), color=color)
 
 
 glClearColor(1,1,1,0)

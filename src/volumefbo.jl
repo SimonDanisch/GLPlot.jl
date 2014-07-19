@@ -112,7 +112,7 @@ texparams = [
 
 ]
 
-keypressed = keepwhen(lift(x-> x==1 ,Bool, window.inputs[:keypressedstate]) ,0,window.inputs[:keypressed])
+keypressed = keepwhen(lift(x-> x==1 ,Bool, window.inputs[:keypressedstate]) , 0, window.inputs[:keypressed])
 isovalue 	= foldl((a,b) -> begin
 				if b == GLFW.KEY_O
 					return a-0.01f0
@@ -121,6 +121,14 @@ isovalue 	= foldl((a,b) -> begin
 				end
 				a
 			end, 0.5f0,keypressed)
+
+algorithm  = lift(x -> begin
+        if x == GLFW.KEY_M
+          return 1f0
+        elseif x == GLFW.KEY_I
+          return 2f0
+        end 
+      end, filter(x-> x == GLFW.KEY_M || x == GLFW.KEY_I, GLFW.KEY_I, keypressed))
 
 delete!(cubedata, :uvw)
 
@@ -132,23 +140,26 @@ cubedata[:frontface2]    = frontf2
 cubedata[:volume_tex]    = Texture(volume, 1, parameters=texparams)
 cubedata[:stepsize]      = 0.001f0
 cubedata[:isovalue]      = isovalue
+cubedata[:algorithm]     = algorithm
 
 cubedata[:light_position] = Vec3(2, 2, -2)
 
 cube = RenderObject(cubedata, shader)
 
-prerender!(cube, glDisable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
+prerender!(cube, glEnable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
 postrender!(cube, render, cube.vertexarray)
 
 glClearColor(0,0,0,1)
 glClearDepth(1)
+
+include("grid.jl")
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   render(cube1)
   render(cube2)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
+  render(axis)
   render(cube)
 
   GLFW.SwapBuffers(window.glfwWindow)
