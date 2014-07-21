@@ -1,7 +1,5 @@
 using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
 import Mustache
-window = createwindow("Mesh Display", 1000, 1000, debugging = true)
-cam = Cam(window.inputs, Vector3(2f0, 0f0, 0f0))
 shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
@@ -192,25 +190,3 @@ function zcolor(z)
     b = Vec4(1,0,0,1)
     return mix(a,b,z[1]*5)
 end
-
-N = 100
-texdata = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
-
-colordata = map(zcolor , texdata)
-
-color = lift(x-> Vec4(sin(x), 0,0,1), Vec4, Timing.every(0.1))
-
-mesh = zgrid(texdata, primitive=CIRCLE(), color=color)
-
-
-glClearColor(1,1,1,0)
-while !GLFW.WindowShouldClose(window.glfwWindow)
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-  render(mesh)
-
-  GLFW.SwapBuffers(window.glfwWindow)
-  GLFW.PollEvents()
-  sleep(0.001)
-end
-GLFW.Terminate()

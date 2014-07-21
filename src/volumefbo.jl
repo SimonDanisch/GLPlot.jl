@@ -1,6 +1,6 @@
 using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
 
-framebuffdims = [1500, 1500]
+framebuffdims = [800, 500]
 window    = createwindow("Mesh Display", framebuffdims..., debugging = false)
 cam       = Cam(window.inputs, Vector3(0f0, 3.5f0, 0f0))
 
@@ -8,40 +8,81 @@ shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
 
-shader              = GLProgram(shaderdir*"simple.vert", shaderdir*"iso.frag")
+volumeshader              = GLProgram(shaderdir*"simple.vert", shaderdir*"iso.frag")
 uvwshader           = GLProgram(shaderdir*"uvwposition")
-
-
-
-file = shaderdir*"iso.frag"
-function trackfilesource(file::ASCIIString)
-  filetracker = lift(delta -> mtime(file), Float64, Timing.every(0.1))
-  filediff = foldl((v0, v1) -> begin
-    (v1, v1 - v0[1])
-  end, (mtime(file), 1.0), filetracker)
-
-  filechanged = filter(x -> x[2] != 0.0, (1.0, 1.0), filediff)
-
-  lift(x -> readall(open(file)) , ASCIIString, filechanged)
-end
-fragsource = Input(readall(open(shaderdir*"iso.frag")))
-
-watch_file(x->push!(fragsource, readall(open(shaderdir*"iso.frag"))),shaderdir*"iso.frag")
-vertsource = trackfilesource(shaderdir*"simple.vert")
-#fragsource = trackfilesource(shaderdir*"iso.frag")
-
-lift((vsource,fsource) -> begin 
-  update(vsource, fsource, file, shader.id)
-end, vertsource, fragsource)
 
 
 fb = glGenFramebuffers()
 
 
+function createvolume(img::Image; cropDimension=1:256, shader = volumeshader )
+  volume = img.data
+  max = maximum(volume)
+  min = minimum(volume)
 
-function GLUtil.render(fbo, tex::Texture, obj::RenderObject)
+  volume = float32((volume .- min) ./ (max - min))
+  createvolume(volume, shader = shader)
+end
+function createvolume(img::Array; spacing = [1f0, 1f0, 1f0], shader = volumeshader )
+  texparams = [
+     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
+    (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
+    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_R,  GL_CLAMP_TO_EDGE)
+  ]
+
+  v, uvw, indexes = gencube(1f0, 1f0, 1f0)
+  cubedata = [
+      :vertex         => GLBuffer(v, 3),
+      :uvw            => GLBuffer(uvw, 3),
+      :indexes        => GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
+      :projectionview => cam.projectionview
+  ]
+  cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0 )
+  cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0)
+  delete!(cubedata, :uvw)
+
+  cubedata[:frontface1]    = frontf1
+  cubedata[:backface1]     = backf1
+  cubedata[:backface2]     = backf2
+  cubedata[:frontface2]    = frontf2
+
+  cubedata[:volume_tex]    = Texture(img, 1, parameters=texparams)
+  cubedata[:stepsize]      = 0.002f0
+  cubedata[:isovalue]      = 0.5f0
+  cubedata[:algorithm]     = 2f0
+
+  cubedata[:light_position] = Vec3(2, 2, -2)
+  volume = RenderObject(cubedata, shader)
+
+  rendertouvwtexture = () -> begin
+    render(cube1)
+    render(cube2)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  end
+  prerender!(volume, rendertouvwtexture, glEnable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
+  postrender!(volume, render, volume.vertexarray)
+  volume
 
 end
+function createvolume(dirpath::String; cropDimension = 1:256, shader = volumeshader )
+  files     = readdir(dirpath)
+  imgSlice1   = imread(dirpath*files[1])
+  volume    = Array(Uint16, size(imgSlice1,1), size(imgSlice1,2), length(files))
+  imgSlice1 = 0
+  for (i,elem) in enumerate(files)
+    img = imread(dirpath*elem)
+    volume[:,:, i] = img.data
+  end
+  max = maximum(volume)
+  min = minimum(volume)
+
+  volume = float32((volume .- min) ./ (max - min))
+  volume = volume[cropDimension, cropDimension, cropDimension]
+  createvolume(volume, shader = shader)
+end
+
 function genuvwcube(x,y,z)
   v, uvw, indexes = gencube(x,y,z)
   cubeobj = RenderObject([
@@ -89,74 +130,15 @@ function genuvwcube(x,y,z)
 
 end
 
-  
 
-
-  v, uvw, indexes = gencube(1f0, 1f0, 1f0)
-  cubedata = [
-      :vertex         => GLBuffer(v, 3),
-      :uvw            => GLBuffer(uvw, 3),
-      :indexes        => GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
-      :projectionview => cam.projectionview
-  ]
-  cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0 )
-  cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0)
-  delete!(cubedata, :uvw)
-
-  cubedata[:frontface1]    = frontf1
-  cubedata[:backface1]     = backf1
-  cubedata[:backface2]     = backf2
-  cubedata[:frontface2]    = frontf2
-
-  cubedata[:volume_tex]    = Texture(volume, 1, parameters=texparams)
-  cubedata[:stepsize]      = 0.001f0
-  cubedata[:isovalue]      = isovalue
-  cubedata[:algorithm]     = algorithm
-
-  cubedata[:light_position] = Vec3(2, 2, -2)
-  cube = RenderObject(cubedata, shader)
-
-function rendertouvwtexture()
-  render(cube1)
-  render(cube2)
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-end
-prerender!(cube, rendertouvwtexture, glEnable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
-postrender!(cube, render, cube.vertexarray)
-cube
 N = 56
 volume = Float32[sin(x / 4f0)+sin(y / 4f0)+sin(z / 4f0) for x=1:N, y=1:N, z=1:N]
 max = maximum(volume)
 min = minimum(volume)
 volume = (volume .- min) ./ (max .- min)
-texparams = [
-   (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
-  (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
-  (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
-  (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
-  (GL_TEXTURE_WRAP_R,  GL_CLAMP_TO_EDGE)
-]
-
-keypressed = keepwhen(lift(x-> x==1 ,Bool, window.inputs[:keypressedstate]) , 0, window.inputs[:keypressed])
-isovalue 	= foldl((a,b) -> begin
-				if b == GLFW.KEY_O
-					return a-0.01f0
-				elseif b == GLFW.KEY_P
-					return a+0.01f0
-				end
-				a
-			end, 0.5f0,keypressed)
-
-algorithm  = lift(x -> begin
-        if x == GLFW.KEY_M
-          return 1f0
-        elseif x == GLFW.KEY_I
-          return 2f0
-        end 
-      end, filter(x-> x == GLFW.KEY_M || x == GLFW.KEY_I, GLFW.KEY_I, keypressed))
 
 
-
+cube = createvolume("example/")
 
 glClearColor(0,0,0,1)
 glClearDepth(1)

@@ -72,7 +72,7 @@ vec4 isosurface(vec3 front, vec3 back, float stepsize)
       break;
     }
     colorsample = texture(volume_tex, start).r;
-    if(abs(colorsample - 0.7) < 0.3)
+    if(abs(colorsample - 0.5) < 0.01)
     {
       vec3 N = gennormal(start, vec3(stepsize));
       vec3 L = normalize(light_position - start);
