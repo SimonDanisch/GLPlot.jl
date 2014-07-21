@@ -15,7 +15,7 @@ out vec2 uv_frag;
 uniform mat4 projectionview;
 void main(){
   uv_frag = uv;
-  gl_Position = vec4(vertex, 0, 1);
+  gl_Position = projectionview * vec4(vertex, 0, 1);
 }
 
 "
@@ -39,12 +39,15 @@ shader              = GLProgram(vert, frag, "vert", "frag")
 
 camposition = Input(Vec3(0))
 camdims    = window.inputs[:window_size]
-lift(x -> glViewport(0,0, x...) ,camdims)
+#lift(x -> glViewport(0,0, x...) ,camdims)
 
-projection = lift(wh -> begin 
-  w = wh[1] > wh[2] ? wh[1] / wh[2] : 1
-  h = wh[1] > wh[2] ? 1 : wh[2] / wh[1]
-  orthographicprojection(0f0, float32(w), 0f0, float32(h), 1f0, 20f0)
+projection = lift(wh -> begin
+  @assert wh[2] > 0
+  @assert wh[1] > 0
+
+  wh = wh[1] > wh[2] ? ((wh[1]/wh[2]), 1f0) : (1f0,(wh[2]/wh[1]))
+                    println(wh)
+  orthographicprojection(0f0, float32(wh[1]), 0f0, float32(wh[2]), -1f0, 10f0)
 end, Mat4, camdims)
 
 view = lift(translatematrix , Mat4, camposition)
@@ -59,11 +62,9 @@ texparams = [
 ]
 
 function GLUtil.render{T, D}(img::Texture{T, D, 2})
-  w, h = img.dims
-  w1 = w > h ? w / h : 1
-  h1 = w > h ? 1 : h / w
-
-  v, uv, indexes = genquad(0f0, 0f0, 1f0,1f0)
+  c, w, h  = img.dims
+  dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
+  v, uv, indexes = genquad(0f0, 0f0,dims...)
   data = RenderObject([
     :vertex         => GLBuffer(v, 2),
     :index          => indexbuffer(indexes),
@@ -76,7 +77,7 @@ function GLUtil.render{T, D}(img::Texture{T, D, 2})
   postrender!(data, render, data.vertexarray)
   data
 end
-test = render(Texture("test.jpg"))
+test = render(Texture(Pkg.dir()"/GLPlot/src/test.jpg"))
 
 glClearColor(1,1,1,1)
 glClearDepth(1)

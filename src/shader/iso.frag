@@ -55,47 +55,6 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 }
 
 
-/*
-
-vec3 frontsurface(vec3 afront, vec3 aback, vec3 bfront, vec3 bback)
-{
-  bool aback_infront_bback    = length(bback.rgb  - aback.rgb)  >= 0.0;
-  bool bfront_infront_afront  = length(bfront.rgb - afront.rgb) <= 0.0;
-  bool afront_infront_bback   = length(bback.rgb  - afront.rgb) >= 0.0;
-  bool aback_infront_bfront   = length(bfront.rgb - aback.rgb)  >= 0.0;
-
-  vec4 front = afront;
-  vec4 back  = aback;
-
-  if(
-    !aback_infront_bback && //if A's backface is behind B's backface
-     bfront_infront_afront // and B sticks out of A, we cutted the whole volume
-  )
-  {
-    front = vec4(0);
-    back  = vec4(0);
-  }
-  else if(bfront.a != 0.0) // only modify, if B is present
-  {
-    if(
-      aback_infront_bback &&
-      bfront_infront_afront && //if volume B has a frontface outside A
-      afront_infront_bback
-    ){
-      front = bback;
-    }
-    if(
-      aback_infront_bfront &&
-      !bfront_infront_afront
-    ){
-      back = bfront;
-    }
-  }
-  return back;
-}
-
-*/
-
 vec4 isosurface(vec3 front, vec3 back, float stepsize)
 {
   vec3  dir            = vec3(back - front);
@@ -113,7 +72,7 @@ vec4 isosurface(vec3 front, vec3 back, float stepsize)
       break;
     }
     colorsample = texture(volume_tex, start).r;
-    if(abs(colorsample - isovalue) < 0.01)
+    if(abs(colorsample - 0.7) < 0.3)
     {
       vec3 N = gennormal(start, vec3(stepsize));
       vec3 L = normalize(light_position - start);

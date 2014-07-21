@@ -1,4 +1,4 @@
-#version 130
+#version 420
 
 #extension GL_ARB_draw_instanced : enable
 

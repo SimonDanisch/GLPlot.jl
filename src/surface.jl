@@ -1,7 +1,7 @@
 using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
 import Mustache
-global const window = createwindow("Mesh Display", 1000, 1000, debugging = true)
-const cam = Cam(window.inputs, Vector3(1.9f0, 0f0, 0f0))
+window = createwindow("Mesh Display", 1000, 1000, debugging = true)
+cam = Cam(window.inputs, Vector3(2f0, 0f0, 0f0))
 shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
@@ -14,37 +14,38 @@ function normal(A, xrange, yrange)
     zs = A[x,y][1]
 
     current = Vector3(xs, ys, zs)
+    
     #calculate indexes for surrounding zvalues
     indexes = [(x+1,y), (x,y+1), (x+1,y+1),
                (x-1,y), (x,y-1), (x-1,y-1)]
+
     #Remove out of bounds
     map!(elem -> begin
-      xx = elem[1] < 1 ? 1 : elem[1] 
-      xx = elem[1] > w ? w : xx 
+      xx = elem[1] < 1 ? 1 : elem[1]
+      xx = elem[1] > w ? w : xx
 
-      yy = elem[2] < 1 ? 1 : elem[2] 
-      yy = elem[2] > h ? h : yy 
+      yy = elem[2] < 1 ? 1 : elem[2]
+      yy = elem[2] > h ? h : yy
       (xx,yy)
     end, indexes)
+
     #Construct the full surrounding difference Vectors with x,y,z coordinates
     differenceVecs = map(elem -> begin
-      xx = stretch(float32(elem[1]), xrange, w) # treat indexes as coordinates by stretching them to the correct range
-      yy = stretch(float32(elem[2]), yrange, h)
-      cVec = current - Vector3(xx, yy, A[elem...][1])
+      xx    = stretch(float32(elem[1]), xrange, w) # treat indexes as coordinates by stretching them to the correct range
+      yy    = stretch(float32(elem[2]), yrange, h)
+      cVec  = current - Vector3(xx, yy, A[elem...][1])
     end, indexes)
-    #normals = reduce((v0, a) -> push!(v0, cross(a,v0[end])), Vector3{Float32}[kdiffs[end]], kdiffs[1:end-1])
 
-    #get the some of the cross with the current Vector and normalize
-    #normal = unit(sum(map(x -> cross(current,x), kneighbours)))
+    #get the sum of the cross with the current Vector and normalize
     normalVec = unit(reduce((v0, a) -> begin
       a1 = a[2]
       a2 = differenceVecs[mod1(a[1] + 1, length(differenceVecs))]
-
       v0 + cross(a1, a2)
     end, Vec3(0), enumerate(differenceVecs)))
+
     result[x,y] = normalVec
-  end  
-  result       
+  end
+  result
 end
 
 function stretch(x, r::Range, normalizer = 1)
@@ -63,7 +64,7 @@ glsl_variable_access(keystring, ::Union(Real, GLBuffer, AbstractArray)) = keystr
 glsl_variable_access(keystring, s::Signal) = glsl_variable_access(keystring, s.value)
 glsl_variable_access(keystring, t::Any) = error("no glsl variable calculation available for ",keystring, " and type ", typeof(t))
 
- 
+
 function createview(x::Dict{Symbol, Any}, keys)
   view = (ASCIIString => ASCIIString)[]
   for (key,value) in x
@@ -93,14 +94,14 @@ glsl_attributes = [
   "in"                  => get_glsl_in_qualifier_string(),
   "GLSL_VERSION"        => get_glsl_version_string(),
   "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable",
-  "instance_functions"  => readall(open("shader/instance_functions.vert"))
+  "instance_functions"  => readall(open(shaderdir*"/instance_functions.vert"))
 ]
 SURFACE(scale=1) = [
     :vertex         => Vec3(0),
     :offset         => GLBuffer(Float32[0,0, 0,1, 1,1, 1,0] * scale, 2),
     :index          => indexbuffer(GLuint[0,1,2,2,3,0]),
-    :xscale         => 1f0,  
-    :yscale         => 1f0, 
+    :xscale         => 1f0,
+    :yscale         => 1f0,
     :zscale         => 1f0,
     :z              => 0f0,
     :drawingmode    => GL_TRIANGLES
@@ -110,8 +111,8 @@ CIRCLE(r=0.4, x=0, y=0, points=6) = [
     :vertex         => Vec3(0),
     :offset         => GLBuffer(gencircle(r, x, y, points) , 2),
     :index          => indexbuffer(GLuint[i for i=0:points + 1]),
-    :xscale         => 1f0,  
-    :yscale         => 1f0, 
+    :xscale         => 1f0,
+    :yscale         => 1f0,
     :zscale         => 1f0,
     :z              => 0f0,
     :drawingmode    => GL_TRIANGLE_FAN
@@ -162,7 +163,7 @@ function zgrid{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=
     primitive[:yscale] = float32(1 / yn)
   end
   merged = merge(primitive, environment, data)
-  template = Mustache.parse(readall(open("shader/instance_template.vert"))) 
+  template = Mustache.parse(readall(open(shaderdir*"/instance_template.vert")))
 
   templatekeys = mustachekeys(template)
   view = createview(merged, templatekeys)
@@ -170,7 +171,7 @@ function zgrid{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=
 
   vert = replace(Mustache.render(template, view), "&#x2F;", "/")
   frag = readall(open(shaderdir*"phongblinn.frag"))
-  write(open("test.vert", "w"), vert)
+  #write(open("test.vert", "w"), vert)
 
   program = GLProgram(vert, frag, "vert", "frag")
 
@@ -178,12 +179,6 @@ function zgrid{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=
 
 end
 
-
-function gldisplay(obj::RenderObject, window)
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  render(obj)
-  GLFW.SwapBuffers(window.glfwWindow)
-end
 
 
 function zdata(x1, y1, factor)
@@ -201,12 +196,11 @@ end
 N = 100
 texdata = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 
-
 colordata = map(zcolor , texdata)
 
 color = lift(x-> Vec4(sin(x), 0,0,1), Vec4, Timing.every(0.1))
 
-mesh = zgrid(texdata, primitive=CUBE(), color=color)
+mesh = zgrid(texdata, primitive=CIRCLE(), color=color)
 
 
 glClearColor(1,1,1,0)
