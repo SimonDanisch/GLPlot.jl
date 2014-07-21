@@ -2,38 +2,43 @@ using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
 
 
 global const window = createwindow("Mesh Display", 1000, 1000, debugging = false)
-const cam = Cam(window.inputs, Vector3(1.9f0, 1.9f0, 1.0f0))
+const cam = Cam(window.inputs, Vector3(1.0f0, 1.9f0, 1.0f0))
 include("../src/surface.jl")
 
-function screenshot(size, key)
-	local imgdata = Array(Uint8, 3, size...)
-	local imgprops = {"colorspace" => "RGB", "spatialorder" => ["x", "y"], "colordim" => 1}
+function screenshot(size, key, path="/home/screenshot.png")
+	imgdata = Array(Uint8, 3, size...)
+	imgprops = {"colorspace" => "RGB", "spatialorder" => ["x", "y"], "colordim" => 1}
 	if key == 83
 		glReadPixels(0, 0, size..., GL_RGB, GL_UNSIGNED_BYTE, imgdata)
 		img = Image(imgdata, imgprops)
-		imwrite(img, "/home/s/test.png")
+		imwrite(img, path)
 		img = 0
 		gc()
 		println("written test.png")
 	end
 end
-size = window.inputs[:window_size]
-key =  window.inputs[:keypressed]
-lift(screenshot, size, key)
+window_size = window.inputs[:window_size]
+keypressed =  window.inputs[:keypressed]
+lift(screenshot, window_size, keypressed)
 
 
-sampleMesh = createSampleMesh()
+
+N = 100
+texdata = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
+
+colordata = map(zcolor , texdata)
+
+color = lift(x-> Vec4(sin(x), 0,0,1), Vec4, Timing.every(0.1))
+
+mesh = zgrid(texdata, primitive=SURFACE(), color=colordata)
+
 
 glClearColor(1,1,1,0)
-glEnable(GL_DEPTH_TEST)
-glDepthFunc(GL_LESS)
-glClearDepth(1)
-
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-  render(sampleMesh)
+  render(mesh)
 
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()
