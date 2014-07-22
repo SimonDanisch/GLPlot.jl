@@ -31,7 +31,10 @@ normedmouse = lift(./, window.inputs[:mouseposition], window.inputs[:window_size
 scale             = lift(x -> scalematrix(Vec3(x,x,1f0)), zoom)
 translate         = lift(x -> translatematrix(Vec3(x..., 0)), camposition)
 
-view = lift((s, t) -> t*translatematrix(Vec3((normedmouse.value)...,0))*s*translatematrix(Vec3((-normedmouse.value)...,0)), scale, translate)
+view = lift((s, t) -> begin
+  pivot = Vec3((s*Vec4((normedmouse.value)..., 0f0, 1f0))[1:3]...)
+  translatematrix(pivot)*s*translatematrix(-pivot)*t
+end, scale, translate)
 
 projectionview = @lift projection * view
 

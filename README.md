@@ -60,6 +60,6 @@ glDisplay(xyz::Array; attributes...)
 
 - Polish things and create cool shader
 
-- Along the way, improve GLUtil.jl with better OpenGL debugging and better API
+- Along the way, improve GLAbstraction.jl with better OpenGL debugging and better API
 
 

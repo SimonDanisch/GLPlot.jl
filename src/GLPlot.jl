@@ -1,5 +1,5 @@
 module GLPlot
-using GLWindow, GLUtil, ModernGL, Meshes, Events, ImmutableArrays, React, GLFW, Images
+using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, React, GLFW, Images
 import Mustache
 export toopengl, initplotting
 const sourcedir = Pkg.dir()*"/GLPlot/src/"

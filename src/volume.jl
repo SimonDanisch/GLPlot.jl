@@ -11,6 +11,8 @@ function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader)
   max = maximum(volume)
   min = minimum(volume)
   volume = float32((volume .- min) ./ (max - min))
+  spacing = get(img.properties, "spacing", [1f0, 1f0, 1f0])
+  
   toopengl(volume, shader = shader)
 end
 

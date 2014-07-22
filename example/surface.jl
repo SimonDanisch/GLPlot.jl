@@ -25,24 +25,6 @@ global const window = createwindow("Mesh Display", 1000, 1000, debugging = false
 const cam = Cam(window.inputs, Vector3(2.0f0, 0f0, 0f0))
 
 initplotting()
-##########################################################
-# Image
-#obj = toopengl(Texture("screenshot.png")) #reads in image in this path, supports all formats from Images.jl
-#obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
-
-##########################################################
-# Volume
-
-#So far just 1 dimensional color values are supported
-#=
-N = 256
-volume = Float32[sin(x / 16f0)+sin(y / 16f0)+sin(z / 16f0) for x=1:N, y=1:N, z=1:N]
-max = maximum(volume)
-min = minimum(volume)
-volume = (volume .- min) ./ (max .- min)
-obj = toopengl(volume)
-#obj = toopengl(Texture(""))
-=#
 
 ##########################################################
 # Surface
