@@ -18,6 +18,8 @@ uniform vec3 light_position;
 
 uniform float isovalue;
 
+uniform vec3 color;
+
 
 
 vec3 gennormal(vec3 uvw, vec3 gradient_delta)
@@ -34,7 +36,7 @@ vec3 gennormal(vec3 uvw, vec3 gradient_delta)
 vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 {
     // material properties
-    vec3 Ka = vec3(0.4);
+    vec3 Ka = vec3(0.1);
     vec3 Kd = vec3(1.0, 1.0, 1.0);
     vec3 Ks = vec3(1.0, 1.0, 1.0);
     float shininess = 50.0;
@@ -72,11 +74,11 @@ vec4 isosurface(vec3 front, vec3 back, float stepsize)
       break;
     }
     colorsample = texture(volume_tex, start).r;
-    if(abs(colorsample - 0.2) < 0.01)
+    if(abs(colorsample - isovalue) < 0.01)
     {
       vec3 N = gennormal(start, vec3(stepsize));
       vec3 L = normalize(light_position - start);
-      result = vec4(blinn_phong(N, start, L, vec3(0,1,1)), 1.0);
+      result = vec4(blinn_phong(N, start, L, color), 1.0);
       break;
     }
     start        += stepsize_dir;
@@ -124,7 +126,7 @@ void main()
   vec4 bfront          = texture(frontface2, texc);
 
 
-  vec4 color           = vec4(0);
+  vec4 result_color               = vec4(0);
 
   bool aback_infront_bback        = length(bback.rgb  - aback.rgb)  >= 0.0;
   bool bfront_infront_afront      = length(bfront.rgb - afront.rgb) <= 0.0;
@@ -163,11 +165,11 @@ void main()
   {
     if(algorithm==1.0)
     {
-      color = mip(afront.rgb, aback.rgb, stepsize);
+      result_color = mip(afront.rgb, aback.rgb, stepsize);
     }else  
     {
-      color = isosurface(afront.rgb, aback.rgb, stepsize);
+      result_color = isosurface(afront.rgb, aback.rgb, stepsize);
     }
   }
-  fragment_color = color;
+  fragment_color = result_color;
 }

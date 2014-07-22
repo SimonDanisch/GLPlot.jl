@@ -4,3 +4,5 @@ React
 GLAbstraction
 GLWindow
 Mustache
+ModernGL
+GLFW

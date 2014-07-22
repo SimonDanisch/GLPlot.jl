@@ -6,7 +6,7 @@ const uvwshader           = TemplateProgram(shaderdir*"uvwposition.vert", shader
 fb = glGenFramebuffers()
 
 
-function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader)
+function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
   volume = img.data
   max = maximum(volume)
   min = minimum(volume)
@@ -16,7 +16,7 @@ function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader)
   toopengl(volume, shader = shader)
 end
 
-function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader = volumeshader )
+function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader=volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
   texparams = [
      (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
     (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
@@ -25,7 +25,7 @@ function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader
     (GL_TEXTURE_WRAP_R,  GL_CLAMP_TO_EDGE)
   ]
 
-  v, uvw, indexes = gencube(1f0, 1f0, 1f0)
+  v, uvw, indexes = gencube(spacing...)
   cubedata = [
       :vertex         => GLBuffer(v, 3),
       :uvw            => GLBuffer(uvw, 3),
@@ -42,9 +42,10 @@ function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader
   cubedata[:frontface2]    = frontf2
 
   cubedata[:volume_tex]    = Texture(img, 1, parameters=texparams)
-  cubedata[:stepsize]      = 0.002f0
-  cubedata[:isovalue]      = 0.8f0
-  cubedata[:algorithm]     = 2f0
+  cubedata[:stepsize]      = stepsize
+  cubedata[:isovalue]      = isovalue
+  cubedata[:algorithm]     = algorithm
+  cubedata[:color]         = color
 
   cubedata[:light_position] = Vec3(2, 2, -2)
   volume = RenderObject(cubedata, shader)
@@ -59,7 +60,7 @@ function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader
   volume
 
 end
-function toopengl(dirpath::String; shader = volumeshader )
+function toopengl(dirpath::String; shader = volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
   files     = readdir(dirpath)
   imgSlice1 = imread(dirpath*files[1])
   volume    = Array(Uint16, size(imgSlice1,1), size(imgSlice1,2), length(files))
