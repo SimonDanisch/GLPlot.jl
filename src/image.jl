@@ -32,7 +32,8 @@ scale             = lift(x -> scalematrix(Vec3(x,x,1f0)), zoom)
 translate         = lift(x -> translatematrix(Vec3(x..., 0)), camposition)
 
 view = lift((s, t) -> begin
-  pivot = Vec3((s*Vec4((normedmouse.value)..., 0f0, 1f0))[1:3]...)
+  grr = Matrix4x4(eye(Float32,4,4) / convert(Matrix{Float32}, s))
+  pivot = Vec3(normedmouse.value..., 0f0)
   translatematrix(pivot)*s*translatematrix(-pivot)*t
 end, scale, translate)
 
