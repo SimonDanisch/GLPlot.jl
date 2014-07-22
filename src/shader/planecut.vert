@@ -1,11 +1,8 @@
+{{GLSL_VERSION}}
+{{out}} vec3 uvw;
+{{in}} vec3 vertex;
 
-out vec3 uvw;
-in vec3 vertex;
-
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
-
+uniform mat4 model, view, projection;
 
 void main(){
 

@@ -1,5 +1,6 @@
-in vec3 uvw;
-out vec4 fragment_color;
+{{GLSL_VERSION}}
+{{in}} vec3 uvw;
+{{out}} vec4 fragment_color;
 
 uniform sampler3D volume_tex;
 

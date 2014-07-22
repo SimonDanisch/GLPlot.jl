@@ -1,5 +1,3 @@
-using GLWindow, GLUtil, ModernGL, ImmutableArrays, GLFW, React, Images
-import Mustache
 shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
@@ -51,16 +49,7 @@ function stretch(x, r::Range, normalizer = 1)
   convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
 end
 
-glsl_variable_access(keystring, ::Texture{Float32, 1, 2}) = "texture($(keystring), uv).r;"
-glsl_variable_access(keystring, ::Texture{Float32, 2, 2}) = "texture($(keystring), uv).rg;"
-glsl_variable_access(keystring, ::Texture{Float32, 3, 2}) = "texture($(keystring), uv).rgb;"
-glsl_variable_access(keystring, ::Texture{Float32, 4, 2}) = "texture($(keystring), uv).rgba;"
-glsl_variable_access(keystring, ::Texture{Float32, 4, 2}) = "texture($(keystring), uv).rgba;"
 
-glsl_variable_access(keystring, ::Union(Real, GLBuffer, AbstractArray)) = keystring*";"
-
-glsl_variable_access(keystring, s::Signal) = glsl_variable_access(keystring, s.value)
-glsl_variable_access(keystring, t::Any) = error("no glsl variable calculation available for ",keystring, " and type ", typeof(t))
 
 
 function createview(x::Dict{Symbol, Any}, keys)
@@ -80,7 +69,7 @@ function createview(x::Dict{Symbol, Any}, keys)
 end
 mustachekeys(mustache::Mustache.MustacheTokens) = map(x->x[2], filter(x-> x[1] == "name", mustache.tokens))
 
-const environment = [
+const ENVIRONMENT = [
     :projection     => cam.projection,
     :view           => cam.view,
     :normalmatrix   => cam.normalmatrix,
@@ -88,11 +77,8 @@ const environment = [
 ]
 
 glsl_attributes = [
-  "out"                 => get_glsl_out_qualifier_string(),
-  "in"                  => get_glsl_in_qualifier_string(),
-  "GLSL_VERSION"        => get_glsl_version_string(),
-  "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable",
-  "instance_functions"  => readall(open(shaderdir*"/instance_functions.vert"))
+  "instance_functions"  => readall(open(shaderdir*"/instance_functions.vert")),
+  "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
 ]
 SURFACE(scale=1) = [
     :vertex         => Vec3(0),
@@ -130,7 +116,11 @@ CUBE() = [
 function mix(x,y,a)
   return (x * (1-a[1])) + (y * a[1])
 end
-function zgrid{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange::Range=0:0.01:1, yrange::Range=0:1, color=Vec4(1))
+
+GRID_DEFAULTS = [
+  :color => Vec4(1)
+]
+function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange::Range=0:1, yrange::Range=0:1, rest...)
   if isa(xrange, StepRange)
     xn = length(xrange)
   else
@@ -141,15 +131,20 @@ function zgrid{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=
   else
     yn = size(attributevalue, 2)
   end
-  if isa(color, Matrix)
-    color = Texture(color)
-  end
-  data = [
-    :color          => color,
+  custom = Dict{Symbol, Any}(map((kv) -> begin 
+    if isa(kv[2], Matrix)
+      (kv[1], Texture(kv[2]))
+    else
+      kv #todo: unsupported type check
+    end
+  end, rest))
+  println(custom)
+  data = merge( [
     attribute       => Texture(attributevalue),
     :xrange         => Vec3(first(xrange), xn, last(xrange)),
     :yrange         => Vec3(first(yrange), yn, last(yrange)),
-  ]
+  ], custom)
+  # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
     normaldata = normal(attributevalue, xrange, yrange)
     primitive[:normal_vector] = Texture(normaldata)
@@ -160,18 +155,9 @@ function zgrid{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=
   if !haskey(primitive, :yscale)
     primitive[:yscale] = float32(1 / yn)
   end
-  merged = merge(primitive, environment, data)
-  template = Mustache.parse(readall(open(shaderdir*"/instance_template.vert")))
+  merged = merge(primitive, ENVIRONMENT, data)
 
-  templatekeys = mustachekeys(template)
-  view = createview(merged, templatekeys)
-  merge!(view, glsl_attributes)
-
-  vert = replace(Mustache.render(template, view), "&#x2F;", "/")
-  frag = readall(open(shaderdir*"phongblinn.frag"))
-  #write(open("test.vert", "w"), vert)
-
-  program = GLProgram(vert, frag, "vert", "frag")
+  program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", glsl_attributes, merged)
 
   instancedobject(merged, program, xn*yn, primitive[:drawingmode])
 

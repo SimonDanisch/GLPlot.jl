@@ -1,4 +1,7 @@
-#version 130
+{{GLSL_VERSION}}
+
+{{in}} vec4 vertpos;
+{{out}} vec4 fragment_color;
 
 uniform sampler2D frontface1;
 uniform sampler2D backface1;
@@ -12,11 +15,9 @@ uniform sampler3D volume_tex;
 uniform float algorithm;
 uniform float stepsize;
 uniform vec3 light_position;
-in vec4 vertpos;
-//in vec3 frag_uvw;
+
 uniform float isovalue;
 
-out vec4 fragment_color;
 
 
 vec3 gennormal(vec3 uvw, vec3 gradient_delta)
@@ -33,8 +34,7 @@ vec3 gennormal(vec3 uvw, vec3 gradient_delta)
 vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 {
     // material properties
-    // you might want to put this into a bunch or uniforms
-    vec3 Ka = vec3(1.0, 1.0, 1.0);
+    vec3 Ka = vec3(0.4);
     vec3 Kd = vec3(1.0, 1.0, 1.0);
     vec3 Ks = vec3(1.0, 1.0, 1.0);
     float shininess = 50.0;
@@ -49,9 +49,9 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
         spec_coeff = 0.0;
 
     // final lighting model
-    return  Ka * vec3(0.2) +
+    return  Ka * vec3(0.8) +
             Kd * diffuse  * diff_coeff +
-            Ks * vec3(0.7, 0.7, 0.9) * spec_coeff ;
+            Ks * vec3(0.8) * spec_coeff ;
 }
 
 
@@ -72,7 +72,7 @@ vec4 isosurface(vec3 front, vec3 back, float stepsize)
       break;
     }
     colorsample = texture(volume_tex, start).r;
-    if(abs(colorsample - 0.5) < 0.01)
+    if(abs(colorsample - 0.2) < 0.01)
     {
       vec3 N = gennormal(start, vec3(stepsize));
       vec3 L = normalize(light_position - start);

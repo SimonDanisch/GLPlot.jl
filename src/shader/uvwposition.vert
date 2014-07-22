@@ -1,8 +1,8 @@
-#version 130
+{{GLSL_VERSION}}
 
-in vec3 vertex;
-in vec3 uvw;
-out vec3 frag_uvw;
+{{in}} vec3 vertex;
+{{in}} vec3 uvw;
+{{out}} vec3 frag_uvw;
 uniform mat4 projectionview;
 
 void main(){

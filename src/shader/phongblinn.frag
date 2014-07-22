@@ -1,12 +1,12 @@
-//{{GLSL_VERSION}}
-#version 130
-in vec3 N;
-in vec3 V;
+{{GLSL_VERSION}}
+
+{{in}} vec3 N;
+{{in}} vec3 V;
+{{in}} vec4 vert_color;
+
+{{out}} vec4 fragment_color;
+
 uniform vec3 light_position;
-in vec4 vert_color;
-
-out vec4 fragment_color;
-
 
 
 vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)

@@ -1,173 +1,122 @@
-const volumevert = "
-in vec3 position;
 
-out vec3 position_o;
-
-uniform mat4 mvp;
-
-void main()
-{
-    position_o 	= position;
-    gl_Position = mvp * vec4(position, 1.0);
-}
-
-"
-global const volumeMIPfrag = "
-uniform sampler3D volume_tex;
-uniform float stepsize;
-uniform vec3 normalizer;
-
-in vec3 position_o;
-
-out vec4 colour_output;
-
-uniform vec3 camposition;
-
-void main()
-{
-    vec3  normed_dir    = normalize(position_o - camposition) * (normalizer * stepsize);
-    vec4  colorsample   = vec4(0.0);
-    float alphasample   = 0.0;
-    vec4  coloraccu     = vec4(0.0);
-    float alphaaccu     = 0.0;
-    vec3  start         = position_o;
-    float maximum       = 0;
-    float alpha_acc     = 0.0;  
-    float alpha_sample; // The src alpha
-    int i = 0;
-    for(i; i < 10000; i++)
-    {
-        colorsample = texture(volume_tex, start / normalizer);
-        
-        if(colorsample.r > coloraccu.r)
-        {
-          coloraccu = vec4(colorsample.r,colorsample.r,colorsample.r, 1);
-        }
-      	start += normed_dir;
-
-	    if(coloraccu.r >= 0.999 || start.x >= normalizer.x || start.y >= normalizer.y || start.z >= normalizer.z || start.x <= 0 || start.y <= 0 || start.z <= 0)
-	    {
-	       break;
-	    }
-    }
-    float r = smoothstep(0.3, 0.8, coloraccu.r);
-    float g = smoothstep(0.6, 1.0, coloraccu.r);
-    float b = smoothstep(0.0, 1.0, coloraccu.r);
-    float a = smoothstep(0.01, 1.0, coloraccu.r);
-    colour_output = vec4(r, g, b, a);
-    //colour_output = vec4(start,1);
-
-    //colour_output =vec4(smoothstep(0.0, 0.4, coloraccu.r),  smoothstep(0.4, 0.7, coloraccu.r), smoothstep(0.7, 0.8, coloraccu.r), smoothstep(0.4, 0.5, coloraccu.r));
-    //colour_output =vec4(normed_dir, 1);
-}
-"
+const volumeshader        = TemplateProgram(shaderdir*"simple.vert", shaderdir*"iso.frag")
+const uvwshader           = TemplateProgram(shaderdir*"uvwposition.vert", shaderdir*"uvwposition.frag")
 
 
-global const volumefrag = "
-uniform sampler3D volume_tex;
-uniform float stepsize;
-uniform vec3 normalizer;
+fb = glGenFramebuffers()
 
-in vec3 position_o;
 
-out vec4 colour_output;
-
-uniform vec3 camposition;
-
-void main()
-{
-    vec3  normed_dir    = normalize(position_o - camposition) * (normalizer * stepsize);
-    vec4  colorsample   = vec4(0.0);
-    float alphasample   = 0.0;
-    vec4  coloraccu     = vec4(0.0);
-    float alphaaccu     = 0.0;
-    vec3  start         = position_o;
-    float maximum       = 0;
-    float alpha_acc     = 0.0;  
-    float alpha_sample; // The src alpha
-    int i = 0;
-    for(i; i < 10000; i++)
-    {
-    	colorsample = texture(volume_tex, start / normalizer);
-    
-    	colorsample = vec4(colorsample.r);
-    	alpha_sample = colorsample.a*stepsize;
-    	coloraccu += (1.0 - alpha_acc) * colorsample * alpha_sample*3;
-    	alpha_acc += alpha_sample;
-             
-      	start += normed_dir;
-
-	    if(coloraccu.r >= 1.0 || start.x >= normalizer.x || start.y >= normalizer.y || start.z >= normalizer.z || start.x <= 0 || start.y <= 0 || start.z <= 0)
-	    {
-	       break;
-	    }
-    }
-    float r = smoothstep(0.3, 0.8, coloraccu.r);
-    float g = smoothstep(0.6, 1.0, coloraccu.r);
-    float b = smoothstep(0.0, 1.0, coloraccu.r);
-    float a = smoothstep(0.01, 1.0, coloraccu.r);
-    //colour_output = vec4(r, g, b, a);
-    colour_output = coloraccu;
-
-    //colour_output =vec4(smoothstep(0.0, 0.4, coloraccu.r),  smoothstep(0.4, 0.7, coloraccu.r), smoothstep(0.7, 0.8, coloraccu.r), smoothstep(0.4, 0.5, coloraccu.r));
-    //colour_output =vec4(normed_dir, 1);
-}
-"
-global const volumeshader   = GLProgram(volumevert, volumefrag, "volumeShader")
-global const mipshader      = GLProgram(volumevert, volumeMIPfrag, "volumeMipShader")
-export volumeshader,mipshader 
-
-function createvolume(img::Image; cropDimension=1:256, shader = volumeshader )
-	volume = img.data
-	max = maximum(volume)
-	min = minimum(volume)
-
-	volume = float32((volume .- min) ./ (max - min))
-	createvolume(volume, shader = shader)
-end
-function createvolume(img::Array; spacing = [1f0, 1f0, 1f0], shader = volumeshader )
-	tex = Texture(img, GL_TEXTURE_3D)
-	position, uv, indexes = gencube(spacing...)
-	volume = RenderObject(
-		[
-			:volume_tex 	=> tex,
-			:stepsize 		=> 0.001f0,
-			:normalizer 	=> spacing, 
-			:position 		=> GLBuffer(position, 3),
-			:indexes 		=> GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
-			:mvp 			=> cam.projectionview,
-			:camposition	=> cam.eyeposition
-		]
-		, shader)
-		(GL_DEPTH_TEST)
-
-	prerender!(volume, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enableTransparency)
-	volume
-end
-function createvolume(dirpath::String; cropDimension = 1:256, shader = volumeshader )
-	files 		= readdir(dirpath)
-	imgSlice1 	= imread(dirpath*files[1])
-	volume 		= Array(Uint16, size(imgSlice1)[1], size(imgSlice1)[2], length(files))
-	imgSlice1	= 0
-	for (i,elem) in enumerate(files)
-		img = imread(dirpath*elem)
-		@assert any(x->x>0, img)
-		volume[:,:, i] = img.data
-	end
-	max = maximum(volume)
-	min = minimum(volume)
-
-	volume = float32((volume .- min) ./ (max - min))
-	volume = volume[cropDimension, cropDimension, cropDimension]
-	createvolume(volume, shader = shader)
+function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader)
+  volume = img.data
+  max = maximum(volume)
+  min = minimum(volume)
+  volume = float32((volume .- min) ./ (max - min))
+  toopengl(volume, shader = shader)
 end
 
+function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader = volumeshader )
+  texparams = [
+     (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
+    (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
+    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_R,  GL_CLAMP_TO_EDGE)
+  ]
 
-#= 
-x,y,z = cone.properties["pixelspacing"]
-pspacing = [float64(x), float64(y), float64(z)]
+  v, uvw, indexes = gencube(1f0, 1f0, 1f0)
+  cubedata = [
+      :vertex         => GLBuffer(v, 3),
+      :uvw            => GLBuffer(uvw, 3),
+      :indexes        => GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
+      :projectionview => cam.projectionview
+  ]
+  cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0 )
+  cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0)
+  delete!(cubedata, :uvw)
 
-cone = cone.data[1:256, :, :]
-spacing = float32(pspacing .* Float64[size(cone)...] * 2000.0)
-println(spacing)
-=#
+  cubedata[:frontface1]    = frontf1
+  cubedata[:backface1]     = backf1
+  cubedata[:backface2]     = backf2
+  cubedata[:frontface2]    = frontf2
+
+  cubedata[:volume_tex]    = Texture(img, 1, parameters=texparams)
+  cubedata[:stepsize]      = 0.002f0
+  cubedata[:isovalue]      = 0.8f0
+  cubedata[:algorithm]     = 2f0
+
+  cubedata[:light_position] = Vec3(2, 2, -2)
+  volume = RenderObject(cubedata, shader)
+
+  rendertouvwtexture = () -> begin
+    render(cube1)
+    render(cube2)
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  end
+  prerender!(volume, rendertouvwtexture, glEnable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
+  postrender!(volume, render, volume.vertexarray)
+  volume
+
+end
+function toopengl(dirpath::String; shader = volumeshader )
+  files     = readdir(dirpath)
+  imgSlice1 = imread(dirpath*files[1])
+  volume    = Array(Uint16, size(imgSlice1,1), size(imgSlice1,2), length(files))
+  imgSlice1 = 0
+  for (i,elem) in enumerate(files)
+    img = imread(dirpath*elem)
+    volume[:,:, i] = img.data
+  end
+  max = maximum(volume)
+  min = minimum(volume)
+
+  volume = float32((volume .- min) ./ (max - min))
+  volume = volume
+  toopengl(volume, shader = shader)
+end
+
+function genuvwcube(x,y,z)
+  v, uvw, indexes = gencube(x,y,z)
+  cubeobj = RenderObject([
+    :vertex         => GLBuffer(v, 3),
+    :uvw            => GLBuffer(uvw, 3),
+    :indexes        => indexbuffer(indexes),
+    :projectionview => cam.projectionview
+  ], uvwshader)
+
+  frontface = Texture(GLfloat, 4, window.inputs[:window_size].value)
+  backface  = Texture(GLfloat, 4, window.inputs[:window_size].value)
+
+  lift(windowsize -> begin
+    glBindTexture(texturetype(frontface), frontface.id)
+    glTexImage(0, frontface.internalformat, windowsize..., 0, frontface.format, frontface.pixeltype, C_NULL)
+    glBindTexture(texturetype(backface), backface.id)
+    glTexImage(0, backface.internalformat, windowsize..., 0, backface.format, backface.pixeltype, C_NULL)
+  end, window.inputs[:window_size])
+
+  rendersetup = () -> begin
+      glBindFramebuffer(GL_FRAMEBUFFER, fb)
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, backface.id, 0)
+      glClearColor(1,1,1,0)
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+      glDisable(GL_DEPTH_TEST)
+      glEnable(GL_CULL_FACE)
+      glCullFace(GL_FRONT)
+      render(cubeobj.vertexarray)
+
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, frontface.id, 0)
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+      glDisable(GL_DEPTH_TEST)
+      glEnable(GL_CULL_FACE)
+      glCullFace(GL_BACK)
+      render(cubeobj.vertexarray)
+
+      glBindFramebuffer(GL_FRAMEBUFFER, 0)
+  end
+
+  postrender!(cubeobj, rendersetup)
+
+  cubeobj, frontface, backface
+end
+

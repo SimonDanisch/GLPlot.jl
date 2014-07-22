@@ -23,7 +23,7 @@ uniform mat4 projection, view;
 {{out}} vec3 V;
 {{out}} vec4 vert_color;
 
-{{instance_functions}}
+{{instance_functions}} //It's rather a bad idea, but I outsourced the functions to another file
 
 void main(){
 
