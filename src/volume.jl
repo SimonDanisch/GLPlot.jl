@@ -13,7 +13,7 @@ function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader, stepsize=0.00
   volume = float32((volume .- min) ./ (max - min))
   spacing = get(img.properties, "spacing", [1f0, 1f0, 1f0])
   
-  toopengl(volume, shader = shader)
+  toopengl(volume, shader = shader, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
 end
 
 function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader=volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
@@ -74,7 +74,7 @@ function toopengl(dirpath::String; shader = volumeshader, stepsize=0.002f0, isov
 
   volume = float32((volume .- min) ./ (max - min))
   volume = volume
-  toopengl(volume, shader = shader)
+  toopengl(volume, shader = shader, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
 end
 
 function genuvwcube(x,y,z)

@@ -40,11 +40,11 @@ keypressed = keepwhen(lift(x -> x == 1, Bool, window.inputs[:keypressedstate]), 
 
 #Make some attributes interactive
 algorithm 	= lift( x -> x==GLFW.KEY_I ? 2f0 : 1f0, filter(x-> x==GLFW.KEY_I || x==GLFW.KEY_M, 2, keypressed)) # i for isosurface, m for MIP
-isovalue 	= foldl( (v0, v1) -> v1==GLFW.KEY_UP ? (v0 + 0.05f0) : (v1==GLFW.KEY_DOWN ? (v0 - 0.05f0) : v0), 0.5f0, keypressed)
+isovalue 	= foldl( (v0, v1) -> v1==GLFW.KEY_UP ? (v0 + 0.01f0) : (v1==GLFW.KEY_DOWN ? (v0 - 0.01f0) : v0), 0.5f0, keypressed)
 stepsize 	= foldl( (v0, v1) -> v1==GLFW.KEY_LEFT ? (v0 + 0.001f0) : (v1==GLFW.KEY_RIGHT ? (v0 - 0.001f0) : v0), 0.001f0, keypressed)
 
-obj = toopengl(volume, algorithm=algorithm, isovalue=isovalue, stepsize=stepsize, color=Vec3(1,0,0))
-#obj = toopengl(Texture(""))
+#obj = toopengl(volume, algorithm=algorithm, isovalue=isovalue, stepsize=stepsize, color=Vec3(1,0,0))
+#obj = toopengl(imread("someexample.nrrd"), algorithm=algorithm, isovalue=isovalue, stepsize=stepsize, color=Vec3(1,0,0))
 
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
 # So this is a little less comfortable, but therefore you have all of the control
