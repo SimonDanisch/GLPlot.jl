@@ -53,9 +53,10 @@ function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader
   rendertouvwtexture = () -> begin
     render(cube1)
     render(cube2)
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
   end
-  prerender!(volume, rendertouvwtexture, glEnable, GL_DEPTH_TEST, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
+  prerender!(volume, rendertouvwtexture, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LESS, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
   postrender!(volume, render, volume.vertexarray)
   volume
 
@@ -115,7 +116,6 @@ function genuvwcube(x,y,z)
       glCullFace(GL_BACK)
       render(cubeobj.vertexarray)
 
-      glBindFramebuffer(GL_FRAMEBUFFER, 0)
   end
 
   postrender!(cubeobj, rendersetup)

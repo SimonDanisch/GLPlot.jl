@@ -49,12 +49,13 @@ obj = toopengl(volume, algorithm=algorithm, isovalue=isovalue, stepsize=stepsize
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
 # So this is a little less comfortable, but therefore you have all of the control
 glClearColor(1,1,1,0) #background color
+glClearDepth(1)
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
+  render(AXIS)
   render(obj)
-  #render(axis)
+
   yield() # this is needed for react to work
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()

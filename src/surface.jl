@@ -102,11 +102,12 @@ CIRCLE(r=0.4, x=0, y=0, points=6) = [
     :drawingmode    => GL_TRIANGLE_FAN
 ]
 const vertexes, uv, normals, indexes = gencubenormals(Vector3{Float32}(0,0,0), Vector3{Float32}(1, 0, 0), Vector3{Float32}(0, 1, 0), Vector3{Float32}(0,0,1))
+
 CUBE() = [
-  :vertex         => GLBuffer(vertexes, 3),
+  :vertex         => GLBuffer(vertexes),
   :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
   :index          => indexbuffer(indexes),
-  :normal_vector  => GLBuffer(normals, 3),
+  :normal_vector  => GLBuffer(normals),
   :zscale         => 1f0,
   :z              => 0f0,
   :drawingmode    => GL_TRIANGLES
@@ -120,7 +121,7 @@ end
 GRID_DEFAULTS = [
   :color => Vec4(1)
 ]
-function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange::Range=0:1, yrange::Range=0:1, rest...)
+function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange::Range=-1:1, yrange::Range=-1:1, rest...)
   if isa(xrange, StepRange)
     xn = length(xrange)
   else
@@ -158,8 +159,9 @@ function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symb
 
   program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", glsl_attributes, merged)
 
-  instancedobject(merged, program, xn*yn, primitive[:drawingmode])
-
+  obj = instancedobject(merged, program, xn*yn, primitive[:drawingmode])
+  prerender!(obj, glEnable, GL_DEPTH_TEST)
+  obj
 end
 
 

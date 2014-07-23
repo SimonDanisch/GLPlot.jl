@@ -9,6 +9,7 @@ function initplotting()
 	include(sourcedir*"surface.jl")
 	include(sourcedir*"volume.jl")
 	include(sourcedir*"image.jl")
+	include(sourcedir*"grid.jl")
 end
 
 end

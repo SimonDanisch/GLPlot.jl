@@ -63,6 +63,8 @@ color = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how 
 #####################################################################################################################
 # This is basically what the SURFACE() function returns.
 # The coordinates are in grid coordinates, meaning +1 is the next cell on the grid
+#=
+
 verts = Vec2[Vec2(0,0), Vec2(0,1), Vec2(1,1), Vec2(1,0)]
 offset = GLBuffer(verts)
 custom_surface = [
@@ -80,9 +82,10 @@ obj = toopengl(texdata, primitive=custom_surface, color=color) # Color can also 
 lift(x-> begin 
 	update!(offset, verts + [Vec2(rand(-0.2f0:0.0001f0:0.2f0)) for i=1:4])
 end, Timing.every(0.2)) 
+=#
+
 #####################################################################################################################
 
-#=
 obj = toopengl(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.001f0, yscale=texdata)
 # You can look at surface.jl to find out how the primitives look like, and create your own.
 # Also, it's pretty easy to extend the shader, which you can find under shader/instance_template.vert
@@ -94,18 +97,23 @@ zscale = Dict{Symbol,Any}(obj.uniforms)[:zscale]
 lift(x-> begin 
 	update!(zscale, texdata + [Vec1(rand(0f0:0.0001f0:0.1f0)) for i=1:N, k=1:N])
 end, Timing.every(0.2)) 
-=#
 
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
 # So this a little less comfortable, but therefore you have all of the control
 glClearColor(1,1,1,0)
+grid_size = Dict{Symbol,Any}(AXIS.uniforms)[:gridsteps]
+runner = 1.0
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  push!(grid_size, Vec3(sin(runner) * 30))
+  runner += 0.01
 
+  render(AXIS)
   render(obj)
-  #render(axis)
+
   yield() # this is needed for react to work
+
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()
 
