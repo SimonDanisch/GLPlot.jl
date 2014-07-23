@@ -1,4 +1,5 @@
 # GLPlot
+### Readme outdated, just look into examples for now! 
 Libarary for plotting in OpenGL and Julia.
 
 It builds upon unregistered packages, to get all of them you can run src/packages.jl.
