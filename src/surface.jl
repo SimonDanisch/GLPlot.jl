@@ -138,7 +138,6 @@ function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symb
       kv #todo: unsupported type check
     end
   end, rest))
-  println(custom)
   data = merge( [
     attribute       => Texture(attributevalue),
     :xrange         => Vec3(first(xrange), xn, last(xrange)),
