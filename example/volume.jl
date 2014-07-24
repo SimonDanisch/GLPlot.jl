@@ -53,7 +53,7 @@ glClearDepth(1)
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  render(AXIS)
+  render(GRID)
   render(obj)
 
   yield() # this is needed for react to work

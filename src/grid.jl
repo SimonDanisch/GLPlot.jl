@@ -6,7 +6,7 @@ function initgrid()
 	
 	v,uv,n,i = mergemesh(xyplane, zyplane, zxplane)
 
-	axis = RenderObject([
+	grid = RenderObject([
 			:vertexes 			  	=> GLBuffer(v),
 			:indexes			   	=> indexbuffer(i),
 			#:grid_color 		  => Float32[0.1,.1,.1, 1.0],
@@ -15,10 +15,10 @@ function initgrid()
 			:gridsteps  		  	=> Input(Vec3(10)),
 			:mvp 				    => cam.projectionview
 		], gridshader)
-	prerender!(axis, glDisable, GL_DEPTH_TEST, glDisable, GL_CULL_FACE, enabletransparency)
-	postrender!(axis, render, axis.vertexarray, glClear, GL_DEPTH_BUFFER_BIT)
-	return axis
+	prerender!(grid, glDisable, GL_DEPTH_TEST, glDisable, GL_CULL_FACE, enabletransparency)
+	postrender!(grid, render, grid.vertexarray, glClear, GL_DEPTH_BUFFER_BIT)
+	return grid
 end
 
-global const AXIS = initgrid() 
+global const GRID = initgrid() 
 

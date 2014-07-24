@@ -101,7 +101,7 @@ end, Timing.every(0.2))
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
 # So this a little less comfortable, but therefore you have all of the control
 glClearColor(1,1,1,0)
-grid_size = Dict{Symbol,Any}(AXIS.uniforms)[:gridsteps]
+grid_size = Dict{Symbol,Any}(GRID.uniforms)[:gridsteps]
 runner = 1.0
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
@@ -109,7 +109,7 @@ while !GLFW.WindowShouldClose(window.glfwWindow)
   push!(grid_size, Vec3(sin(runner) * 30))
   runner += 0.01
 
-  render(AXIS)
+  render(GRID)
   render(obj)
 
   yield() # this is needed for react to work
