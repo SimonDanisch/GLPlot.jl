@@ -33,15 +33,15 @@ https://www.youtube.com/watch?v=uz-HV1AAgcI&feature=youtu.be
 
 2D geometry projected on z-value grid:
 
-![Iso-surface](/example/2dgeom.png "sin(x)+sin(y)+sin(z)")
+![Iso-surface](/example/2dgeom.png?raw=true "sin(x)+sin(y)+sin(z)")
 
 Same without seams (Surface Plot):
 
-![Iso-surface](/example/surf.png "sin(x)+sin(y)+sin(z)")
+![Iso-surface](/example/surf.png?raw=true "sin(x)+sin(y)+sin(z)")
 
 Iso surface:
 
-![Iso-surface](/example/iso.png "sin(x)+sin(y)+sin(z)")
+![Iso-surface](/example/iso.png?raw=true "sin(x)+sin(y)+sin(z)")
 
 Best,
 
