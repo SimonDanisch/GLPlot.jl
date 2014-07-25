@@ -1,4 +1,15 @@
 # GLPlot
+
+### Installation notes:
+You still need to install packages manually, as the packages are not in metadata yet.
+Unregistered:
+Pkg.clone("https://github.com/SimonDanisch/GLWindow.jl.git")
+Pkg.clone("https://github.com/SimonDanisch/GLAbstraction.jl.git")
+Pkg.clone("https://github.com/JuliaGL/ModernGL.jl.git")
+The rest should be fetched by REQUIRE
+
+
+
 First of all, a few things actually got less comfortable.
 
 That's because I stopped acting like I have a scene Graph and now fully expose the render loop. I think this offers greater flexibility for early adopters.
