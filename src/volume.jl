@@ -1,5 +1,4 @@
-
-const volumeshader        = TemplateProgram(shaderdir*"simple.vert", shaderdir*"iso.frag")
+const volumeshader        = TemplateProgram(shaderdir*"simple.vert"     , shaderdir*"iso.frag")
 const uvwshader           = TemplateProgram(shaderdir*"uvwposition.vert", shaderdir*"uvwposition.frag")
 
 
@@ -77,6 +76,7 @@ function toopengl(dirpath::String; shader = volumeshader, stepsize=0.002f0, isov
   volume = volume
   toopengl(volume, shader = shader, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
 end
+
 
 function genuvwcube(x,y,z)
   v, uvw, indexes = gencube(x,y,z)
