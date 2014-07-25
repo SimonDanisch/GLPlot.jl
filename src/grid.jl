@@ -10,13 +10,13 @@ function initgrid()
 			:vertexes 			  	=> GLBuffer(v),
 			:indexes			   	=> indexbuffer(i),
 			#:grid_color 		  => Float32[0.1,.1,.1, 1.0],
-			:bg_color 			  	=> Input(Vec4(1, 1, 1, 0.2)),
+			:bg_color 			  	=> Input(Vec4(1, 1, 1, 0.01)),
 			:grid_thickness  		=> Input(Vec3(2)),
 			:gridsteps  		  	=> Input(Vec3(10)),
 			:mvp 				    => cam.projectionview
 		], gridshader)
-	prerender!(grid, glDisable, GL_DEPTH_TEST, glDisable, GL_CULL_FACE, enabletransparency)
-	postrender!(grid, render, grid.vertexarray, glClear, GL_DEPTH_BUFFER_BIT)
+	prerender!(grid, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
+	postrender!(grid, render, grid.vertexarray)
 	return grid
 end
 
