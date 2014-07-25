@@ -58,7 +58,7 @@ colordata = map(zcolor , texdata)
 color = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how to use react to change the color over time
 
 #obj = toopengl(texdata) # This is the base case, where the Matrix is simply mapped as a surface, with white color
-#obj = toopengl(texdata, primitive=SURFACE(#= spacing =#), color=colordata) # Color can be any matrix or a Vec3
+obj = toopengl(texdata, primitive=CIRCLE(), color=colordata) # Color can be any matrix or a Vec3
 
 #####################################################################################################################
 # This is basically what the SURFACE() function returns.
@@ -85,7 +85,7 @@ end, Timing.every(0.2))
 =#
 
 #####################################################################################################################
-
+#=
 obj = toopengl(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.001f0, yscale=texdata)
 # You can look at surface.jl to find out how the primitives look like, and create your own.
 # Also, it's pretty easy to extend the shader, which you can find under shader/instance_template.vert
@@ -95,23 +95,29 @@ obj = toopengl(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.001f0, 
 
 zscale = Dict{Symbol,Any}(obj.uniforms)[:zscale]
 lift(x-> begin 
-	update!(zscale, texdata + [Vec1(rand(0f0:0.0001f0:0.1f0)) for i=1:N, k=1:N])
-end, Timing.every(0.2)) 
+	update!(zscale, texdata + [Vec1((sin(x) +cos(i))/4.0) for i=1:N, k=1:N])
+end, Timing.every(0.1)) 
+=#
 
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
 # So this a little less comfortable, but therefore you have all of the control
 glClearColor(1,1,1,0)
+
 grid_size = Dict{Symbol,Any}(GRID.uniforms)[:gridsteps]
-runner = 1.0
+lift(x->screenshot(window.inputs[:window_size].value), filter(x->x=='s', '0', window.inputs[:unicodeinput]))
+
+runner = 0.0
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  push!(grid_size, Vec3(sin(runner) * 30))
+  #push!(grid_size, Vec3(sin(runner) * 30.0))
   runner += 0.01
 
-  render(GRID)
   render(obj)
-
+  #render(GRID)
+  
+  #timeseries(window.inputs[:window_size].value)
+  
   yield() # this is needed for react to work
 
   GLFW.SwapBuffers(window.glfwWindow)
