@@ -9,7 +9,7 @@ Pkg.clone("https://github.com/JuliaGL/ModernGL.jl.git")
 The rest should be fetched by REQUIRE
 
 
-
+### Some updates:
 First of all, a few things actually got less comfortable.
 
 That's because I stopped acting like I have a scene Graph and now fully expose the render loop. I think this offers greater flexibility for early adopters.
