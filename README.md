@@ -21,7 +21,7 @@ Or volume.jl and GLPlot/src/shader/iso.frag.
 
  
 
-Here are some screen-shots/videos:
+Here are some screen-shots/videos ( Gamma values don't come out correctly when saving, so they all look a little pale):
 
 Going through some iso-values:
 
