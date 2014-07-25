@@ -1,66 +1,48 @@
 # GLPlot
-### Readme outdated, just look into examples for now! 
-Libarary for plotting in OpenGL and Julia.
+First of all, a few things actually got less comfortable.
 
-It builds upon unregistered packages, to get all of them you can run src/packages.jl.
-If you want to try this package, I advice to wait a few more days, as I plan on cleaning my packages starting today.
+That's because I stopped acting like I have a scene Graph and now fully expose the render loop. I think this offers greater flexibility for early adopters.
 
+That means instead of display I rather expose the function toopengl, which I intend to use to build up the scene graph later on.
 
-##Current Sate: 
-Volume rendering and surface rendering prototype finished, but not really usable for plotting, as there is no api.
+Also I'm not fully happy with the API, but that is to be expected, as I haven't figured out the scene graph and its interaction with React yet.
 
-###Volume Rendering
-![Volume](/doc/volume1.png "Maximum intensity projection with basic transfer function")
+BUT, I have most of the pieces together now, to do the basic render operations, which you would expect from a 3D plotting package and most of the render attributes can be be time changing signals, which enables nice animation capabilities.
 
-Dataset from:
-http://www.osirix-viewer.com/datasets/
-You can just download a dateset, unpack it, and then call `createvolum("path_to_dir"[, cropdimension = 1:256])`
-Cropping of dimension is needed for some graphic cards, which don't support textures bigger than 256*256*256.
+You can find examples with a few comments in GLPlot/examples
 
+By the way, all shaders are interactive now by default.
 
-Internally, a volume is represented by something like this:
+That means you can just run the example, open a shader in a text editor, edit something, save -> et voilà =)
 
-```Julia
-volumeRenderObject = RenderObject(
-	[
-		:volume_tex 	=> texture,
-		:stepsize 		=> 0.001f0,
-		:normalizer 	=> spacing, 
-		:vertice 		=> GLBuffer(vertices, 3),
-		:indexes 		=> GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
-		:mvp 			=> cam.projectionview,
-		:camposition	=> cam.eyeposition
-	]
-	, volumeShader)
+For example if you run example/surface.jl, GLPlot/src/shader/phongblinn.frag might be interesting.
 
-glDisplay(:id, volumeRenderObject)
-```
+Or volume.jl and GLPlot/src/shader/iso.frag.
 
-####Planned API:
-```Julia
-glDisplay(img::Image; attributes...)
-```
-The attributes will overwrite the defaults, which will look like `volumeRenderObject`.
-This way one has full control over the shader, but you can still have quick results!
+ 
 
-###Surfaces:
-Phong shading and BRDF shading work now, but automatic surface creation is still not fully there yet.
-What should work pretty well now is supplying the z information for a grid.
-####Planned API:
-```Julia
-glDisplay(xyz::Array; attributes...)
-```
-![Surface](/doc/surface.png "Surface with Phong shader")
-#Next steps:
+Here are some screen-shots/videos:
 
-- Improve Camera
+Going through some iso-values:
 
-- Create Plot Api
+https://www.youtube.com/watch?v=aDzCABwxdJI&feature=youtu.be
 
-- Create different Example plots
+Tiny cubes animated with different attributes:
 
-- Polish things and create cool shader
+https://www.youtube.com/watch?v=uz-HV1AAgcI&feature=youtu.be
 
-- Along the way, improve GLAbstraction.jl with better OpenGL debugging and better API
+2D geometry projected on z-value grid:
 
+![Iso-surface](2dgeom/surf.png "sin(x)+sin(y)+sin(z)")
 
+Same without seams (Surface Plot):
+
+![Iso-surface](example/surf.png "sin(x)+sin(y)+sin(z)")
+
+Iso surface:
+
+![Iso-surface](example/iso.png "sin(x)+sin(y)+sin(z)")
+
+Best,
+
+Simon
