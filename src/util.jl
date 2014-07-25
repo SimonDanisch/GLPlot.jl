@@ -1,12 +1,24 @@
-function screenshot(size, key, path="screenshot.png")
-	imgdata = Array(Uint8, 3, size...)
-	imgprops = {"colorspace" => "RGB", "spatialorder" => ["x", "y"], "colordim" => 1}
-	if key == GLFW.KEY_S
-		glReadPixels(0, 0, size..., GL_RGB, GL_UNSIGNED_BYTE, imgdata)
-		img = Image(mapslices(reverse, imgdata, [3]), imgprops)
+begin 
+	local runner 	= 1
+	local wsize 	= [512, 512]
+	local buffer 	= Array(Uint8, 3, wsize...)
+
+	local imgprops 		= {"colorspace" => "RGB", "spatialorder" => ["x", "y"], "colordim" => 1}
+
+	function screenshot(window_size, path="screenshot.png")
+		if window_size != wsize
+			buffer = Array(Uint8, 3, window_size...)
+			wsize = window_size
+		end
+		glReadPixels(0, 0, window_size..., GL_RGB, GL_UNSIGNED_BYTE, buffer)
+		img = Image(mapslices(reverse, buffer, [3]), imgprops)
 		imwrite(img, path)
-		img = 0
-		gc()
-		println("written: $(screenshot)")
+	end
+	l
+	function timeseries(window_size, path="video/")
+		p = abspath(path)*@sprintf("%06d.png", runner)
+		screenshot(window_size, p)
+		runner += 1
 	end
 end
+
