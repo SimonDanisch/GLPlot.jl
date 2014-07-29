@@ -3,9 +3,14 @@
 ### Installation notes:
 You still need to install packages manually, as the packages are not in metadata yet.
 Unregistered:
-Pkg.clone("https://github.com/SimonDanisch/GLWindow.jl.git")
-Pkg.clone("https://github.com/SimonDanisch/GLAbstraction.jl.git")
 Pkg.clone("https://github.com/JuliaGL/ModernGL.jl.git")
+
+Pkg.clone("https://github.com/SimonDanisch/GLWindow.jl.git")
+
+Pkg.clone("https://github.com/SimonDanisch/GLAbstraction.jl.git")
+
+Pkg.clone("https://github.com/JuliaGL/GLPlot.jl.git")
+
 The rest should be fetched by REQUIRE
 
 
