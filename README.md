@@ -10,10 +10,11 @@ Pkg.clone("https://github.com/SimonDanisch/GLWindow.jl.git")
 
 Pkg.clone("https://github.com/SimonDanisch/GLAbstraction.jl.git")
 
-Pkg.clone("https://github.com/JuliaGL/GLPlot.jl.git")
+Pkg.clone("https://github.com/SimonDanisch/GLPlot.jl.git")
 
 The rest should be fetched by REQUIRE
-
+You might get an error, for the unregistered packages, as the Package manager can't find them.
+This is okay, as long as you install all of the GL-packages.
 
 ### Some updates:
 First of all, a few things actually got less comfortable.
