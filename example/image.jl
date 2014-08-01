@@ -27,7 +27,7 @@ const cam = Cam(window.inputs, Vector3(2.0f0, 0f0, 0f0))
 initplotting()
 ##########################################################
 # Image
-obj = toopengl(Texture("screenshot.png")) #reads in image in this path, supports all formats from Images.jl
+obj = toopengl(Texture("surf.png")) #reads in image in this path, supports all formats from Images.jl
 #obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
 
 

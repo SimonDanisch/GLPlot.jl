@@ -47,7 +47,7 @@ obj = toopengl(volume, algorithm=algorithm, isovalue=isovalue, stepsize=stepsize
 #obj = toopengl(imread("someexample.nrrd"), algorithm=algorithm, isovalue=isovalue, stepsize=stepsize, color=Vec3(1,0,0))
 
 #screenshot
-lift(x->timeseries(window.inputs[:window_size].value), filter(x->x=='s', '0', window.inputs[:unicodeinput]))
+#lift(x->timeseries(window.inputs[:window_size].value), filter(x->x=='s', '0', window.inputs[:unicodeinput]))
 
 
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.

@@ -30,7 +30,7 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
     // final lighting model
     return  Ka * vec3(0.1) +
             Kd * diffuse * diff_coeff +
-            Ks * vec3(0.7, 0.7, 0.9) * spec_coeff ;
+            Ks * vec3(0.9, 0.9, 0.9) * spec_coeff ;
 }
 
 
