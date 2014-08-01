@@ -107,7 +107,7 @@ end, Timing.every(0.1))
 glClearColor(1,1,1,0)
 
 grid_size = Dict{Symbol,Any}(GRID.uniforms)[:gridsteps]
-lift(x->screenshot(window.inputs[:window_size].value), filter(x->x=='s', '0', window.inputs[:unicodeinput]))
+#lift(x->screenshot(window.inputs[:window_size].value), filter(x->x=='s', '0', window.inputs[:unicodeinput]))
 
 runner = 0.0
 while !GLFW.WindowShouldClose(window.glfwWindow)
