@@ -34,7 +34,7 @@ initplotting()
 # The default defines a grid with xrange*yrange*Matrix[n], and projects a 2D geometry onto the z-values on every grid point.
 # This will look something like this, for a quad as a 2D geometry:
 # +---+---+---+
-# | * | * | * |  
+# | * | * | * |
 # +---+---+---+
 # Whereas the stars are the zvalues defined by the Matrix and the plusses are defined by the 2D geometry, with zvalues interpolated from the surrounding zvalues.
 # You can upload different attributes, different 2D geometries, and your own meshes, which will be instanced for every value in the matrix.
@@ -79,9 +79,9 @@ custom_surface = [
 ]
 obj = toopengl(texdata, primitive=custom_surface, color=color) # Color can also be a time varying value
 #now you can animate the offset:
-lift(x-> begin 
+lift(x-> begin
 	update!(offset, verts + [Vec2(rand(-0.2f0:0.0001f0:0.2f0)) for i=1:4])
-end, Timing.every(0.2)) 
+end, Timing.every(0.2))
 =#
 
 #####################################################################################################################
@@ -94,9 +94,9 @@ obj = toopengl(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.001f0, 
 # you can also simply update the texture, even though it's not nicely exposed by the API yet.
 
 zscale = Dict{Symbol,Any}(obj.uniforms)[:zscale]
-lift(x-> begin 
+lift(x-> begin
 	update!(zscale, texdata + [Vec1((sin(x) +cos(i))/4.0) for i=1:N, k=1:N])
-end, Timing.every(0.1)) 
+end, Timing.every(0.1))
 =#
 
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
@@ -107,24 +107,31 @@ grid_size = Dict{Symbol,Any}(GRID.uniforms)[:gridsteps]
 #lift(x->screenshot(window.inputs[:window_size].value), filter(x->x=='s', '0', window.inputs[:unicodeinput]))
 
 runner = 0.0
+
+function renderloop()
+  global runner
+  runner += 0.01
+  render(obj)
+end
+
+#@async begin # can be used in REPL
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
   #push!(grid_size, Vec3(sin(runner) * 30.0))
-  runner += 0.01
 
-  render(obj)
-  #render(GRID)
-  
+  renderloop()
+
   #timeseries(window.inputs[:window_size].value)
-  
+
   yield() # this is needed for react to work
 
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()
 
 end
-GLFW.Terminate()
 
+GLFW.Terminate()
+#end
 
 

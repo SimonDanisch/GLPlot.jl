@@ -1,4 +1,4 @@
-using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, GLFW, React, Images, ModernGL, GLPlot
+using GLWindow, GLAbstraction, ImmutableArrays, GLFW, React, Images, ModernGL, GLPlot
 #=
 Offered window Inputs, which can be used together with React:
 inputs = [
@@ -27,8 +27,8 @@ const cam = Cam(window.inputs, Vector3(2.0f0, 0f0, 0f0))
 initplotting()
 ##########################################################
 # Image
-obj = toopengl(Texture("surf.png")) #reads in image in this path, supports all formats from Images.jl
-#obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
+#obj = toopengl(Texture("surf.png")) #reads in image in this path, supports all formats from Images.jl
+obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
 
 
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
