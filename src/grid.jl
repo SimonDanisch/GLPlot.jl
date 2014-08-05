@@ -4,7 +4,7 @@ function initgrid()
 	zyplane = genquad(Vec3(0,-1, -1), Vec3(0, 0, 2), Vec3(0, 2, 0))
 	zxplane = genquad(Vec3(-1, 0, -1), Vec3(0, 0, 2), Vec3(2, 0, 0))
 	
-	v,uv,n,i = mergemesh(xyplane, zyplane, zxplane)
+	v,uv,n,i = mergemesh(xyplane)
 
 	grid = RenderObject([
 			:vertexes 			  	=> GLBuffer(v),
@@ -15,7 +15,7 @@ function initgrid()
 			:gridsteps  		  	=> Input(Vec3(10)),
 			:mvp 				    => cam.projectionview
 		], gridshader)
-	prerender!(grid, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
+	prerender!(grid, glDisable, GL_DEPTH_TEST, glDisable, GL_CULL_FACE, enabletransparency)
 	postrender!(grid, render, grid.vertexarray)
 	return grid
 end

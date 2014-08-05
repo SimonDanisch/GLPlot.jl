@@ -2,11 +2,10 @@ shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
 
 
 const textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag")
-
-clicked     = lift(tuple, window.inputs[:mousepressed], window.inputs[:mouseposition])
-
+leftclicked = lift(x-> in(0,x), Bool, window.inputs[:mousebuttonspressed])
+clicked     = lift(tuple, leftclicked, window.inputs[:mouseposition])
 #Really ugly way of diffing and adding up the mouseposition
-camposition = keepwhen(window.inputs[:mousepressed], Vec2(0), lift(x->x[1], Vec2, foldl((v0,v1)-> begin 
+camposition = keepwhen(leftclicked, Vec2(0), lift(x->x[1], Vec2, foldl((v0,v1)-> begin 
   if v0[2][1] #-> last position mousebuttondown
     return (v0[1] + Vec3(((v1[2]-v0[2][2])/1000f0)..., 0), v1)
   end
@@ -29,12 +28,12 @@ zoom = foldl((a,b) -> float32(a+(b*0.1f0)) , 1.0, window.inputs[:scroll_y])
 normedmouse = lift(./, window.inputs[:mouseposition], window.inputs[:window_size])
 
 scale             = lift(x -> scalematrix(Vec3(x,x,1f0)), zoom)
-translate         = lift(x -> translatematrix(Vec3(x..., 0)), camposition)
+translate         = lift(x -> translationmatrix(Vec3(x..., 0)), camposition)
 
 view = lift((s, t) -> begin
   grr = Matrix4x4(eye(Float32,4,4) / convert(Matrix{Float32}, s))
   pivot = Vec3(normedmouse.value..., 0f0)
-  translatematrix(pivot)*s*translatematrix(-pivot)*t
+  translationmatrix(pivot)*s*translationmatrix(-pivot)*t
 end, scale, translate)
 
 projectionview = @lift projection * view
