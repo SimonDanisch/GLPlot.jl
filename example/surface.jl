@@ -114,7 +114,7 @@ function renderloop()
   render(obj)
 end
 
-#@async begin # can be used in REPL
+#@async begin # can be used in REPL or Lightable to interactively change the renderloop
 while !GLFW.WindowShouldClose(window.glfwWindow)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

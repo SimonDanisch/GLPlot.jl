@@ -51,7 +51,7 @@ function toopengl{T, D}(img::Texture{T, D, 2})
     :projectionview   => projectionview,
   ], textureshader)
 
-  prerender!(data, glDisable, GL_DEPTH_TEST, enabletransparency)
+  prerender!(data, glDisable, GL_DEPTH_TEST, enabletransparency,  glDisable, GL_CULL_FACE)
   postrender!(data, render, data.vertexarray)
   data
 end
