@@ -22,7 +22,7 @@ inputs = [
 =#
 
 global const window = createwindow("Mesh Display", 1000, 1000, debugging = false) # debugging just works on linux and windows
-const cam = PerspectiveCamera(window.inputs, Vector3(2.0f0, 0f0, 0f0))
+const cam = PerspectiveCamera(window.inputs, Vector3(1f0, 1f0, 0.5f0), Vector3(0.5f0, 0.5f0, 0f0))
 
 initplotting()
 
