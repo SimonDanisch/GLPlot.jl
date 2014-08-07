@@ -1,17 +1,16 @@
 using ModernGL, GLAbstraction, GLWindow, GLFW, React, ImmutableArrays, Images
 using GLPlot
 
-window = createwindow("test", 1000, 800,debugging=false)
-cam = Cam(window.inputs, Vec3(3.0, 1, 0))
+window  = createwindow("test", 1000, 800, windowhints=[(GLFW.SAMPLES, 0)])
+cam     = PerspectiveCamera(window.inputs, Vec3(3.0, 1, 0), Vec3(0.5))
 initplotting()
 
 function setup()
   sourcedir = Pkg.dir()*"/GLPlot/src/"
   shaderdir = sourcedir*"shader/"
 
-  shader = TemplateProgram2(shaderdir*"stencil.vert", shaderdir*"stencil.frag")
+  shader = TemplateProgram("stencil.vert", "stencil.frag", fragdatalocation=[(0, "fragment_color")])
   const vertexes, uv, normals, indexes = gencubenormals(Vec3(0,0,0), Vec3(1, 0, 0), Vec3(0, 1, 0), Vec3(0,0,1))
-  println(cam.projection.value)
   obj = RenderObject([
     :vertex         => GLBuffer(vertexes),
     :index          => indexbuffer(indexes),
@@ -61,11 +60,6 @@ function renderloop()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
   render(obj)
 
-
-  	glBindTexture(GL_TEXTURE_2D, stencil.id)
-	data = GLushort[0]
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16UI, mp.value..., 1,1, GL_RED, GL_UNSIGNED_SHORT, data)
-	println(data)
 end
 
 
