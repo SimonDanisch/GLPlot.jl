@@ -15,7 +15,7 @@ function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader, stepsize=0.00
   toopengl(volume, shader = shader, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
 end
 
-function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader=volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
+function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader=volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1), cam=cam)
   texparams = [
      (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
     (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
@@ -31,8 +31,8 @@ function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader
       :indexes        => GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
       :projectionview => cam.projectionview
   ]
-  cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0 )
-  cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0)
+  cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0, cam)
+  cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0, cam)
   delete!(cubedata, :uvw)
 
   cubedata[:frontface1]    = frontf1
@@ -50,6 +50,7 @@ function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader
   volume = RenderObject(cubedata, shader)
 
   rendertouvwtexture = () -> begin
+    glColorMask(true, true, true, true)
     render(cube1)
     render(cube2)
     glBindFramebuffer(GL_FRAMEBUFFER, 0)
@@ -78,7 +79,7 @@ function toopengl(dirpath::String; shader = volumeshader, stepsize=0.002f0, isov
 end
 
 
-function genuvwcube(x,y,z)
+function genuvwcube(x,y,z, cam)
   v, uvw, indexes = gencube(x,y,z)
   cubeobj = RenderObject([
     :vertex         => GLBuffer(v, 3),
@@ -99,8 +100,9 @@ function genuvwcube(x,y,z)
 
   rendersetup = () -> begin
       glBindFramebuffer(GL_FRAMEBUFFER, fb)
+
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, backface.id, 0)
-      glClearColor(1,1,1,0)
+      glClearColor(0,0,0,0)
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
       glDisable(GL_DEPTH_TEST)
