@@ -29,10 +29,10 @@ vec4 filter_img(sampler2D kernel, float norm)
       	kerneli.x = i;
       	kerneli.y = j;
       	windowi = ((vec2(i,j) - (sizef/2)) / sizeimgf);
-        accum += (texelFetch(kernel, kerneli, 0).r * texture(image, uv_frag + windowi)) / norm;
+        accum += (texelFetch(kernel, kerneli, 0).r * texture(image, uv_frag + windowi)) ;
       }
     }
-    return vec4(accum.rgb, 1);
+    return vec4(accum.rgb / norm, 1);
 }
 vec4 filter_img(float kernel, float norm)
 {

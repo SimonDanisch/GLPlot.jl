@@ -29,7 +29,7 @@ const cam = PerspectiveCamera(window.inputs, Vector3(1f0, 1f0, 0.5f0), Vector3(0
 initplotting()
 ##########################################################
 # Image
-obj = toopengl(Texture(Pkg.dir()*"/GLPlot/example/iso.png"), normrange=Vec2(0,0.5)) #reads in image in this path, supports all formats from Images.jl
+obj = toopengl(Texture(Pkg.dir()*"/GLPlot/docs/iso.png"), kernel=[1 0 -1; 2 0 -2; 1 0 -1], filternorm=0.5f0) #reads in image in this path, supports all formats from Images.jl
 #obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
 
 

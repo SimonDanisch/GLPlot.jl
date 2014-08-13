@@ -1,6 +1,6 @@
 
 
-function toopengl{T, D}(img::Texture{T, D, 2}; camera = OrthographicCamera(window.inputs), kernel=1f0, normrange=Vec2(0,1), filternorm=1f0,)
+function toopengl{T, D}(img::Texture{T, D, 2}; camera = OrthographicCamera(window.inputs), normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
 
   c, w, h  = img.dims
   dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
@@ -17,7 +17,7 @@ function toopengl{T, D}(img::Texture{T, D, 2}; camera = OrthographicCamera(windo
   elseif eltype(kernel) <: AbstractArray
     filterkernel = Texture(kernel, parameters=texparams)
   elseif eltype(kernel) <: Real
-    filterkernel = Texture(float32(kernel), 1,parameters=texparams)
+    filterkernel = Texture(float32(kernel), 1, parameters=texparams)
   end
 
   data = [
@@ -40,7 +40,7 @@ function toopengl{T, D}(img::Texture{T, D, 2}; camera = OrthographicCamera(windo
 end
 
 
-function toopengl{T, D}(img::Texture{T, D, 1}; camera = OrthographicCamera(window.inputs), kernel=1f0, normrange=Vec2(0,1), filternorm=1f0,)
+function toopengl{T, D}(img::Texture{T, D, 1}; camera = OrthographicCamera(window.inputs), kernel=1f0, filternorm=1f0, normrange=Vec2(0,1))
 
   c, w, h  = img.dims
   dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
