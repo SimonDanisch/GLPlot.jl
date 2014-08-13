@@ -2,8 +2,8 @@ function initgrid()
 	gridshader = TemplateProgram(shaderdir*"grid.vert", shaderdir*"grid.frag")
 
 	xyplane = genquad(Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0))
-	zyplane = genquad(Vec3(0, 0, 0), Vec3(0, 0, 2), Vec3(0, 1, 0))
-	zxplane = genquad(Vec3(0, 1, 0), Vec3(0, 0, 2), Vec3(1, 0, 0))
+	zyplane = genquad(Vec3(0, 0, 0), Vec3(0, 0, 1.2), Vec3(0, 1, 0))
+	zxplane = genquad(Vec3(0, 1, 0), Vec3(0, 0, 1.2), Vec3(1, 0, 0))
 	
 	v,uv,n,i = mergemesh(xyplane, zyplane, zxplane)
 

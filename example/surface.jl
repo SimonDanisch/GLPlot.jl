@@ -58,7 +58,7 @@ colordata = map(zcolor , texdata)
 color = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how to use react to change the color over time
 
 #obj = toopengl(texdata) # This is the base case, where the Matrix is simply mapped as a surface, with white color
-obj = toopengl(texdata, primitive=CIRCLE(), color=colordata) # Color can be any matrix or a Vec3
+obj = toopengl(texdata, primitive=SURFACE(), color=colordata) # Color can be any matrix or a Vec3
 
 #####################################################################################################################
 # This is basically what the SURFACE() function returns.
