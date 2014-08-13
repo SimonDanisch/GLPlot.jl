@@ -1,23 +1,27 @@
 {{GLSL_VERSION}}
+{{GLSL_EXTENSIONS}}
 
-{{in}} vec2 vertex;
+{{in}} float dummy;
+uniform vec2 mouseposition;
 
 uniform usampler2D stencil;
 uniform int groups;
 
-vec2 getuv(ivec2 texdim, int index)
-{
-  float x = float(texdim.x);
-  float y = float(texdim.y);
-  float i = float(index);
+flat {{out}} uint fragvalue;
 
-  float u = float((index % texdim.x)) / x;
-  float v = (i / y) / y;
-  return vec2(u,v);
-}
 
 void main(){
-	vec2 uv 	= getuv(textureSize(stencil, 0), gl_InstanceID);
-	uint value 	= texture(stencil, uv).r;
-   	gl_Position = ((value / groups) * 2) - 1;
+	ivec2 tsize 	= textureSize(stencil, 0);
+	ivec2 position	= ivec2(gl_InstanceID % tsize.x, gl_InstanceID / tsize.x);
+
+	if((abs(mouseposition.x - float(position.x)) <= 2) && (abs(mouseposition.y - float(position.y)) <= 2))
+	{
+		gl_Position = vec4(-0.5, 0,dummy,1);
+		fragvalue 	= texelFetch(stencil, position, 0).r;
+
+	}else
+	{
+		fragvalue 	= uint(1);
+   		gl_Position = vec4(0, 0, dummy, 1.0); //image coordinate in space -1:1
+	}
 }

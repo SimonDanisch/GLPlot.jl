@@ -1,9 +1,10 @@
 {{GLSL_VERSION}}
 
-
-{{out}} uint fragment_color;
+uniform vec3 color;
+{{out}} uvec2 fragment_id;
+{{out}} vec4 fragment_color;
 void main(){
 
-
-  fragment_color = 1024;
+	fragment_id 	= uvec2(1);
+  	fragment_color 	= vec4(color,1);
 }
