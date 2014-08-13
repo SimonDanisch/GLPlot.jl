@@ -29,25 +29,23 @@ const cam = PerspectiveCamera(window.inputs, Vector3(1f0, 1f0, 0.5f0), Vector3(0
 initplotting()
 ##########################################################
 # Image
-#obj = toopengl(Texture("surf.png")) #reads in image in this path, supports all formats from Images.jl
-obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
+obj = toopengl(Texture(Pkg.dir()*"/GLPlot/example/iso.png"), normrange=Vec2(0,0.5)) #reads in image in this path, supports all formats from Images.jl
+#obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
 
 
 # I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
 # So this a little less comfortable, but therefore you have all of the control
 glClearColor(1,1,1,0)
-while !GLFW.WindowShouldClose(window.glfwWindow)
+  while !GLFW.WindowShouldClose(window.glfwWindow)
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  render(obj)
-  #render(axis)
-  yield() # this is needed for react to work
-  GLFW.SwapBuffers(window.glfwWindow)
-  GLFW.PollEvents()
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    render(obj)
+    #render(axis)
+    yield() # this is needed for react to work
+    GLFW.SwapBuffers(window.glfwWindow)
+    GLFW.PollEvents()
 
-end
-GLFW.Terminate()
-
-
+  end
+  GLFW.Terminate()
 
 

@@ -1,20 +1,80 @@
-const textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag")
 
 
-function toopengl{T, D}(img::Texture{T, D, 2}; camera = OrthographicCamera(window.inputs))
+function toopengl{T, D}(img::Texture{T, D, 2}; camera = OrthographicCamera(window.inputs), kernel=1f0, normrange=Vec2(0,1), filternorm=1f0,)
 
   c, w, h  = img.dims
   dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
-  v, uv, indexes = genquad(0f0, 0f0,dims...)
-  data = RenderObject([
+  texparams = [
+     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
+    (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
+    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE)
+  ]
+
+  v, uv, indexes = genquad(0f0, 0f0, dims...)
+  if typeof(kernel) <: Real
+    filterkernel = float32(kernel)
+  elseif eltype(kernel) <: AbstractArray
+    filterkernel = Texture(kernel, parameters=texparams)
+  elseif eltype(kernel) <: Real
+    filterkernel = Texture(float32(kernel), 1,parameters=texparams)
+  end
+
+  data = [
     :vertex           => GLBuffer(v, 2),
     :index            => indexbuffer(indexes),
-    :uv               => GLBuffer(v, 2),
+    :uv               => GLBuffer(uv, 2),
     :image            => img,
-    :projectionview   => camera.projectionview,
-  ], textureshader)
+    :normrange        => normrange,
+    :filterkernel     => filterkernel,
+    :filternorm       => filternorm,
+    :projectionview   => camera.projectionview
+  ]
 
-  prerender!(data, glDisable, GL_DEPTH_TEST, enabletransparency,  glDisable, GL_CULL_FACE)
-  postrender!(data, render, data.vertexarray)
-  data
+  textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag", attributes=data)
+
+  obj = RenderObject(data, textureshader)
+  prerender!(obj, glDisable, GL_DEPTH_TEST, enabletransparency,  glDisable, GL_CULL_FACE)
+  postrender!(obj, render, obj.vertexarray)
+  obj
+end
+
+
+function toopengl{T, D}(img::Texture{T, D, 1}; camera = OrthographicCamera(window.inputs), kernel=1f0, normrange=Vec2(0,1), filternorm=1f0,)
+
+  c, w, h  = img.dims
+  dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
+  texparams = [
+     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
+    (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
+    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE)
+  ]
+
+  v, uv, indexes = genquad(-1f0, -1f0,1f0, 1f0)
+  if typeof(kernel) <: Real
+    filterkernel = float32(kernel)
+  elseif eltype(kernel) <: AbstractArray
+    filterkernel = Texture(kernel, parameters=texparams)
+  elseif eltype(kernel) <: Real
+    filterkernel = Texture(float32(kernel), 1,parameters=texparams)
+  end
+
+  data = [
+    :vertex           => GLBuffer(v, 2),
+    :index            => indexbuffer(indexes),
+    :uv               => GLBuffer(uv, 2),
+    :image            => img,
+    :normrange        => normrange,
+    :filterkernel     => filterkernel,
+    :filternorm       => filternorm,
+    :projectionview   => eye(GLfloat, 4,4)
+  ]
+
+  textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag", attributes=data)
+
+  obj = RenderObject(data, textureshader)
+  prerender!(obj, glDisable, GL_DEPTH_TEST, enabletransparency,  glDisable, GL_CULL_FACE)
+  postrender!(obj, render, obj.vertexarray)
+  obj
 end
