@@ -1,10 +1,11 @@
 function initgrid()
 	gridshader = TemplateProgram(shaderdir*"grid.vert", shaderdir*"grid.frag")
-	xyplane = genquad(Vec3(-1,-1, 0), Vec3(2, 0, 0), Vec3(0, 2, 0))
-	zyplane = genquad(Vec3(0,-1, -1), Vec3(0, 0, 2), Vec3(0, 2, 0))
-	zxplane = genquad(Vec3(-1, 0, -1), Vec3(0, 0, 2), Vec3(2, 0, 0))
+
+	xyplane = genquad(Vec3(0, 0, 0), Vec3(1, 0, 0), Vec3(0, 1, 0))
+	zyplane = genquad(Vec3(0, 0, 0), Vec3(0, 0, 2), Vec3(0, 1, 0))
+	zxplane = genquad(Vec3(0, 1, 0), Vec3(0, 0, 2), Vec3(1, 0, 0))
 	
-	v,uv,n,i = mergemesh(xyplane)
+	v,uv,n,i = mergemesh(xyplane, zyplane, zxplane)
 
 	grid = RenderObject([
 			:vertexes 			  	=> GLBuffer(v),

@@ -38,5 +38,5 @@ void main(){
 
   vec3 L = normalize(light_position - V);
 
-  fragment_color = vec4(blinn_phong(N, V, L, vert_color.rgb), 1.0);
+  fragment_color = vec4(blinn_phong(N, V, L, vert_color.rgb), vert_color.a);
 }

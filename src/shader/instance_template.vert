@@ -25,6 +25,8 @@ uniform mat4 projection, view;
 
 {{instance_functions}} //It's rather a bad idea, but I outsourced the functions to another file
 
+
+
 void main(){
 
 	vec3  xyz, scale, normal, vert;
@@ -44,6 +46,6 @@ void main(){
     N = normalize(normalmatrix * normal);
     V = vec3(view  * vec4(xyz, 1.0));
     vert = {{vertex_calculation}}
-    gl_Position = projection * view * getmodelmatrix(xyz, scale) * vec4(vert.xyz, 1.0);
+    gl_Position = projection * view * getmodelmatrix(xyz, scale) * vec4((vert.xyz - vec3(0.5,0.5,0)), 1.0);
 
 }

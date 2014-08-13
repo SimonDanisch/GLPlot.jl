@@ -20,9 +20,10 @@ vec2 getuv(ivec2 texdim, int index)
 vec2 getuv(vec2 texdim, int index, vec2 offset)
 {
   float u = float((index % int(texdim.x)));
-  float v = float((index / int(texdim.y)));
-  return (vec2(u,v) + offset) / texdim;
+  float v = float((index / int(texdim.x)));
+  return (vec2(u,v) + offset) / (texdim-1);
 }
+
 vec2 stretch(vec2 uv, vec2 from, vec2 to)
  {
    return from + (uv * (to - from));

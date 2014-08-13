@@ -11,6 +11,7 @@ function initplotting()
 	include(sourcedir*"image.jl")
 	include(sourcedir*"grid.jl")
 	include(sourcedir*"util.jl")
+	include(sourcedir*"text.jl")
 end
 
 end

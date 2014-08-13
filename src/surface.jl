@@ -1,4 +1,8 @@
+
 shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
+
+Base.middle(x::(Real, Real)) = (first(x)+last(x)) /2 
+rangelength(x::(Real, Real)) = abs(last(x)-first(x))
 
 
 function normal(A, xrange, yrange)
@@ -49,7 +53,10 @@ function stretch(x, r::Range, normalizer = 1)
   convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
 end
 
-
+function stretch(x, r::(Real, Real), normalizer = 1)
+  T = typeof(x)
+  convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
+end
 
 
 function createview(x::Dict{Symbol, Any}, keys)
@@ -101,7 +108,7 @@ CIRCLE(r=0.4, x=0, y=0, points=6) = [
     :z              => 0f0,
     :drawingmode    => GL_TRIANGLE_FAN
 ]
-const vertexes, uv, normals, indexes = gencubenormals(Vector3{Float32}(0,0,0), Vector3{Float32}(1, 0, 0), Vector3{Float32}(0, 1, 0), Vector3{Float32}(0,0,1))
+const vertexes, uv, normals, indexes = gencubenormals(Vec3(0), Vec3(1, 0, 0), Vec3(0,1, 0), Vec3(0,0,1))
 
 CUBE() = [
   :vertex         => GLBuffer(vertexes),
@@ -112,7 +119,15 @@ CUBE() = [
   :z              => 0f0,
   :drawingmode    => GL_TRIANGLES
 ]
-
+POINT() = [
+  :vertex         => GLBuffer(Vec3[Vec3(0)]),
+  :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
+  :index          => indexbuffer(GLuint[0]),
+  :normal_vector  => GLBuffer(Vec3[Vec3(0,0,1)]),
+  :zscale         => 1f0,
+  :z              => 0f0,
+  :drawingmode    => GL_POINTS
+]
 
 function mix(x,y,a)
   return (x * (1-a[1])) + (y * a[1])
@@ -121,7 +136,14 @@ end
 GRID_DEFAULTS = [
   :color => Vec4(1)
 ]
-function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange::Range=-1:1, yrange::Range=-1:1, rest...)
+function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), rest...)
+  
+  parameters = [
+    (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
+    (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
+    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
+  ]
   if isa(xrange, StepRange)
     xn = length(xrange)
   else
@@ -132,17 +154,18 @@ function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symb
   else
     yn = size(attributevalue, 2)
   end
+  push!(rest, (:color, color))
   custom = Dict{Symbol, Any}(map((kv) -> begin 
     if isa(kv[2], Matrix)
-      (kv[1], Texture(kv[2]))
+      (kv[1], Texture(kv[2], parameters=parameters))
     else
-      kv #todo: unsupported type check
+      kv #todo: check for unsupported types
     end
   end, rest))
   data = merge( [
-    attribute       => Texture(attributevalue),
+    attribute       => Texture(attributevalue, parameters=parameters),
     :xrange         => Vec3(first(xrange), xn, last(xrange)),
-    :yrange         => Vec3(first(yrange), yn, last(yrange)),
+    :yrange         => Vec3(first(yrange), yn, last(yrange))
   ], custom)
   # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
@@ -157,14 +180,54 @@ function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symb
   end
   merged = merge(primitive, ENVIRONMENT, data)
 
-  program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", glsl_attributes, merged)
-
+  program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
   obj = instancedobject(merged, program, xn*yn, primitive[:drawingmode])
   prerender!(obj, glEnable, GL_DEPTH_TEST)
   obj
 end
 
 
+
+function toopengl{T <: AbstractArray}(
+          array::Dict{Symbol, Dict{Symbol, T}}, attribute::Symbol=:zscale; 
+          xscale=0.08f0, yscale=0.03f0, textscale = Vec2(1/200f0),
+          xrange=(0,1), yrange=(0,1), xborder=0.05, yborder=0.05, gap=0.2, color=Vec4(0,0,0,1)
+        )
+  result    = RenderObject[]
+
+  mappedresult  = map(res->hcat( collect(values(res))...), values(array))
+
+  xrangestart = first(xrange) + xborder
+  xrangeend = last(xrange) - xborder
+
+  yrange    = (first(yrange) + yborder, last(yrange) - yborder)
+
+  L = length(mappedresult)
+  xstep     = ((xrangeend-xrangestart) - ((L-1)*gap)) / L
+  step      = 0f0
+
+  for elem in mappedresult
+    plot = map(x->Vector1{Float32}((x/10^8)/2), elem)
+
+    start1 = xrangestart + (step*xstep) + (step*gap)
+    xrange = (start1, (start1 + xstep))
+    push!(result, toopengl(plot, attribute, primitive=CUBE(), xscale=xscale, yscale=yscale, color=color, xrange=xrange, yrange=yrange))
+
+    step += 1f0
+  end
+
+  rotq    = qrotation(Float32[0,0,1], pi/2f0)
+  rotdir  = qrotation(Float32[0,0,1], -pi/2f0)
+
+  ytext = foldl((v0,v1)-> v0*"\n"*v1, map(string, keys(results)))
+  xtext = foldl((v0,v1)-> v0*"\n"*v1, map(string, keys(first(results)[2])))
+
+  
+  push!(result, toopengl(reverse(ytext), start=Vec3(xrangestart + (xstep/2),-0.1,0), 
+    scale=textscale, rotation=rotdir, 
+    textrotation=rotq, lineheight=xstep+gap))
+  push!(result, toopengl(string(xtext), start=Vec3(1,0f0,0), scale=textscale, lineheight=(rangelength(yrange) / (size((mappedresult[1]), 2)-1))))
+end
 
 function zdata(x1, y1, factor)
     x = (x1 - 0.5) * 15
