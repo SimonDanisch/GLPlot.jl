@@ -1,66 +1,81 @@
-const volumeshader        = TemplateProgram(shaderdir*"simple.vert"     , shaderdir*"iso.frag")
-const uvwshader           = TemplateProgram(shaderdir*"uvwposition.vert", shaderdir*"uvwposition.frag")
+function initvolume()
+  const global volumeshader = TemplateProgram(shaderdir*"simple.vert"     , shaderdir*"iso.frag")
+  const global uvwshader    = TemplateProgram(shaderdir*"uvwposition.vert", shaderdir*"uvwposition.frag")
+   
+  const global uvwposition_framebuffer = glGenFramebuffers() 
+end
+init_after_context_creation(initvolume)
 
 
-fb = glGenFramebuffers()
 
 
-function toopengl{T,A}(img::Image{T, 3, A}; shader = volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
+function toopengl{T,A}(img::Image{T, 3, A}; stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
   volume = img.data
   max = maximum(volume)
   min = minimum(volume)
   volume = float32((volume .- min) ./ (max - min))
   spacing = get(img.properties, "spacing", [1f0, 1f0, 1f0])
   
-  toopengl(volume, shader = shader, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
+  toopengl(volume, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
 end
 
-function toopengl{T <: Real}(img::Array{T, 3}; spacing = [1f0, 1f0, 1f0], shader=volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
-  texparams = [
-     (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
-    (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
-    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
-    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
-    (GL_TEXTURE_WRAP_R,  GL_CLAMP_TO_EDGE)
+begin 
+  local texparams = [
+      (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
+      (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
+      (GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE),
+      (GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE),
+      (GL_TEXTURE_WRAP_R,     GL_CLAMP_TO_EDGE)
   ]
+  function toopengl{T <: Real}(img::Array{T, 3}; 
+        spacing = [1f0, 1f0, 1f0], stepsize=0.002f0, isovalue=0.8f0, algorithm=2f0, 
+        color=Vec3(0,0,1), lightposition=Vec3(2, 2, -2),
+        camera=pcamera
+      )
 
-  v, uvw, indexes = gencube(spacing...)
-  cubedata = [
-      :vertex         => GLBuffer(v, 3),
-      :uvw            => GLBuffer(uvw, 3),
-      :indexes        => GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
-      :projectionview => cam.projectionview
-  ]
-  cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0 )
-  cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0)
-  delete!(cubedata, :uvw)
+    v, uvw, indexes = gencube(spacing...)
 
-  cubedata[:frontface1]    = frontf1
-  cubedata[:backface1]     = backf1
-  cubedata[:backface2]     = backf2
-  cubedata[:frontface2]    = frontf2
+    cubedata = [
+        :vertex         => GLBuffer(v, 3),
+        :uvw            => GLBuffer(uvw, 3),
+        :indexes        => GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
+        :projectionview => camera.projectionview
+    ]
+    
 
-  cubedata[:volume_tex]    = Texture(img, 1, parameters=texparams)
-  cubedata[:stepsize]      = stepsize
-  cubedata[:isovalue]      = isovalue
-  cubedata[:algorithm]     = algorithm
-  cubedata[:color]         = color
+    cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0, uvwposition_framebuffer, camera)
+    cube2,frontf2, backf2 = genuvwcube(0.1f0, 1f0, 1f0, uvwposition_framebuffer, camera)
 
-  cubedata[:light_position] = Vec3(2, 2, -2)
-  volume = RenderObject(cubedata, shader)
+    delete!(cubedata, :uvw)
 
-  rendertouvwtexture = () -> begin
-    render(cube1)
-    render(cube2)
-    glBindFramebuffer(GL_FRAMEBUFFER, 0)
+    cubedata[:frontface1]     = frontf1
+    cubedata[:backface1]      = backf1
+    cubedata[:backface2]      = backf2
+    cubedata[:frontface2]     = frontf2
+
+    cubedata[:volume_tex]     = Texture(img, 1, parameters=texparams)
+    cubedata[:stepsize]       = stepsize
+    cubedata[:isovalue]       = isovalue
+    cubedata[:algorithm]      = algorithm
+    cubedata[:color]          = color
+
+    cubedata[:light_position] = lightposition
+
+    volume = RenderObject(cubedata, volumeshader)
+
+    rendertouvwtexture = () -> begin
+      render(cube1)
+      render(cube2)
+      glBindFramebuffer(GL_FRAMEBUFFER, 0)
+
+    end
+    prerender!(volume, rendertouvwtexture, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LESS, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
+    postrender!(volume, render, volume.vertexarray)
+    volume
 
   end
-  prerender!(volume, rendertouvwtexture, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LESS, glEnable, GL_CULL_FACE, glCullFace, GL_BACK, enabletransparency)
-  postrender!(volume, render, volume.vertexarray)
-  volume
-
 end
-function toopengl(dirpath::String; shader = volumeshader, stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
+function toopengl(dirpath::String; stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
   files     = readdir(dirpath)
   imgSlice1 = imread(dirpath*files[1])
   volume    = Array(Uint16, size(imgSlice1,1), size(imgSlice1,2), length(files))
@@ -74,17 +89,17 @@ function toopengl(dirpath::String; shader = volumeshader, stepsize=0.002f0, isov
 
   volume = float32((volume .- min) ./ (max - min))
   volume = volume
-  toopengl(volume, shader = shader, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
+  toopengl(volume, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
 end
 
 
-function genuvwcube(x,y,z)
+function genuvwcube(x, y, z, fb, camera)
   v, uvw, indexes = gencube(x,y,z)
   cubeobj = RenderObject([
     :vertex         => GLBuffer(v, 3),
     :uvw            => GLBuffer(uvw, 3),
     :indexes        => indexbuffer(indexes),
-    :projectionview => cam.projectionview
+    :projectionview => camera.projectionview
   ], uvwshader)
 
   frontface = Texture(GLfloat, 4, window.inputs[:window_size].value)

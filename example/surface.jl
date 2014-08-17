@@ -1,30 +1,6 @@
-using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, GLFW, React, Images, ModernGL, GLPlot
-#=
-Offered window Inputs, which can be used together with React:
-inputs = [
-		:mouseposition					=> Input{Vector2{Float64})},
-		:mousedragged 					=> Input{Vector2{Float64})},
-		:window_size					=> Input{Vector2{Int})},
-		:framebuffer_size 				=> Input{Vector2{Int})},
-		:windowposition					=> Input{Vector2{Int})},
+using GLAbstraction, GLPlot, React
 
-		:unicodeinput					=> Input{Char},
-		:keymodifiers					=> Input{Int},
-		:keypressed 					=> Input{Int},
-		:keypressedstate				=> Input{Int},
-		:mousebutton 					=> Input{Int},
-		:mousepressed					=> Input{Bool},
-		:scroll_x						=> Input{Int},
-		:scroll_y						=> Input{Int},
-		:insidewindow 					=> Input{Bool},
-		:open 							=> Input{Bool}
-	]
-=#
-
-global const window = createwindow("Mesh Display", 1000, 1000, debugging = false) # debugging just works on linux and windows
-const cam = PerspectiveCamera(window.inputs, Vector3(1f0, 1f0, 0.5f0), Vector3(0.5f0, 0.5f0, 0f0))
-
-initplotting()
+window = createdisplay()
 
 ##########################################################
 # Surface
@@ -54,14 +30,14 @@ function zcolor(z)
     return mix(a,b,z[1]*5)
 end
 
-N = 128
-texdata = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
+N         = 128
+texdata   = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 colordata = map(zcolor , texdata)
-color = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how to use react to change the color over time
+color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how to use react to change the color over time
 
 #obj = toopengl(texdata) # This is the base case, where the Matrix is simply mapped as a surface, with white color
-color = Texture(Pkg.dir()*"/GLPlot/docs/julia.png")
-obj = toopengl(texdata, primitive=CIRCLE(), color=color) # Color can be any matrix or a Vec3
+color     = Texture(Pkg.dir()*"/GLPlot/docs/julia.png")
+obj       = glplot(texdata, primitive=CIRCLE(), color=color) # Color can be any matrix or a Vec3
 
 #####################################################################################################################
 # This is basically what the SURFACE() function returns.
@@ -102,39 +78,4 @@ lift(x-> begin
 end, Timing.every(0.1))
 =#
 
-# I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
-# So this a little less comfortable, but therefore you have all of the control
-glClearColor(1,1,1,0)
-
-grid_size = Dict{Symbol,Any}(GRID.uniforms)[:gridsteps]
-#lift(x->screenshot(window.inputs[:window_size].value), filter(x->x=='s', '0', window.inputs[:unicodeinput]))
-
-runner = 0.0
-
-function renderloop()
-  global runner
-  runner += 0.01
-  render(obj)
-end
-
-#@async begin # can be used in REPL or Lightable to interactively change the renderloop
-while !GLFW.WindowShouldClose(window.glfwWindow)
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  #push!(grid_size, Vec3(sin(runner) * 30.0))
-
-  renderloop()
-
-  #timeseries(window.inputs[:window_size].value)
-
-  yield() # this is needed for react to work
-
-  GLFW.SwapBuffers(window.glfwWindow)
-  GLFW.PollEvents()
-
-end
-
-GLFW.Terminate()
-#end
-
-
+renderloop(window)

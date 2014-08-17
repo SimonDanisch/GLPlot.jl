@@ -1,9 +1,7 @@
-using GLText
-
 function toopengl(text::String; 
 					start=Vec3(0), scale=Vec2(1/500), color=Vec4(0,0,0,1), backgroundcolor=Vec4(0), 
-					lineheight=0.1,
-					rotation=Quaternion(1f0,0f0,0f0,0f0), textrotation=Quaternion(1f0,0f0,0f0,0f0)
+					lineheight=0.1, rotation=Quaternion(1f0,0f0,0f0,0f0), textrotation=Quaternion(1f0,0f0,0f0,0f0),
+					camera=pcamera
 				)
 	font = getfont()
 	fontprops = font.props[1] .* scale
@@ -27,7 +25,7 @@ function toopengl(text::String;
 	    :scale 				=> scale,
 	    :color 				=> color,
 	    :backgroundcolor 	=> backgroundcolor,
-	    :projectionview 	=> cam.projectionview
+	    :projectionview 	=> camera.projectionview
 	], font.data)
 
 	program = TemplateProgram(Pkg.dir()*"/GLText/src/textShader.vert", Pkg.dir()*"/GLText/src/textShader.frag", 

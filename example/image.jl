@@ -1,51 +1,24 @@
-using GLWindow, GLAbstraction, ImmutableArrays, GLFW, React, Images, ModernGL, GLPlot
+using GLPlot, GLAbstraction
 
-#=
-Offered window Inputs, which can be used together with React:
-inputs = [
-		:mouseposition					=> Input{Vector2{Float64})},
-		:mousedragged 					=> Input{Vector2{Float64})},
-		:window_size					=> Input{Vector2{Int})},
-		:framebuffer_size 				=> Input{Vector2{Int})},
-		:windowposition					=> Input{Vector2{Int})},
+window = createdisplay()
 
-		:unicodeinput					=> Input{Char},
-		:keymodifiers					=> Input{Int},
-		:keypressed 					=> Input{Int},
-		:keypressedstate				=> Input{Int},
-		:mousebutton 					=> Input{Int},
-		:mousepressed					=> Input{Bool},
-		:scroll_x						=> Input{Int},
-		:scroll_y						=> Input{Int},
-		:insidewindow 					=> Input{Bool},
-		:open 							=> Input{Bool}
-	]
-=#
-
-global const window = createwindow("Mesh Display", 1000, 1000, debugging = false) # debugging just works on linux and windows
-
-const cam = PerspectiveCamera(window.inputs, Vector3(1f0, 1f0, 0.5f0), Vector3(0.5f0, 0.5f0, 0f0))
-
-initplotting()
 ##########################################################
 # Image
-obj = toopengl(Texture(Pkg.dir()*"/GLPlot/docs/catsobelt.png"), kernel=[1 0 -1; 2 0 -2; 1 0 -1], filternorm=1f0) #reads in image in this path, supports all formats from Images.jl
-#obj = toopengl(Texture([Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])) # any array works for texture
 
+# Using ImmutableArrays for colors (Vec4 --> Vector4{Float32):
+a = Texture(Vec4[Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])
+# Without ImmutableArrays, the color dimension is not known and you need to supply it
+b = Texture(Float32[(i*j)/512^2 for i=1:512, j=1:512], 1) 
+#c = Texture("examples/mypicture.png")
 
-# I decided not to fake some kind of Render tree for now, as I don't really have more than a list of render objects currently.
-# So this a little less comfortable, but therefore you have all of the control
-glClearColor(1,1,1,0)
-  while !GLFW.WindowShouldClose(window.glfwWindow)
+# default usage will just bring the texture on your screen with zooming and panning enabled:
+glplot(b)
+# these are the keyword arguments:
+# ; camera = OrthographicCamera(window.inputs), normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
+# The kernel should be a Matrix{Float32} or Matrix{Vec1}. 
+# Matrix{Vec2/3/4} is currently not supported, but quite easy to implement
+# normrange normalizes the values from normrange[1] to normrange[2] to 0->1
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    render(obj)
-    #render(axis)
-    yield() # this is needed for react to work
-    GLFW.SwapBuffers(window.glfwWindow)
-    GLFW.PollEvents()
-
-  end
-  GLFW.Terminate()
+renderloop(window)
 
 

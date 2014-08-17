@@ -1,87 +1,5 @@
+export mix, SURFACE, CIRCLE, CUBE, POINT
 
-shaderdir = Pkg.dir()*"/GLPlot/src/shader/"
-
-Base.middle(x::(Real, Real)) = (first(x)+last(x)) /2 
-rangelength(x::(Real, Real)) = abs(last(x)-first(x))
-
-
-function normal(A, xrange, yrange)
-  w,h = size(A)
-  result = Array(Vector3{eltype(A[1])}, w,h)
-  for x=1:w, y=1:h
-    xs = stretch(float32(x), xrange, w)
-    ys = stretch(float32(y), yrange, h)
-    zs = A[x,y][1]
-
-    current = Vector3(xs, ys, zs)
-    
-    #calculate indexes for surrounding zvalues
-    indexes = [(x+1,y), (x,y+1), (x+1,y+1),
-               (x-1,y), (x,y-1), (x-1,y-1)]
-
-    #Remove out of bounds
-    map!(elem -> begin
-      xx = elem[1] < 1 ? 1 : elem[1]
-      xx = elem[1] > w ? w : xx
-
-      yy = elem[2] < 1 ? 1 : elem[2]
-      yy = elem[2] > h ? h : yy
-      (xx,yy)
-    end, indexes)
-
-    #Construct the full surrounding difference Vectors with x,y,z coordinates
-    differenceVecs = map(elem -> begin
-      xx    = stretch(float32(elem[1]), xrange, w) # treat indexes as coordinates by stretching them to the correct range
-      yy    = stretch(float32(elem[2]), yrange, h)
-      cVec  = current - Vector3(xx, yy, A[elem...][1])
-    end, indexes)
-
-    #get the sum of the cross with the current Vector and normalize
-    normalVec = unit(reduce((v0, a) -> begin
-      a1 = a[2]
-      a2 = differenceVecs[mod1(a[1] + 1, length(differenceVecs))]
-      v0 + cross(a1, a2)
-    end, Vec3(0), enumerate(differenceVecs)))
-
-    result[x,y] = normalVec
-  end
-  result
-end
-
-function stretch(x, r::Range, normalizer = 1)
-  T = typeof(x)
-  convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
-end
-
-function stretch(x, r::(Real, Real), normalizer = 1)
-  T = typeof(x)
-  convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
-end
-
-
-function createview(x::Dict{Symbol, Any}, keys)
-  view = (ASCIIString => ASCIIString)[]
-  for (key,value) in x
-    keystring = string(key)
-    typekey = keystring*"_type"
-    calculationkey = keystring*"_calculation"
-    if in(typekey, keys)
-      view[keystring*"_type"] = toglsltype_string(value)
-    end
-    if in(calculationkey, keys)
-        view[keystring*"_calculation"] = glsl_variable_access(keystring, value)
-    end
-  end
-  view
-end
-mustachekeys(mustache::Mustache.MustacheTokens) = map(x->x[2], filter(x-> x[1] == "name", mustache.tokens))
-
-const ENVIRONMENT = [
-    :projection     => cam.projection,
-    :view           => cam.view,
-    :normalmatrix   => cam.normalmatrix,
-    :light_position => Vec3(20, 20, -20)
-]
 
 glsl_attributes = [
   "instance_functions"  => readall(open(shaderdir*"/instance_functions.vert")),
@@ -129,21 +47,18 @@ POINT() = [
   :drawingmode    => GL_POINTS
 ]
 
-function mix(x,y,a)
-  return (x * (1-a[1])) + (y * a[1])
-end
-
-GRID_DEFAULTS = [
-  :color => Vec4(1)
-]
-function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symbol=:z; primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), rest...)
-  
-  parameters = [
+parameters = [
     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
     (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
     (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
     (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
   ]
+function toopengl{T <: AbstractArray}(
+			attributevalue::Matrix{T}, attribute::Symbol=:z; 
+			primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), 
+			lightposition=Vec3(20, 20, -20), camera=pcamera, rest...)
+  
+  
   if isa(xrange, StepRange)
     xn = length(xrange)
   else
@@ -165,7 +80,11 @@ function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symb
   data = merge( [
     attribute       => Texture(attributevalue, parameters=parameters),
     :xrange         => Vec3(first(xrange), xn, last(xrange)),
-    :yrange         => Vec3(first(yrange), yn, last(yrange))
+    :yrange         => Vec3(first(yrange), yn, last(yrange)),
+    :projection     => camera.projection,
+    :view           => camera.view,
+    :normalmatrix   => camera.normalmatrix,
+    :light_position => lightposition,
   ], custom)
   # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
@@ -178,7 +97,7 @@ function toopengl{T <: AbstractArray}(attributevalue::Matrix{T}, attribute::Symb
   if !haskey(primitive, :yscale)
     primitive[:yscale] = float32(1 / yn)
   end
-  merged = merge(primitive, ENVIRONMENT, data)
+  merged = merge(primitive, data)
 
   program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
   obj = instancedobject(merged, program, xn*yn, primitive[:drawingmode])
@@ -240,3 +159,66 @@ function zcolor(z)
     b = Vec4(1,0,0,1)
     return mix(a,b,z[1]*5)
 end
+
+function mix(x,y,a)
+  return (x * (1-a[1])) + (y * a[1])
+end
+
+
+Base.middle(x::(Real, Real)) = (first(x)+last(x)) /2 
+rangelength(x::(Real, Real)) = abs(last(x)-first(x))
+
+
+function normal(A, xrange, yrange)
+  w,h = size(A)
+  result = Array(Vector3{eltype(A[1])}, w,h)
+  for x=1:w, y=1:h
+    xs = stretch(float32(x), xrange, w)
+    ys = stretch(float32(y), yrange, h)
+    zs = A[x,y][1]
+
+    current = Vector3(xs, ys, zs)
+    
+    #calculate indexes for surrounding zvalues
+    indexes = [(x+1,y), (x,y+1), (x+1,y+1),
+               (x-1,y), (x,y-1), (x-1,y-1)]
+
+    #Remove out of bounds
+    map!(elem -> begin
+      xx = elem[1] < 1 ? 1 : elem[1]
+      xx = elem[1] > w ? w : xx
+
+      yy = elem[2] < 1 ? 1 : elem[2]
+      yy = elem[2] > h ? h : yy
+      (xx,yy)
+    end, indexes)
+
+    #Construct the full surrounding difference Vectors with x,y,z coordinates
+    differenceVecs = map(elem -> begin
+      xx    = stretch(float32(elem[1]), xrange, w) # treat indexes as coordinates by stretching them to the correct range
+      yy    = stretch(float32(elem[2]), yrange, h)
+      cVec  = current - Vector3(xx, yy, A[elem...][1])
+    end, indexes)
+
+    #get the sum of the cross with the current Vector and normalize
+    normalVec = unit(reduce((v0, a) -> begin
+      a1 = a[2]
+      a2 = differenceVecs[mod1(a[1] + 1, length(differenceVecs))]
+      v0 + cross(a1, a2)
+    end, Vec3(0), enumerate(differenceVecs)))
+
+    result[x,y] = normalVec
+  end
+  result
+end
+
+function stretch(x, r::Range, normalizer = 1)
+  T = typeof(x)
+  convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
+end
+
+function stretch(x, r::(Real, Real), normalizer = 1)
+  T = typeof(x)
+  convert(T, first(r) + ((x / normalizer) * (last(r) - first(r))))
+end
+
