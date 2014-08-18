@@ -20,10 +20,13 @@ global const RENDER_LIST = RenderObject[]
 
 
 function glplot(args...;keyargs...)
-	push!(RENDER_LIST, toopengl(args...;keyargs...))
+	obj = toopengl(args...;keyargs...)
+	push!(RENDER_LIST, obj)
+	obj
 end
 function glplot(x::RenderObject)
 	push!(RENDER_LIST, x)
+	x
 end
 
 #=

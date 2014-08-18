@@ -74,19 +74,20 @@ postrender!(lines, render, lines.vertexarray, GL_LINES)
 
 
 glClearColor(1,1,1,0)
-while !GLFW.WindowShouldClose(window.glfwWindow)
+@async begin while !GLFW.WindowShouldClose(window.glfwWindow)
 
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+	  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-  render(obj)
-  render(lines)
-  #render(axis)
-  yield() # this is needed for react to work
-  GLFW.SwapBuffers(window.glfwWindow)
-  GLFW.PollEvents()
+	  render(obj)
+	  render(lines)
+	  #render(axis)
+	  yield() # this is needed for react to work
+	  GLFW.SwapBuffers(window.glfwWindow)
+	  GLFW.PollEvents()
 
+	end
 end
-GLFW.Terminate()
+#GLFW.Terminate()
 
 
 
