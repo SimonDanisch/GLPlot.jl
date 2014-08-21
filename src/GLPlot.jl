@@ -2,7 +2,7 @@ module GLPlot
 using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, React, GLFW, Images, Quaternions, GLText
 import Mustache
 
-export glplot, createdisplay, renderloop
+export glplot, createdisplay, renderloop, toopengl
 
 
 const sourcedir = Pkg.dir()*"/GLPlot/src/"
@@ -69,6 +69,7 @@ function renderloop(window)
 		end
 	end
 	GLFW.Terminate()
+	empty!(RENDER_LIST)
 end
 
 

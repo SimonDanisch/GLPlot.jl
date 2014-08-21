@@ -50,8 +50,8 @@ POINT() = [
 parameters = [
     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
     (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
-    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
-    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_S,  GL_REPEAT),
+    (GL_TEXTURE_WRAP_T,  GL_REPEAT),
   ]
 function toopengl{T <: AbstractArray}(
 			attributevalue::Matrix{T}, attribute::Symbol=:z; 

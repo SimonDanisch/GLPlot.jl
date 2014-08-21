@@ -102,14 +102,14 @@ function genuvwcube(x, y, z, fb, camera)
     :projectionview => camera.projectionview
   ], uvwshader)
 
-  frontface = Texture(GLfloat, 4, window.inputs[:window_size].value)
-  backface  = Texture(GLfloat, 4, window.inputs[:window_size].value)
+  frontface = Texture(GLfloat, 4, window.inputs[:window_size].value[3:4])
+  backface  = Texture(GLfloat, 4, window.inputs[:window_size].value[3:4])
 
   lift(windowsize -> begin
     glBindTexture(texturetype(frontface), frontface.id)
-    glTexImage(0, frontface.internalformat, windowsize..., 0, frontface.format, frontface.pixeltype, C_NULL)
+    glTexImage(0, frontface.internalformat, windowsize[3:4]..., 0, frontface.format, frontface.pixeltype, C_NULL)
     glBindTexture(texturetype(backface), backface.id)
-    glTexImage(0, backface.internalformat, windowsize..., 0, backface.format, backface.pixeltype, C_NULL)
+    glTexImage(0, backface.internalformat, windowsize[3:4]..., 0, backface.format, backface.pixeltype, C_NULL)
   end, window.inputs[:window_size])
 
   rendersetup = () -> begin
