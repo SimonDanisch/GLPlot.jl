@@ -1,25 +1,38 @@
 using GLAbstraction, GLPlot, React
 
-window = createdisplay()
-function zdata(x1, y1, factor)
-    x = (x1 - 0.5) * 15
-    y = (y1 - 0.5) * 15
-    R = sqrt(x^2 + y^2)
-    Z = sin(R)/R
-    Vec1(Z)
+
+immutable Vector3{T}
+	x::T
+	y::T
+	z::T
 end
-function zcolor(z)
-    a = Vec4(0,1,0,1)
-    b = Vec4(1,0,0,1)
-    return mix(a,b,z[1]*5)
+
+window = createdisplay(eyeposition=Vec3(4,4,3))
+function zdata(i, j, t)
+    x 		= float32(i - 0.5)
+	z 		= float32(j - 0.5)
+	radius 	= sqrt((x * x) + (z * z))
+
+	r = sin(10.0f0 * radius + t)
+    Vec1(r + rand(1.0:0.01:1.1))
+end
+function zcolor(i, j, t)
+	x 		= float32(i - 0.5)
+	z 		= float32(j - 0.5)
+	radius 	= sqrt((x * x) + (z * z))
+
+	r = sin(10.0f0 * radius + t)
+    g = cos(10.0f0 * radius + t)
+    b = radius
+    return Vec4(r,g,b, 1)
 end
 
 N         = 128
-texdata   = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
-color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how to use react to change the color over time
+texdata   = [zdata(i/N, j/N, 15) for i=1:N, j=1:N]
+color     = [zcolor(i/N, j/N, 15) for i=1:N, j=1:N] # Example on how to use react to change the color over time
 
 
-obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.001f0, yscale=texdata)
+obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.05f0, yscale=0.05f0, xrange=(-4, 4), yrange=(-4, 4))
 
 # You can look at surface.jl to find out how the primitives look like, and create your own.
 # Also, it's pretty easy to extend the shader, which you can find under shader/instance_template.vert
@@ -28,8 +41,14 @@ obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.001f0, ys
 # you can also simply update the texture, even though it's not nicely exposed by the API yet.
 
 zscale = obj.uniforms[:zscale]
+tcolor = obj.uniforms[:color]
+
+println(tcolor)
+
 lift(x-> begin
-	update!(zscale, texdata + [Vec1((sin(x) +cos(i))/4.0) for i=1:N, k=1:N])
-end, Timing.every(0.1))
+	update!(zscale, [zdata(i/N, k/N, sin(x/10)*15) for i=1:N, k=1:N])
+	update!(tcolor, [zcolor(i/N, k/N, (sin(x)+1f0)*4) for i=1:N, k=1:N])
+
+end, Timing.every(0.01))
 
 renderloop(window)
