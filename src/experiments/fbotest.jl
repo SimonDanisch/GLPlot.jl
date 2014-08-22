@@ -1,6 +1,5 @@
 using ModernGL, GLAbstraction, GLWindow, GLFW, React, ImmutableArrays, Images, GLText, Quaternions
 using GLPlot
-using ProfileView
 
 window  = createwindow("test", 1000, 800, windowhints=[(GLFW.SAMPLES, 0)], debugging=false)
 cam     = PerspectiveCamera(window.inputs, Vec3(1,0,0), Vec3(0))
@@ -38,7 +37,6 @@ glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 
 analyzefb = glGenFramebuffers()
 glBindFramebuffer(GL_FRAMEBUFFER, analyzefb)
 analyzetex = Texture(GLushort, 1, [3,1], format=GL_RED_INTEGER, internalformat=GL_R16UI, parameters=parameters)
-println(analyzetex)
 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, analyzetex.id, 0)
 
 
@@ -64,11 +62,11 @@ cubecolor = lift(x-> begin
     
 end,  window.inputs[:mouseposition])
 
-lift(println, cubecolor)
+ocam = OrthographicCamera(Input(Vector4(0,0,frame...)), Input(1f0), Input(Vec2(0)), Input(Vector2(0.0)))
 
 
 obj = setup(cubecolor)
-obj2 = toopengl(stencil, normrange=Vec2(0,40))
+obj2 = toopengl(stencil, normrange=Vec2(0,40), camera=ocam)
 
 
 
