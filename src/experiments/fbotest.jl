@@ -4,7 +4,7 @@ using GLPlot
 window  = createwindow("test", 1000, 800, windowhints=[(GLFW.SAMPLES, 0)], debugging=false)
 cam     = PerspectiveCamera(window.inputs, Vec3(1,0,0), Vec3(0))
 cam2    = OrthographicCamera(window.inputs)
-initplotting()
+
 sourcedir = Pkg.dir()*"/GLPlot/src/"
 shaderdir = sourcedir*"shader/"
 
@@ -21,8 +21,8 @@ parameters = [
         (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
         (GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     ]
-color   = Texture(GLfloat, 3, window.inputs[:window_size].value, format=GL_RGB, internalformat=GL_RGB8)
-stencil = Texture(GLushort, 2, window.inputs[:window_size].value, format=GL_RG_INTEGER, internalformat=GL_RG16UI, parameters=parameters)
+color   = Texture(GLfloat, 3, window.inputs[:window_size].value[3:4], format=GL_RGB, internalformat=GL_RGB8)
+stencil = Texture(GLushort, 2, window.inputs[:window_size].value[3:4], format=GL_RG_INTEGER, internalformat=GL_RG16UI, parameters=parameters)
 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color.id, 0)
 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, stencil.id, 0)
 
@@ -30,7 +30,7 @@ rboDepthStencil = GLuint[0]
 
 glGenRenderbuffers(1, rboDepthStencil);
 glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil[1])
-glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window.inputs[:window_size].value...)
+glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window.inputs[:window_size].value[3:4]...)
 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil[1])
 
 
@@ -53,7 +53,7 @@ glsl_view = [
   "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
 ]
 analyzeRO = instancedobject(data, TemplateProgram(Pkg.dir()*"/GLPlot/src/experiments/stencil_analyze.vert", Pkg.dir()*"/GLPlot/src/experiments/stencil_analyze.frag", view=glsl_view,fragdatalocation=[(0, "fragment_color")]),
-  prod(window.inputs[:window_size].value), GL_POINTS)
+  prod(window.inputs[:window_size].value[3:4]), GL_POINTS)
 cubecolor = lift(x-> begin
   data = Vector2{GLushort}[Vector2{GLushort}(convert(GLushort, 0), convert(GLushort, 0)) for i=1:3, j=1:1]
   glBindTexture(GL_TEXTURE_2D, analyzetex.id)
@@ -87,7 +87,7 @@ function renderloop()
   render(analyzeRO)
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0)
-  glViewport(0,0,window.inputs[:window_size].value...)
+  glViewport(0,0,window.inputs[:window_size].value[3:4]...)
 
   glClearColor(1,1,1,1)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

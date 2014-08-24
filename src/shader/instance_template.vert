@@ -17,6 +17,7 @@ uniform vec3 yrange;
 
 
 uniform mat3 normalmatrix;
+uniform mat4 modelmatrix;
 uniform mat4 projection, view;
 
 {{out}} vec3 N;
@@ -46,6 +47,6 @@ void main(){
     N = normalize(normalmatrix * normal);
     V = vec3(view  * vec4(xyz, 1.0));
     vert = {{vertex_calculation}}
-    gl_Position = projection * view * getmodelmatrix(xyz, scale) * vec4((vert.xyz - vec3(0.5,0.5,0)), 1.0);
+    gl_Position = projection * view * modelmatrix * getmodelmatrix(xyz, scale) * vec4((vert.xyz - vec3(0.5,0.5,0)), 1.0);
 
 }

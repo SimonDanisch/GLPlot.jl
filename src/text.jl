@@ -23,11 +23,12 @@ function textwithoffset{T}(text::String, start::Vector3{T}, advance::Vector3{T},
 	offset, resulttext
 end
 
-function toopengl(text::String; 
+function toopengl(text::String;
 					start=Vec3(0), scale=Vec2(1/500), color=Vec4(0,0,1,1), backgroundcolor=Vec4(0), 
 					lineheight=Vec3(0,0,0), advance=Vec3(0,0,0), rotation=Quaternion(1f0,0f0,0f0,0f0), textrotation=Quaternion(1f0,0f0,0f0,0f0),
-					camera=pcamera
+					camera=ocamera
 				)
+
 	font 			= getfont()
 	fontprops 		= font.props[1] .* scale
 
@@ -41,7 +42,6 @@ function toopengl(text::String;
 	else
 		advance_dir = advance
 	end
-	
 
 
 	offset, ctext 	= textwithoffset(text, start, rotation*advance_dir, rotation*newline_dir)
@@ -55,6 +55,7 @@ function toopengl(text::String;
 	]
 	if !isa(color, Vec4)
 		view["color_calculation"] = "texelFetch(color, index, 0);"
+		color = Texture(color, parameters=parameters)
 	end
 	data = merge([
 		:index_offset		=> convert(GLint, 0),
@@ -67,9 +68,11 @@ function toopengl(text::String;
 	    :projectionview 	=> camera.projectionview
 	], font.data)
 
-	program = TemplateProgram(Pkg.dir()*"/GLText/src/textShader.vert", Pkg.dir()*"/GLText/src/textShader.frag", 
-		view=view, attributes=data)
+	program = TemplateProgram(
+		Pkg.dir()*"/GLText/src/textShader.vert", Pkg.dir()*"/GLText/src/textShader.frag", 
+		view=view, attributes=data
+	)
 	obj = instancedobject(data, program, length(text))
-	postrender!(obj, enabletransparency)
+	prerender!(obj, enabletransparency)
 	return obj
 end

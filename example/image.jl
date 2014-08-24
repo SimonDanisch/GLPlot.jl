@@ -9,10 +9,10 @@ window = createdisplay()
 a = Texture(Vec4[Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])
 # Without ImmutableArrays, the color dimension is not known and you need to supply it
 b = Texture(Float32[(i*j)/512^2 for i=1:512, j=1:512], 1) 
-c = Texture("../docs/interaction.png")
+c = Texture("BUTTWIBA.JPG")
 
 # default usage will just bring the texture on your screen with zooming and panning enabled:
-glplot(c,  kernel=Float32[0 -1 0; -1 4 -1; 0 -1 0])
+glplot(c)
 # these are the keyword arguments:
 # ; camera = OrthographicCamera(window.inputs), normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
 # The kernel should be a Matrix{Float32} or Matrix{Vec1}. 

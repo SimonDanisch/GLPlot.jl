@@ -85,6 +85,7 @@ function toopengl{T <: AbstractArray}(
     :view           => camera.view,
     :normalmatrix   => camera.normalmatrix,
     :light_position => lightposition,
+    :modelmatrix    => eye(Mat4)
   ], custom)
   # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
@@ -110,7 +111,8 @@ end
 function toopengl{T <: AbstractArray}(
           array::Dict{Symbol, Dict{Symbol, T}}, attribute::Symbol=:zscale; 
           xscale=0.08f0, yscale=0.03f0, textscale = Vec2(1/200f0),
-          xrange=(0,1), yrange=(0,1), xborder=0.05, yborder=0.05, gap=0.2, color=Vec4(0,0,0,1)
+          xrange=(0,1), yrange=(0,1), xborder=0.05, yborder=0.05, gap=0.2, color=Vec4(0,0,0,1), 
+          camera=pcamera
         )
   result    = RenderObject[]
 
@@ -130,7 +132,12 @@ function toopengl{T <: AbstractArray}(
 
     start1 = xrangestart + (step*xstep) + (step*gap)
     xrange = (start1, (start1 + xstep))
-    push!(result, toopengl(plot, attribute, primitive=CUBE(), xscale=xscale, yscale=yscale, color=color, xrange=xrange, yrange=yrange))
+    push!(result, toopengl(
+      plot, 
+      attribute, primitive=CUBE(), xscale=xscale, 
+      yscale=yscale, color=color, xrange=xrange, 
+      yrange=yrange, camer=camera
+    ))
 
     step += 1f0
   end
@@ -142,10 +149,15 @@ function toopengl{T <: AbstractArray}(
   xtext = foldl((v0,v1)-> v0*"\n"*v1, map(string, keys(first(results)[2])))
 
   
-  push!(result, toopengl(reverse(ytext), start=Vec3(xrangestart + (xstep/2),-0.1,0), 
+  push!(result, toopengl(
+    reverse(ytext), start=Vec3(xrangestart + (xstep/2),-0.1,0), 
     scale=textscale, rotation=rotdir, 
-    textrotation=rotq, lineheight=xstep+gap))
-  push!(result, toopengl(string(xtext), start=Vec3(1,0f0,0), scale=textscale, lineheight=(rangelength(yrange) / (size((mappedresult[1]), 2)-1))))
+    textrotation=rotq, lineheight=xstep+gap, camer=camera
+  ))
+  push!(result, toopengl(
+    string(xtext), start=Vec3(1,0f0,0), camer=camera, scale=textscale,
+    lineheight=(rangelength(yrange) / (size((mappedresult[1]), 2)-1)),
+  ))
 end
 
 function zdata(x1, y1, factor)

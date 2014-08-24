@@ -3,7 +3,7 @@ using GLAbstraction, GLPlot, React
 window = createdisplay(h=1000,w=1500, eyeposition=Vec3(2,0,0))
 text = "whatup internet!?\n#Crusont"
 
-glplot(text, scale=Vec2(1/50), color=Texture(Vec4[Vec4(rand(), rand(), 0,1) for i=1:length(text)])) # You can either, supply a texture with colors
+glplot(text, scale=Vec2(1/50), color=Vec4[Vec4(rand(), rand(), 0,1) for i=1:length(text)]) # You can either, supply a texture with colors
 #glplot(text, scale=Vec2(1/50), color=Vec4(0,1,0,1)) # or just supply one color
 #full api:
 #=
