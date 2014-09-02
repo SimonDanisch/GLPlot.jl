@@ -89,8 +89,7 @@ function toopengl{T <: AbstractArray}(
   ], custom)
   # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
-    normaldata = normal(attributevalue, xrange, yrange)
-    primitive[:normal_vector] = Texture(normaldata)
+    primitive[:normal_vector] = Vec3(0)
   end
   if !haskey(primitive, :xscale)
     primitive[:xscale] = float32(1 / xn)
@@ -101,7 +100,7 @@ function toopengl{T <: AbstractArray}(
   merged = merge(primitive, data)
 
   program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
-  obj = instancedobject(merged, program, xn*yn, primitive[:drawingmode])
+  obj = instancedobject(merged, program, xn*yn-xn, primitive[:drawingmode])
   prerender!(obj, glEnable, GL_DEPTH_TEST)
   obj
 end
@@ -180,7 +179,6 @@ end
 Base.middle(x::(Real, Real)) = (first(x)+last(x)) /2 
 rangelength(x::(Real, Real)) = abs(last(x)-first(x))
 
-
 function normal(A, xrange, yrange)
   w,h = size(A)
   result = Array(Vector3{eltype(A[1])}, w,h)
@@ -192,34 +190,40 @@ function normal(A, xrange, yrange)
     current = Vector3(xs, ys, zs)
     
     #calculate indexes for surrounding zvalues
-    indexes = [(x+1,y), (x,y+1), (x+1,y+1),
-               (x-1,y), (x,y-1), (x-1,y-1)]
+    indexes = reverse([(x-1,y-1), (x-1,y), (x-1,y+1), (x,y+1), 
+                (x+1,y+1), (x+1,y), (x+1,y-1), (x,y-1)])
 
     #Remove out of bounds
-    map!(elem -> begin
-      xx = elem[1] < 1 ? 1 : elem[1]
-      xx = elem[1] > w ? w : xx
-
-      yy = elem[2] < 1 ? 1 : elem[2]
-      yy = elem[2] > h ? h : yy
-      (xx,yy)
-    end, indexes)
-
+    indextmp = (Int, (Int,Int))[]
+    holes = 0
+    for (ind,(x1,y1)) in enumerate(indexes)
+      if x1 >= 1 && x1 <= w && y1 >= 1 && y1 <= h
+        push!(indextmp, (ind,(x1, y1)))
+      else
+        holes += 1
+      end
+    end
+    #Put back into order, solving one special case (edges (N,N.  )
+    if length(indextmp)==3 && holes > 0 && indextmp[1][1] == 1
+      indextmp[1] = (999, indextmp[1][2])
+    end
+    indexes = map(x->x[2], sort(indextmp))
     #Construct the full surrounding difference Vectors with x,y,z coordinates
-    differenceVecs = map(elem -> begin
+    differenceVecs = map(indexes) do elem
       xx    = stretch(float32(elem[1]), xrange, w) # treat indexes as coordinates by stretching them to the correct range
       yy    = stretch(float32(elem[2]), yrange, h)
       cVec  = current - Vector3(xx, yy, A[elem...][1])
-    end, indexes)
+    end
 
     #get the sum of the cross with the current Vector and normalize
     normalVec = unit(reduce((v0, a) -> begin
       a1 = a[2]
-      a2 = differenceVecs[mod1(a[1] + 1, length(differenceVecs))]
+      a2 = differenceVecs[a[1] + 1]
       v0 + cross(a1, a2)
-    end, Vec3(0), enumerate(differenceVecs)))
+    end, Vec3(0), enumerate(differenceVecs[1:end-1])))
 
     result[x,y] = normalVec
+
   end
   result
 end

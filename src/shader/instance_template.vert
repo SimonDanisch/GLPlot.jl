@@ -26,8 +26,25 @@ uniform mat4 projection, view;
 
 {{instance_functions}} //It's rather a bad idea, but I outsourced the functions to another file
 
+vec3 getnormal(sampler2D zvalues, vec2 uv)
+{
+	const vec2 size = vec2(2.0,0.0);
+	const ivec3 off = ivec3(-1,0,1);
 
-
+    vec4 wave = texture(zvalues, uv);
+    float s11 = wave.x;
+    float s01 = textureOffset(zvalues, uv, off.xy).x;
+    float s21 = textureOffset(zvalues, uv, off.zy).x;
+    float s10 = textureOffset(zvalues, uv, off.yx).x;
+    float s12 = textureOffset(zvalues, uv, off.yz).x;
+    vec3 va = normalize(vec3(size.xy,s21-s01));
+    vec3 vb = normalize(vec3(size.yx,s12-s10));
+    return cross(va,vb);
+}
+vec3 getnormal(float zvalues, vec2 uv)
+{
+    return normal_vector;
+}
 void main(){
 
 	vec3  xyz, scale, normal, vert;
@@ -42,7 +59,7 @@ void main(){
 
     vert_color = {{color_calculation}}
 
-    normal = {{normal_vector_calculation}}
+    normal = getnormal(z, uv);
 
     N = normalize(normalmatrix * normal);
     V = vec3(view  * vec4(xyz, 1.0));
