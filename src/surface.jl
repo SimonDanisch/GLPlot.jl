@@ -57,6 +57,7 @@ function toopengl{T <: AbstractArray}(
 			attributevalue::Matrix{T}, attribute::Symbol=:z; 
 			primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), 
 			lightposition=Vec3(20, 20, -20), camera=pcamera, rest...)
+
   xn  = size(attributevalue, 1)
   yn  = size(attributevalue, 2)
   if isa(xrange, Matrix)

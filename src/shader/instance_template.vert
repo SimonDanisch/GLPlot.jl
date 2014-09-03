@@ -57,6 +57,12 @@ vec2 getcoordinate(vec2 xrange, vec2 yrange, vec2 uv)
 	vec2 to   = vec2(xrange.y, yrange.y);
 	return from + (uv * (to - from));
 }
+vec2 getuv(vec2 texdim, int index, vec2 offset)
+{
+  float u = float((index % int(texdim.x)));
+  float v = float((index / int(texdim.x)));
+  return (vec2(u,v) + offset) / (texdim+1);
+}
 void main(){
 
 	vec3  xyz, scale, normal, vert;
@@ -68,7 +74,7 @@ void main(){
 	scale.y = {{yscale_calculation}}
 	scale.z = {{zscale_calculation}}
 
-    vert_color = {{color_calculation}}
+    vert_color = {{color_calculation}};
 
     normal = getnormal(z, uv);
 

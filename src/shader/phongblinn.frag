@@ -37,6 +37,6 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 void main(){
 
   vec3 L = normalize(light_position - V);
-
+    
   fragment_color = vec4(blinn_phong(N, V, L, vert_color.rgb), vert_color.a);
 }
