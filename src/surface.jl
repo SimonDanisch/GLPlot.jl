@@ -68,13 +68,19 @@ function toopengl{T <: AbstractArray}(
     y   = Vec2(first(yrange), last(yrange))
   end
   push!(rest, (:color, color))
-  custom = Dict{Symbol, Any}(map((kv) -> begin 
-    if isa(kv[2], Matrix)
-      (kv[1], Texture(kv[2], parameters=parameters))
+  customattributes = (Symbol => Any)[]
+  customview = (ASCIIString => ASCIIString)[]
+
+  for (key, value) in rest
+    if isa(value, Matrix)
+      customattributes[key] = Texture(value, parameters=parameters)
+    elseif isa(value, ASCIIString)
+      customview[string(key)*"_calculation"] = value
+      customview[string(key)*"_type"] = "uniform float "
     else
-      kv #todo: check for unsupported types
+      customattributes[key] = value #todo: check for unsupported types
     end
-  end, rest))
+  end
   data = merge( [
     attribute       => Texture(attributevalue, parameters=parameters),
     :xrange         => x,
@@ -85,7 +91,7 @@ function toopengl{T <: AbstractArray}(
     :normalmatrix   => camera.normalmatrix,
     :light_position => lightposition,
     :modelmatrix    => eye(Mat4)
-  ], custom)
+  ], customattributes)
   # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
     primitive[:normal_vector] = Vec3(0)
@@ -97,7 +103,7 @@ function toopengl{T <: AbstractArray}(
     primitive[:yscale] = float32(1 / yn)
   end
   merged = merge(primitive, data)
-
+  merge!(glsl_attributes,customview)
   program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
   obj = instancedobject(merged, program, xn*yn-xn, primitive[:drawingmode])
   prerender!(obj, glEnable, GL_DEPTH_TEST)

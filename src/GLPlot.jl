@@ -55,18 +55,13 @@ function renderloop(window)
 	global RENDER_LIST
 	glClearColor(1,1,1,0)
 	while !GLFW.WindowShouldClose(window.glfwWindow)
-		tic()
+	    yield()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		for elem in RENDER_LIST
 	        render(elem)
 	    end
-	    yield()
 	    GLFW.SwapBuffers(window.glfwWindow)
 		GLFW.PollEvents()
-		fps = toq()
-		if fps < 0.016 # sleep, to get exactly 60 frames
-			#sleep(0.016 - fps)
-		end
 	end
 	GLFW.Terminate()
 	empty!(RENDER_LIST)
