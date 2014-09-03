@@ -6,8 +6,8 @@
 {{offset_type}} offset;	//offset for texture look up. Needed to get neighbouring vertexes, when rendering the surface
 
 
-uniform vec3 xrange;	
-uniform vec3 yrange; 	
+{{xrange_type}} xrange;	
+{{yrange_type}} yrange; 	
 {{z_type}} z;	
 		
 {{xscale_type}} xscale;	
@@ -15,6 +15,7 @@ uniform vec3 yrange;
 {{zscale_type}} zscale;		
 {{color_type}} color;
 
+uniform vec2 texdimension;
 
 uniform mat3 normalmatrix;
 uniform mat4 modelmatrix;
@@ -45,12 +46,22 @@ vec3 getnormal(float zvalues, vec2 uv)
 {
     return normal_vector;
 }
+
+vec2 getcoordinate(sampler2D xvalues, sampler2D yvalues, vec2 uv)
+{
+	return vec2(texture(xvalues, uv).x, texture(yvalues, uv).x);
+}
+vec2 getcoordinate(vec2 xrange, vec2 yrange, vec2 uv)
+{
+	vec2 from = vec2(xrange.x, yrange.x);
+	vec2 to   = vec2(xrange.y, yrange.y);
+	return from + (uv * (to - from));
+}
 void main(){
 
 	vec3  xyz, scale, normal, vert;
-	vec2 uv;
-	uv 		= getuv(vec2(xrange.y, yrange.y), gl_InstanceID, offset);
-	xyz.xy 	= stretch(uv, vec2(xrange.x, yrange.x), vec2(xrange.z, yrange.z));
+	vec2 uv = getuv(texdimension, gl_InstanceID, offset);
+	xyz.xy 	= getcoordinate(xrange, yrange, uv);
 	xyz.z 	= {{z_calculation}}
 	
 	scale.x = {{xscale_calculation}}

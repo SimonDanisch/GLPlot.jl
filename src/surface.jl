@@ -57,17 +57,14 @@ function toopengl{T <: AbstractArray}(
 			attributevalue::Matrix{T}, attribute::Symbol=:z; 
 			primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), 
 			lightposition=Vec3(20, 20, -20), camera=pcamera, rest...)
-  
-  
-  if isa(xrange, StepRange)
-    xn = length(xrange)
+  xn  = size(attributevalue, 1)
+  yn  = size(attributevalue, 2)
+  if isa(xrange, Matrix)
+    x = Texture(xrange, 1, parameters=parameters)
+    y = Texture(yrange, 1, parameters=parameters)
   else
-    xn = size(attributevalue, 1)
-  end
-  if isa(yrange, StepRange)
-    yn = length(yrange)
-  else
-    yn = size(attributevalue, 2)
+    x   = Vec2(first(xrange), last(xrange))
+    y   = Vec2(first(yrange), last(yrange))
   end
   push!(rest, (:color, color))
   custom = Dict{Symbol, Any}(map((kv) -> begin 
@@ -79,8 +76,9 @@ function toopengl{T <: AbstractArray}(
   end, rest))
   data = merge( [
     attribute       => Texture(attributevalue, parameters=parameters),
-    :xrange         => Vec3(first(xrange), xn, last(xrange)),
-    :yrange         => Vec3(first(yrange), yn, last(yrange)),
+    :xrange         => x,
+    :yrange         => y,
+    :texdimension   => Vec2(xn,yn),
     :projection     => camera.projection,
     :view           => camera.view,
     :normalmatrix   => camera.normalmatrix,
