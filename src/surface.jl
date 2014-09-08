@@ -53,7 +53,7 @@ parameters = [
     (GL_TEXTURE_WRAP_S,  GL_REPEAT),
     (GL_TEXTURE_WRAP_T,  GL_REPEAT),
   ]
-function toopengl{T <: AbstractArray}(
+function toopengl{T <: Union(AbstractArray, Real)}(
 			attributevalue::Matrix{T}, attribute::Symbol=:z; 
 			primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), 
 			lightposition=Vec3(20, 20, -20), camera=pcamera, rest...)
