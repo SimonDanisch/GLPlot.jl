@@ -2,7 +2,7 @@ module GLPlot
 using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, React, GLFW, Images, Quaternions, GLText
 import Mustache
 
-export glplot, createdisplay, renderloop, toopengl
+export glplot, createdisplay, renderloop, toopengl,clearplot
 
 
 const sourcedir = Pkg.dir()*"/GLPlot/src/"
@@ -28,6 +28,9 @@ function glplot(x::RenderObject)
 	push!(RENDER_LIST, x)
 	x
 end
+clearplot() = empty!(RENDER_LIST)
+
+
 
 #=
 Args
