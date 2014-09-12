@@ -43,7 +43,6 @@ custom_surface = [
 ]
 
 glplot(texdata, primitive=custom_surface, color=color) # Color can also be a time varying value
-
 #now you can animate the offset:
 lift(x-> begin
 	update!(offset, verts + [Vec2(rand(-0.2f0:0.0001f0:0.2f0)) for i=1:4])

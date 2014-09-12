@@ -1,13 +1,7 @@
 using GLAbstraction, GLPlot, React
 
-
-immutable Vector3{T}
-	x::T
-	y::T
-	z::T
-end
-
 window = createdisplay(eyeposition=Vec3(4,4,3))
+
 function zdata(i, j, t)
     x 		= float32(i - 0.5)
 	z 		= float32(j - 0.5)
@@ -43,7 +37,6 @@ obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.05f0, ysc
 zscale = obj.uniforms[:zscale]
 tcolor = obj.uniforms[:color]
 
-println(tcolor)
 
 lift(x-> begin
 	update!(zscale, [zdata(i/N, k/N, sin(x/10)*15) for i=1:N, k=1:N])

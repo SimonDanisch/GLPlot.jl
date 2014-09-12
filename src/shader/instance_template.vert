@@ -3,20 +3,19 @@
 
 {{vertex_type}} vertex;
 {{normal_vector_type}} normal_vector; // normal might not be an uniform, whereas the other will be allways uniforms
-{{offset_type}} offset;	//offset for texture look up. Needed to get neighbouring vertexes, when rendering the surface
+{{offset_type}} offset; //offset for texture look up. Needed to get neighbouring vertexes, when rendering the surface
 
+{{xrange_type}} xrange; 
+{{yrange_type}} yrange;
+{{z_type}} z;   
 
-{{xrange_type}} xrange;	
-{{yrange_type}} yrange; 	
-{{z_type}} z;	
-		
-{{xscale_type}} xscale;	
-{{yscale_type}} yscale;		
-{{zscale_type}} zscale;		
+{{xscale_type}} xscale; 
+{{yscale_type}} yscale; 
+{{zscale_type}} zscale; 
+
 {{color_type}} color;
 
 uniform vec2 texdimension;
-
 uniform mat3 normalmatrix;
 uniform mat4 modelmatrix;
 uniform mat4 projection, view;
@@ -27,60 +26,68 @@ uniform mat4 projection, view;
 
 {{instance_functions}} //It's rather a bad idea, but I outsourced the functions to another file
 
-vec3 getnormal(sampler2D zvalues, vec2 uv)
-{
-	const vec2 size = vec2(2.0,0.0);
-	const ivec3 off = ivec3(-1,0,1);
+vec3 getnormal(sampler2D zvalues, vec2 uv, vec3 normal)
+{   
+    float weps = 1.0/textureSize(zvalues,0).x;
+    float heps = 1.0/textureSize(zvalues,0).y;
 
-    vec4 wave = texture(zvalues, uv);
-    float s11 = wave.x;
-    float s01 = textureOffset(zvalues, uv, off.xy).x;
-    float s21 = textureOffset(zvalues, uv, off.zy).x;
-    float s10 = textureOffset(zvalues, uv, off.yx).x;
-    float s12 = textureOffset(zvalues, uv, off.yz).x;
-    vec3 va = normalize(vec3(size.xy,s21-s01));
-    vec3 vb = normalize(vec3(size.yx,s12-s10));
-    return cross(va,vb);
-}
-vec3 getnormal(float zvalues, vec2 uv)
-{
-    return normal_vector;
+    vec2 off1 = uv + vec2(-weps,0);
+    vec2 off2 = uv + vec2(0, heps);
+    vec2 off3 = uv + vec2(weps, 0);
+    vec2 off4 = uv + vec2(0,-heps);
+
+    vec3 s0 = vec3(uv, texture(zvalues, uv).x);
+
+    vec3 s1 = vec3((off1), texture(zvalues, off1).x);
+    vec3 s2 = vec3((off2), texture(zvalues, off2).x);
+    vec3 s3 = vec3((off3), texture(zvalues, off3).x);
+    vec3 s4 = vec3((off4), texture(zvalues, off4).x);
+
+    return normalize(
+        cross(s0-s1, s0-s2) +
+        cross(s0-s2, s0-s3) +
+        cross(s0-s3, s0-s4) +
+        cross(s0-s4, s0-s1) +
+        normal
+        );
 }
 
+vec3 getnormal(float zvalues, vec2 uv, vec3 normal)
+{
+    return normal;
+}
 vec2 getcoordinate(sampler2D xvalues, sampler2D yvalues, vec2 uv)
 {
-	return vec2(texture(xvalues, uv).x, texture(yvalues, uv).x);
+    return vec2(texture(xvalues, uv).x, texture(yvalues, uv).x);
 }
 vec2 getcoordinate(vec2 xrange, vec2 yrange, vec2 uv)
 {
-	vec2 from = vec2(xrange.x, yrange.x);
-	vec2 to   = vec2(xrange.y, yrange.y);
-	return from + (uv * (to - from));
+    vec2 from = vec2(xrange.x, yrange.x);
+    vec2 to = vec2(xrange.y, yrange.y);
+    return from + (uv * (to - from));
 }
 vec2 getuv(vec2 texdim, int index, vec2 offset)
 {
-  float u = float((index % int(texdim.x)));
-  float v = float((index / int(texdim.x)));
-  return (vec2(u,v) + offset) / (texdim+1);
+    float u = float((index % int(texdim.x)));
+    float v = float((index / int(texdim.x)));
+    return (vec2(u,v) + offset) / (texdim+1);
 }
 void main(){
+    vec3 xyz, scale, normal, vert;
 
-	vec3  xyz, scale, normal, vert;
-	vec2 uv = getuv(texdimension, gl_InstanceID, offset);
-	xyz.xy 	= getcoordinate(xrange, yrange, uv);
-	xyz.z 	= {{z_calculation}}
-	
-    scale.x = {{xscale_calculation}}
-    scale.y = {{yscale_calculation}}
-	scale.z = {{zscale_calculation}}
-	
-    vert_color = {{color_calculation}}
+    vec2 uv     = getuv(texdimension, gl_InstanceID, offset);
+    xyz.xy      = getcoordinate(xrange, yrange, uv);
+    xyz.z       = {{z_calculation}}
+    scale.x     = {{xscale_calculation}}
+    scale.y     = {{yscale_calculation}}
+    scale.z     = {{zscale_calculation}}
+    vert_color  = {{color_calculation}}
 
-    normal = getnormal(z, uv);
+    normal      = getnormal(z, uv, normal_vector);
 
-    N = normalize(normalmatrix * normal);
-    V = vec3(view  * vec4(xyz, 1.0));
-    vert = {{vertex_calculation}}
-    gl_Position = projection * view * modelmatrix * getmodelmatrix(xyz, scale) * vec4((vert.xyz - vec3(0.5,0.5,0)), 1.0);
+    N           = normalize(normalmatrix * normal);
+    V           = vec3(view * vec4(xyz, 1.0));
+    vert        = {{vertex_calculation}}
 
+    gl_Position = projection * view * modelmatrix * getmodelmatrix(xyz, scale) * vec4(vert.xyz, 1.0);
 }

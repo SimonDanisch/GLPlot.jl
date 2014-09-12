@@ -7,9 +7,9 @@ window = createdisplay()
 
 # Using ImmutableArrays for colors (Vec4 --> Vector4{Float32):
 a = Texture(Vec4[Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])
-# Without ImmutableArrays, the color dimension is not known and you need to supply it
+# Without ImmutableArays, the color dimension is not known and you need to supply it
 b = Texture(Float32[(i*j)/512^2 for i=1:512, j=1:512], 1) 
-c = Texture("BUTTWIBA.JPG")
+c = Texture("../docs/julia.png")
 
 # default usage will just bring the texture on your screen with zooming and panning enabled:
 glplot(c)

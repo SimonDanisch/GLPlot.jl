@@ -13,7 +13,7 @@ SURFACE(scale=1) = [
     :yscale         => 1f0,
     :zscale         => 1f0,
     :z              => 0f0,
-    :drawingmode    => GL_TRIANGLES
+    :drawingmode    => GL_TRIANGLES,
 ]
 
 CIRCLE(r=0.4, x=0, y=0, points=6) = [
@@ -53,6 +53,7 @@ parameters = [
     (GL_TEXTURE_WRAP_S,  GL_REPEAT),
     (GL_TEXTURE_WRAP_T,  GL_REPEAT),
   ]
+
 function toopengl{T <: Union(AbstractArray, Real)}(
 			attributevalue::Matrix{T}, attribute::Symbol=:z; 
 			primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), 
