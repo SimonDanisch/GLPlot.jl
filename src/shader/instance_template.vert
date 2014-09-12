@@ -70,9 +70,9 @@ void main(){
 	xyz.xy 	= getcoordinate(xrange, yrange, uv);
 	xyz.z 	= {{z_calculation}}
 	
-	float scalex = {{xscale_calculation}}
-	float scaley = {{yscale_calculation}}
-	float scalez = {{zscale_calculation}}
+    scale.x = {{xscale_calculation}}
+    scale.y = {{yscale_calculation}}
+	scale.z = {{zscale_calculation}}
 	
     vert_color = {{color_calculation}}
 
