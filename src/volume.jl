@@ -9,7 +9,7 @@ init_after_context_creation(initvolume)
 
 
 
-function toopengl{T,A}(img::Image{T, 3, A}; stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
+function toopengl{T,A}(img::Image{T, 3, A}; stepsize=0.001f0, isovalue=0.5f0, algorithm=2f0, color=Vec4(0,0,1,1))
   volume = img.data
   max = maximum(volume)
   min = minimum(volume)
@@ -28,7 +28,7 @@ begin
       (GL_TEXTURE_WRAP_R,     GL_CLAMP_TO_EDGE)
   ]
   function toopengl{T <: Real}(img::Array{T, 3}; 
-        spacing = [1f0, 1f0, 1f0], stepsize=0.002f0, isovalue=0.8f0, algorithm=2f0, 
+        spacing = [1f0, 1f0, 1f0], stepsize=0.001f0, isovalue=0.5f0, algorithm=2f0, 
         color=Vec3(0,0,1), lightposition=Vec3(2, 2, -2),
         camera=pcamera
       )
@@ -75,7 +75,7 @@ begin
 
   end
 end
-function toopengl(dirpath::String; stepsize=0.002f0, isovalue=0.8, algorithm=2f0, color=Vec4(0,0,1,1))
+function toopengl(dirpath::String; stepsize=0.001f0, isovalue=0.5f0, algorithm=2f0, color=Vec4(0,0,1,1))
   files     = readdir(dirpath)
   imgSlice1 = imread(dirpath*files[1])
   volume    = Array(Uint16, size(imgSlice1,1), size(imgSlice1,2), length(files))

@@ -107,7 +107,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
   merge!(glsl_attributes,customview)
   program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
   obj     = instancedobject(merged, program, xn*yn, primitive[:drawingmode])
-  prerender!(obj, glEnable, GL_DEPTH_TEST)
+  prerender!(obj, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
   obj
 end
 
