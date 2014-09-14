@@ -6,3 +6,4 @@ GLFW
 GLAbstraction
 ModernGL
 GLWindow
+GLText
