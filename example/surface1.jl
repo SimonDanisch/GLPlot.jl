@@ -1,4 +1,4 @@
-using GLAbstraction, GLPlot, React
+using GLAbstraction, GLPlot, Reactive
 
 window = createdisplay()
 
@@ -19,7 +19,7 @@ end
 N         = 128
 texdata   = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 colordata = map(zcolor , texdata)
-color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how to use react to change the color over time
+color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, every(0.1)) # Example on how to use react to change the color over time
 
 #color     = Texture(Pkg.dir()*"/GLPlot/docs/julia.png") # example for using an image for the color channel
 

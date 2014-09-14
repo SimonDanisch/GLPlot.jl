@@ -1,4 +1,4 @@
-using GLAbstraction, GLPlot, React
+using GLAbstraction, GLPlot, Reactive
 
 window = createdisplay(eyeposition=Vec3(4,4,3))
 
@@ -42,6 +42,6 @@ lift(x-> begin
 	update!(zscale, [zdata(i/N, k/N, sin(x/10)*15) for i=1:N, k=1:N])
 	update!(tcolor, [zcolor(i/N, k/N, (sin(x)+1f0)*4) for i=1:N, k=1:N])
 
-end, Timing.every(0.01))
+end, every(0.01))
 
 renderloop(window)

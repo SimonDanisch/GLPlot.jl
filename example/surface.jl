@@ -1,4 +1,4 @@
-using GLAbstraction, GLPlot, React, ModernGL
+using GLAbstraction, GLPlot, Reactive, ModernGL
 
 window = createdisplay()
 
@@ -19,7 +19,7 @@ end
 N         = 128
 texdata   = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 colordata = map(zcolor , texdata)
-color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, Timing.every(0.1)) # Example on how to use react to change the color over time
+color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, every(0.1)) # Example on how to use react to change the color over time
 
 color     = Texture(Pkg.dir()*"/GLPlot/docs/julia.png")
 
@@ -46,7 +46,7 @@ glplot(texdata, primitive=custom_surface, color=color) # Color can also be a tim
 #now you can animate the offset:
 lift(x-> begin
 	update!(offset, verts + [Vec2(rand(-0.2f0:0.0001f0:0.2f0)) for i=1:4])
-end, Timing.every(0.2))
+end, every(0.2))
 
 
 renderloop(window)

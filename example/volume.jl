@@ -1,6 +1,6 @@
-using GLAbstraction, GLPlot, React
+using GLAbstraction, GLPlot, Reactive
 
-window = createdisplay()
+window = createdisplay(eyeposition=Vec3(2), lookat=Vec3(0.5))
 
 ##########################################################
 # Volume

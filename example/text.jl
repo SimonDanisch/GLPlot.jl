@@ -1,4 +1,4 @@
-using GLAbstraction, GLPlot, React
+using GLAbstraction, GLPlot, Reactive
 
 window = createdisplay(h=1000,w=1500, eyeposition=Vec3(2,0,0))
 text = "whatup internet!?\n#Crusont"
