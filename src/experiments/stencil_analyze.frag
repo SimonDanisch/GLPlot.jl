@@ -1,8 +1,8 @@
 {{GLSL_VERSION}}
 
-flat {{in}} uint fragvalue;
+flat {{in}} uvec2 fragvalue;
 
-{{out}} uint fragment_color;
+{{out}} uvec2 fragment_color;
 void main(){
-  fragment_color = uint(fragvalue);
+  fragment_color = uvec2(fragvalue);
 }

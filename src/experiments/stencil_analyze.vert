@@ -7,7 +7,7 @@ uniform vec2 mouseposition;
 uniform usampler2D stencil;
 uniform int groups;
 
-flat {{out}} uint fragvalue;
+flat {{out}} uvec2 fragvalue;
 
 
 void main(){
@@ -16,12 +16,11 @@ void main(){
 
 	if((abs(mouseposition.x - float(position.x)) <= 2) && (abs(mouseposition.y - float(position.y)) <= 2))
 	{
-		gl_Position = vec4(-0.5, 0,dummy,1);
-		fragvalue 	= texelFetch(stencil, position, 0).r;
-
+		gl_Position = vec4(0, 0, dummy, 1.0);
+		fragvalue 	= texelFetch(stencil, position, 0).rg;
 	}else
 	{
-		fragvalue 	= uint(1);
-   		gl_Position = vec4(0, 0, dummy, 1.0); //image coordinate in space -1:1
+   		gl_Position = vec4(1, 0, dummy, 1.0); //image coordinate in space -1:1
+		fragvalue 	= uvec2(abs(mouseposition.y));
 	}
 }

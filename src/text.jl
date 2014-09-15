@@ -70,7 +70,7 @@ function toopengl(text::String;
 
 	program = TemplateProgram(
 		Pkg.dir()*"/GLText/src/textShader.vert", Pkg.dir()*"/GLText/src/textShader.frag", 
-		view=view, attributes=data
+		view=view, attributes=data, fragdatalocation=[(0, "fragment_color"),(1, "fragment_groupid")]
 	)
 	obj = instancedobject(data, program, length(text))
 	prerender!(obj, enabletransparency)
