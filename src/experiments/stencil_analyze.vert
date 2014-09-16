@@ -21,6 +21,6 @@ void main(){
 	}else
 	{
    		gl_Position = vec4(1, 0, dummy, 1.0); //image coordinate in space -1:1
-		fragvalue 	= uvec2(abs(mouseposition.y));
+		fragvalue 	= uvec2(1);
 	}
 }

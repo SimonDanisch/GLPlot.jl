@@ -37,7 +37,6 @@ obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.05f0, ysc
 zscale = obj.uniforms[:zscale]
 tcolor = obj.uniforms[:color]
 
-
 lift(x-> begin
 	update!(zscale, [zdata(i/N, k/N, sin(x/10)*15) for i=1:N, k=1:N])
 	update!(tcolor, [zcolor(i/N, k/N, (sin(x)+1f0)*4) for i=1:N, k=1:N])

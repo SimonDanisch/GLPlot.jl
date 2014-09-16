@@ -1,3 +1,4 @@
+export textwithoffset
 function textwithoffset{T}(text::String, start::Vector3{T}, advance::Vector3{T}, lineheight::Vector3{T})
 	resulttext 	= Vec1[]
 	offset 		= Vec3[start]
@@ -11,6 +12,7 @@ function textwithoffset{T}(text::String, start::Vector3{T}, advance::Vector3{T},
         	offset[end] = offset1 + advance
         elseif elem == '\r' || elem == '\n'
         	offset[end] = start + (newlines*lineheight)
+        	newlines += 1
         else
         	glchar = float32(elem)
         	if glchar > 256 
@@ -45,7 +47,7 @@ function toopengl(text::String;
 
 
 	offset, ctext 	= textwithoffset(text, start, rotation*advance_dir, rotation*newline_dir)
-
+	println(offset)
 	parameters 		= [(GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE), (GL_TEXTURE_MIN_FILTER, GL_NEAREST)]
 	texttex 		= Texture(ctext, parameters=parameters)
 	offset 			= Texture(offset, parameters=parameters)
