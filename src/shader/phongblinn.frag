@@ -8,7 +8,12 @@
 
 uniform vec3 light_position;
 
-
+struct MyStruct
+{
+  vec2 firstField;
+  vec4 secondField;
+  mat2 thirdField;
+};
 vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 {
     // material properties

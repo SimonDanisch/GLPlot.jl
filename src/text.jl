@@ -47,7 +47,7 @@ function toopengl(text::String;
 
 
 	offset, ctext 	= textwithoffset(text, start, rotation*advance_dir, rotation*newline_dir)
-	println(offset)
+
 	parameters 		= [(GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE), (GL_TEXTURE_MIN_FILTER, GL_NEAREST)]
 	texttex 		= Texture(ctext, parameters=parameters)
 	offset 			= Texture(offset, parameters=parameters)
@@ -67,11 +67,12 @@ function toopengl(text::String;
 	    :scale 				=> scale,
 	    :color 				=> color,
 	    :backgroundcolor 	=> backgroundcolor,
-	    :projectionview 	=> camera.projectionview
+	    :projectionview 	=> camera.projectionview,
+	    :model 				=> eye(Mat4)
 	], font.data)
 
 	program = TemplateProgram(
-		Pkg.dir()*"/GLText/src/textShader.vert", Pkg.dir()*"/GLText/src/textShader.frag", 
+		Pkg.dir("GLText", "src", "textShader.vert"), Pkg.dir("GLText", "src", "textShader.frag"), 
 		view=view, attributes=data, fragdatalocation=[(0, "fragment_color"),(1, "fragment_groupid")]
 	)
 	obj = instancedobject(data, program, length(text))

@@ -1,0 +1,1 @@
+GLPlot.toopengl{X <: AbstractAlphaColorValue}(x::Signal{X}) = println(x)
