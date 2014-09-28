@@ -24,9 +24,9 @@ local data = [
 ]
 
 #GLPlot.toopengl{T <: AbstractRGB}(colorinput::Input{T}) = toopengl(lift(x->AlphaColorValue(x, one(T)), RGBA{T}, colorinput))
-tohsv(rgba) = AlphaColorValue(convert(HSV, rgba.c), rgba.alpha)
-torgb(hsva) = AlphaColorValue(convert(RGB, hsva.c), hsva.alpha)
-tohsv(h,s,v,a) = AlphaColorValue(HSV(float32(h), float32(s), float32(v)), float32(a))
+tohsv(rgba)     = AlphaColorValue(convert(HSV, rgba.c), rgba.alpha)
+torgb(hsva)     = AlphaColorValue(convert(RGB, hsva.c), hsva.alpha)
+tohsv(h,s,v,a)  = AlphaColorValue(HSV(float32(h), float32(s), float32(v)), float32(a))
 
 function GLPlot.toopengl{X <: AbstractAlphaColorValue}(colorinput::Signal{X}; camera=ocam)
 
@@ -282,7 +282,7 @@ function GLPlot.toopengl{T <: Union(Real, Matrix, ImmutableArrays.ImmutableArray
   for (i, elem) in enumerate(numbers)
     i3 = ((i-1)*maxlength) + 1
 
-    textgpu[i3:i3+maxlength]   = Float32[float32(c) for c in makestring(elem, maxlength)]
+    textgpu[i3:i3+maxlength]   = Vec1[Vec1(c) for c in makestring(elem, maxlength)]
     offsetgpu[i3:i3+maxlength] = Vec3[positionrunner + (advance*(k-1)) for k=1:maxlength]
 
     positionrunner += (advance*maxlength) + (gap.*Vec3(2,0,0))

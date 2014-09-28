@@ -1,4 +1,4 @@
-using ModernGL, GLAbstraction, GLWindow, GLFW, Reactive, ImmutableArrays, Images, GLText, Quaternions, Color
+using ModernGL, GLAbstraction, GLWindow, GLFW, Reactive, ImmutableArrays, Images, GLText, Quaternions, Color, FixedPointNumbers
 using GLPlot
 windowhints =[
   (GLFW.SAMPLES, 0), 
@@ -21,7 +21,6 @@ include("glwidgets.jl")
 
 fb = glGenFramebuffers()
 glBindFramebuffer(GL_FRAMEBUFFER, fb)
-
 parameters = [
         (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
         (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
@@ -29,21 +28,28 @@ parameters = [
         (GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     ]
 
-println(window.inputs[:framebuffer_size].value)
-framebuffsize = window.inputs[:framebuffer_size].value
-color     = Texture(GLfloat, 4, framebuffsize, format=GL_RGBA, internalformat=GL_RGBA8)
-stencil   = Texture(GLushort, 2, framebuffsize, format=GL_RG_INTEGER, internalformat=GL_RG16UI, parameters=parameters)
+
+framebuffsize = [window.inputs[:framebuffer_size].value]
+
+color     = Texture(RGBA{Ufixed8}, framebuffsize, parameters=parameters)
+stencil   = Texture(Vector2{GLushort}, framebuffsize, parameters=parameters)
+
 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color.id, 0)
 glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, stencil.id, 0)
 
 rboDepthStencil = GLuint[0]
 
-glGenRenderbuffers(1, rboDepthStencil);
+glGenRenderbuffers(1, rboDepthStencil)
 glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil[1])
 glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, framebuffsize...)
 glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepthStencil[1])
 
-group_amount = Input(int32(2))
+lift(window.inputs[:framebuffer_size]) do window_size
+  resize!(color, window_size)
+  resize!(stencil, window_size)
+  glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil[1])
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_size...)
+end
 
 
 mousepos = lift(x-> Vec2(x...), window.inputs[:mouseposition])
@@ -67,8 +73,8 @@ function GLPlot.toopengl(dict::Dict{Symbol, Any})
 
     push!(result, toopengl(value, camera=ocam2))
     
-    last(result)[:model] = translationmatrix(translate) * scalematrix(Vec3(200f0, 200f0, 1))
-    translate += Vec3(0,10f0,0)
+    last(result)[:model] = translationmatrix(translate) * scalematrix(Vec3(700f0, 700f0, 1))
+    translate += Vec3(0,-200f0,0)
   end
   push!(result, toopengl(labels, scale=Vec2(1f0), camera=ocam2))
 end
@@ -76,17 +82,14 @@ end
 testdict = [
   :loley  => Input(AlphaColorValue(RGB(1f0,0f0,0f0), 1f0)),
   :trol   => Input("trololol, lolol, lololoool"),
-  :ruufl  => Input(eye(Matrix4x4{Float32})),
+  :ruufl  => Input(eye(Mat4)),
 ]
 
 obj     = toopengl(testdict)
-obj2    = toopengl(color, camera=ocam)
-
-
 
 
 glClearColor(1,1,1,1)
-const mousehover = Array(Vector2{GLushort}, 1)
+const mousehover = Array(Vector2{GLushort},1)
 function renderloop()
   window_size = window.inputs[:framebuffer_size].value
   glViewport(0,0, window_size...)
@@ -108,33 +111,11 @@ function renderloop()
 end
 
 
-const query = GLuint[1]
-const elapsed_time = GLuint64[1]
-const done = GLint[0]
 
-macro gputime(codeblock)
-  quote 
-    local const query = GLuint[1]
-    local const elapsed_time = GLuint64[1]
-    local const done = GLint[0]
-    glGenQueries(1, query)
-    glBeginQuery(GL_TIME_ELAPSED, query[1])
-    value = $(esc(codeblock))
-    glEndQuery(GL_TIME_ELAPSED)
-
-    while (done[1] != 1)
-      glGetQueryObjectiv(query[1],
-              GL_QUERY_RESULT_AVAILABLE,
-              done)
-    end 
-    glGetQueryObjectui64v(query[1], GL_QUERY_RESULT, elapsed_time)
-    println("Time Elapsed: ", elapsed_time[1] / 1000000.0, "ms")
-  end
-end
 while !GLFW.WindowShouldClose(window.glfwWindow)
   yield() # this is needed for react to work
 
-  @gputime renderloop()
+  renderloop()
 
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()

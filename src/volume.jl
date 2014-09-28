@@ -53,7 +53,7 @@ begin
     cubedata[:backface2]      = backf2
     cubedata[:frontface2]     = frontf2
 
-    cubedata[:volume_tex]     = Texture(img, 1, parameters=texparams)
+    cubedata[:volume_tex]     = Texture(reinterpret(Vec1, img, size(img)), parameters=texparams)
     cubedata[:stepsize]       = stepsize
     cubedata[:isovalue]       = isovalue
     cubedata[:algorithm]      = algorithm
@@ -75,6 +75,7 @@ begin
 
   end
 end
+#=
 function toopengl(dirpath::String; stepsize=0.001f0, isovalue=0.5f0, algorithm=2f0, color=Vec4(0,0,1,1))
   files     = readdir(dirpath)
   imgSlice1 = imread(dirpath*files[1])
@@ -91,7 +92,7 @@ function toopengl(dirpath::String; stepsize=0.001f0, isovalue=0.5f0, algorithm=2
   volume = volume
   toopengl(volume, stepsize=stepsize, isovalue=isovalue, algorithm=algorithm, color=color)
 end
-
+=#
 
 function genuvwcube(x, y, z, fb, camera)
   v, uvw, indexes = gencube(x,y,z)
@@ -102,16 +103,14 @@ function genuvwcube(x, y, z, fb, camera)
     :projectionview => camera.projectionview
   ], uvwshader)
 
-  frontface = Texture(GLfloat, 4, window.inputs[:window_size].value[3:4])
-  backface  = Texture(GLfloat, 4, window.inputs[:window_size].value[3:4])
+  frontface = Texture(Vec4, window.inputs[:window_size].value[3:4])
+  backface  = Texture(Vec4, window.inputs[:window_size].value[3:4])
 
-  lift(windowsize -> begin
-    glBindTexture(texturetype(frontface), frontface.id)
-    glTexImage(0, frontface.internalformat, windowsize[3:4]..., 0, frontface.format, frontface.pixeltype, C_NULL)
-    glBindTexture(texturetype(backface), backface.id)
-    glTexImage(0, backface.internalformat, windowsize[3:4]..., 0, backface.format, backface.pixeltype, C_NULL)
-  end, window.inputs[:window_size])
-
+  lift(window.inputs[:window_size]) do window_size
+    resize!(frontface, window_size[3:4])
+    resize!(backface, window_size[3:4])
+  end
+  
   rendersetup = () -> begin
       glBindFramebuffer(GL_FRAMEBUFFER, fb)
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, backface.id, 0)

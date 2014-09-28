@@ -13,7 +13,7 @@ include(joinpath(sourcedir, "surface.jl"))
 include(joinpath(sourcedir, "volume.jl"))
 include(joinpath(sourcedir, "image.jl"))
 include(joinpath(sourcedir, "util.jl"))
-include(joinpath(sourcedir, "text.jl"))
+#include(joinpath(sourcedir, "text.jl"))
 
 
 global const RENDER_LIST = RenderObject[]
