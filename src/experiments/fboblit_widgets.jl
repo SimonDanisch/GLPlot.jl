@@ -12,7 +12,7 @@ windowhints = [
 window  = createdisplay(w=1920, h=1080, windowhints=windowhints, debugging=false)
 cam     = PerspectiveCamera(window.inputs, Vec3(1,0,0), Vec3(0))
 ocam    = OrthographicCamera(window.inputs[:window_size], Input(1f0), Input(Vec2(0)), Input(Vector2(1.0)))
-ocam2   = OrthographicPixelCamera(window.inputs)
+pcamera = OrthographicPixelCamera(window.inputs)
 
 sourcedir = Pkg.dir("GLPlot", "src", "experiments")
 shaderdir = sourcedir
@@ -31,7 +31,7 @@ fb = glGenFramebuffers()
 glBindFramebuffer(GL_FRAMEBUFFER, fb)
 
 framebuffsize = [window.inputs[:framebuffer_size].value]
-println(framebuffsize)
+
 color     = Texture(RGBA{Ufixed8},     framebuffsize, parameters=parameters)
 stencil   = Texture(Vector2{GLushort}, framebuffsize, parameters=parameters)
 
@@ -136,7 +136,7 @@ function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 1},
   ]
 
   renderdata[:text]           = text
-  renderdata[:projectionview] = ocam2.projectionview
+  renderdata[:projectionview] = pcamera.projectionview
   shader = TemplateProgram(
     Pkg.dir("GLText", "src", "textShader.vert"), Pkg.dir("GLText", "src", "textShader.frag"), 
     view=view, attributes=renderdata, fragdatalocation=[(0, "fragment_color"),(1, "fragment_groupid")]
@@ -155,7 +155,7 @@ function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 2},
   ]
 
   renderdata[:text]           = text
-  renderdata[:projectionview] = ocam2.projectionview
+  renderdata[:projectionview] = pcamera.projectionview
   shader = TemplateProgram(
     Pkg.dir("GLText", "src", "textShader.vert"), Pkg.dir("GLText", "src", "textShader.frag"), 
     view=view, attributes=renderdata, fragdatalocation=[(0, "fragment_color"),(1, "fragment_groupid")]
@@ -171,32 +171,6 @@ end
 obj = toopengl(readall(open("fboblit_text.jl")))
 
 
-function make_editible(text::Texture{GLGlyph{Uint8}, 1, 2}, selection, pressedkeys)
-    testinput = foldl(v00, window.inputs[:unicodeinput], textselection, specialkeys) do v0, unicode_array, selection1, specialkey
-    # selection0 tracks, where the carsor is after a new character addition, selection10 tracks the old selection
-    text0, selection0, selection10 = v0
-    # to compare it to the newly selected mouse position
-    if selection10 != selection1
-      return (text0, selection1, selection1)
-    end
-    if !isempty(unicode_array)# else unicode input must have occured
-      unicode_char = first(unicode_array)
-
-      text1  = addchar(text0, unicode_char, selection0)
-
-      updatetext(text1, start, rotation, advance_dir, newline_dir, obj)
-
-      return (text1, selection0 + 1, selection1)
-    elseif in(GLFW.KEY_BACKSPACE, specialkey)
-      text1 = delete(text0, selection0)
-      updatetext(text1, start, rotation, advance_dir, newline_dir, obj)
-      return (text1, max(selection0 - 1, 0), selection1)
-    end
-    return (text0, selection0, selection1)
-  end
-end
-
-function make_editible(text::Texture{GLGlyph{Uint8}, 1, 2},
 glClearColor(1,1,1,1)
 const mousehover = Array(Vector2{GLushort},1)
 

@@ -206,20 +206,39 @@ function GLPlot.toopengl{T <: String}(textinput::Input{T};
   end
   obj
 end
+function 
 
+MATRIX_EDITING_DEFAULTS = [
+:Default => [
 
-defaultsliderticks(x::FloatingPoint) = x/10.0
-defaultsliderticks(x::Integer) = div(x,10) == 0 ? 1 : div(x,10)
+:color           => rgba(0,0,0,1),
+:backgroundcolor => rgba(1,0,0,0.1),
+:maxlenght       => 10f0, 
+:maxdigits       => 5f0,
+:gap             => Vec3(10, 10, 0),
+:model           => eye(Mat4),
+:camera          => GLPlot.pcamera,
+:window          => window.inputs
 
-function GLPlot.toopengl{T <: Union(Real, Matrix, ImmutableArrays.ImmutableArray, Vector)}(numberinput::Input{T};
-          start=Vec3(0.1,0.5,0), scale=Vec2(1/500), color=Vec4(0,0,0,1), backgroundcolor=Vec4(1,0,0,0.1), 
-          lineheight=Vec3(0,0,0), advance=Vec3(0,0,0), rotation=Quaternion(1f0,0f0,0f0,0f0), textrotation=Quaternion(1f0,0f0,0f0,0f0),
-          camera=GLPlot.ocamera,
-          maxlenght=10, maxdigits=5, gap = Vec3(0.02, 0.02, 0)
-        )
+]]
+
+# High Level text rendering for one line or multi line text, which is decided by searching for the occurence of '\n' in text
+# Low level text rendering for one line text
+# Low level text rendering for multiple line text
+make_editible{T <: Real}(text::Texture{T, 1, 2}, style=Style(:Default); customization...) = toopengl(style, text, mergedefault!(style, MATRIX_EDITING_DEFAULTS, customization))
+
+function make_editible{T <: Real}(numbertex::Texture{T, CD, 2}, customization)
+
+  color, backgroundcolor, maxlength, maxdigitis, gap, model, camera, window  = values(customization)
+
+  numbers = data(numbertex) # get data from texture/video memory
+  text    = Array(GLGlyph, size(numbers,1)*maxdigitis, size(numbers, 2))
+  offset  = Array(Vec3,    size(text))
+  fill!(text, GLGlyph(' ')) # Fill text array with blanks, as we don't need all of them
+
   # handle real values 
-  Base.stride(x::Real, i) = 1
-  # remove f0
+  Base.stride(x::Real, i)       = 1
+  # remove f0 
   makestring(x::Integer)        = string(int(x))
   makestring(x::FloatingPoint)  = string(float64(x))
 
@@ -243,42 +262,14 @@ function GLPlot.toopengl{T <: Union(Real, Matrix, ImmutableArrays.ImmutableArray
     end
     tmp
   end
-  numbers     = numberinput.value
-  resultstring  = ""
-  linebreak     = stride(numbers, 2)
-  maxlength     = 0
+  obj         = toopengl(text, offset=offset, customization)
 
-  # allocate empty string and calculate max digit length
-  for (i, elem) in enumerate(numbers)
-    tmp = makestring(elem)
-    len = length(tmp)
+  font        = getfont()
+  advance     = Vec3(font.props[1][1],0,0)
+  newline     = Vec3(0, font.props[1][2] + gap[2], 0)
 
-    maxlength = maxlength > len ? maxlength : len
-
-    if len > maxdigits
-      tmp = tmp[1:maxdigits]
-    end
-
-    resultstring *= "X"^maxdigits
-  end
-
-  # allocate one more digit, just to make things a little bit more spacious
-  maxlength = maxlength < maxdigits ? maxlength + 1 : maxlength
-  ####################################################################
-  obj = toopengl(resultstring, start=start, scale=scale, color=color, backgroundcolor=backgroundcolor, 
-        lineheight=lineheight, advance=advance, rotation=rotation, textrotation=textrotation,
-        camera=camera)
-
-  textgpu         = obj[:text]
-  offsetgpu       = obj[:offset]
-  positionrunner  = start
-
-  font            = getfont()
-  fontprops       = font.props[1] .* scale
-
-  advance     = Vec3(fontprops[1],0,0)
-  newline     = Vec3(0, fontprops[2] + gap[2], 0)
   i3 = 0
+  maxlength = 3
   for (i, elem) in enumerate(numbers)
     i3 = ((i-1)*maxlength) + 1
 
@@ -295,24 +286,27 @@ function GLPlot.toopengl{T <: Union(Real, Matrix, ImmutableArrays.ImmutableArray
   # So we need to update the render method, to render only length(numbers) * maxlength
   obj[:postrender, renderinstanced] = (obj.vertexarray, length(numbers) * maxlength)
 
-  
-  testinput = foldl(([numbers], zero(eltype(numbers)), -1, -1, -1, Vector2(0.0)), window.inputs[:mouseposition], window.inputs[:mousebuttonspressed], selectiondata) do v0, mposition, mbuttons, selection
+
+  # We allocated more space on the gpu then needed (length(numbers)*maxdigits)
+  # So we need to update the render method, to render only length(numbers) * maxlength
+
+  foldl(([numbers], zero(eltype(numbers)), -1, -1, -1, Vector2(0.0)), window.inputs[:mouseposition], window.inputs[:mousebuttonspressed], selectiondata) do v0, mposition, mbuttons, selection
     numbers0, value0, inumbers0, igpu0, mbutton0, mposition0 = v0
 
     # if over a number           && nothing selected &&         only           left mousebutton clicked
     if selection[1][1] == obj.id && inumbers0 == -1 && length(mbuttons) == 1 && in(0, mbuttons)
       iorigin   = selection[1][2]
       inumbers  = div(iorigin, maxlength) + 1
-      igpu    = (iorigin - (iorigin%maxlength)) + 1
+      igpu      = (iorigin - (iorigin%maxlength)) + 1
       return (numbers0, numbers0[inumbers], inumbers, igpu, 0, mposition)
     end
     # if a number is selected && previous click was left && still only left button ist clicked
     if inumbers0 > 0 && mbutton0 == 0 && length(mbuttons) == 1 && in(0, mbuttons) 
-      xdiff             = mposition[1] - mposition0[1]
+      xdiff                    = mposition[1] - mposition0[1]
 
-      numbers0[inumbers0]     = value0 + int(xdiff)
+      numbers0[inumbers0]      = value0 + int(xdiff)
 
-      textgpu[igpu0:maxlength]  = Float32[float32(c) for c in makestring(numbers0[inumbers0], maxlength)]
+      textgpu[igpu0:maxlength] = Float32[float32(c) for c in makestring(numbers0[inumbers0], maxlength)]
       return (numbers0, value0, inumbers0, igpu0, 0, mposition0)
     end
     return (numbers0, zero(eltype(numbers0)), -1, -1, -1, Vector2(0.0))
@@ -320,3 +314,5 @@ function GLPlot.toopengl{T <: Union(Real, Matrix, ImmutableArrays.ImmutableArray
 
   obj
 end
+
+  obj[:postrender, renderinstanced] = (obj.vertexarray, length(numbers) * maxlength)
