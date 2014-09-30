@@ -19,7 +19,7 @@ function creategrid(;xrange::(Real, Real)=(-1,1), yrange::(Real, Real)=(-1,1), z
 	return grid
 end
 
-initgrid() = global gridshader = TemplateProgram(shaderdir*"grid.vert", shaderdir*"grid.frag")
+initgrid() = global gridshader = TemplateProgram(joinpath(shaderdir,"grid.vert"), joinpath(shaderdir,"grid.frag"))
 init_after_context_creation(initgrid)
 
 export creategrid

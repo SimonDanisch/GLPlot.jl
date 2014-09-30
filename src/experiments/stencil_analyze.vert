@@ -12,7 +12,7 @@ flat {{out}} uvec2 fragvalue;
 
 void main(){
 	ivec2 tsize 	= textureSize(stencil, 0);
-	ivec2 position	= ivec2(gl_InstanceID % tsize.x, gl_InstanceID / tsize.x);
+	ivec2 position	= ivec2(gl_InstanceID % tsize.x, gl_InstanceID / tsize.x) * 4;
 
 	if((abs(mouseposition.x - float(position.x)) <= 2) && (abs(mouseposition.y - float(position.y)) <= 2))
 	{

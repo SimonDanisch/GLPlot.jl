@@ -41,6 +41,6 @@ vec4 filter_img(float kernel, float norm)
 void main(){
 
 	vec4 color = filter_img(filterkernel, filternorm);
-	frag_color = normrange.x + (color * (normrange.y - normrange.x));
+	frag_color = vec4(color.g / 10000.0, 0,0,1);
 }
  

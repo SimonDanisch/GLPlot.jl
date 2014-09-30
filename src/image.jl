@@ -1,8 +1,8 @@
 
 
-function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
+function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0, model=eye(Mat4))
 
-  c, w, h  = img.dims
+  w, h  = img.dims
   dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
   texparams = [
      (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
@@ -28,10 +28,11 @@ function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(
     :normrange        => normrange,
     :filterkernel     => filterkernel,
     :filternorm       => filternorm,
-    :projectionview   => camera.projectionview
+    :projectionview   => camera.projectionview,
+    :model            => model
   ]
 
-  textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag", attributes=data)
+  textureshader = TemplateProgram(joinpath(shaderdir, "uv_vert.vert"), joinpath(shaderdir, "texture.frag"), attributes=data)
 
   obj = RenderObject(data, textureshader)
   prerender!(obj, glDisable, GL_DEPTH_TEST, enabletransparency,  glDisable, GL_CULL_FACE)

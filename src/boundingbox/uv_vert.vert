@@ -5,8 +5,8 @@
 
 {{out}} vec2 uv_frag;
 
-uniform mat4 projectionview, model;
+uniform mat4 projectionview;
 void main(){
   uv_frag = uv;
-  gl_Position = projectionview * model * vec4(vertex, 0, 1);
+  gl_Position = projectionview * vec4(vertex, 0, 1);
 }

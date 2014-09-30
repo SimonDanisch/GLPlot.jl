@@ -5,15 +5,15 @@ import Mustache
 export glplot, createdisplay, renderloop, toopengl,clearplot
 
 
-const sourcedir = Pkg.dir()*"/GLPlot/src/"
-const shaderdir = sourcedir*"shader/"
+const sourcedir = Pkg.dir("GLPlot", "src")
+const shaderdir = joinpath(sourcedir, "shader")
 
-include(sourcedir*"grid.jl")
-include(sourcedir*"surface.jl")
-include(sourcedir*"volume.jl")
-include(sourcedir*"image.jl")
-include(sourcedir*"util.jl")
-include(sourcedir*"text.jl")
+include(joinpath(sourcedir, "grid.jl"))
+include(joinpath(sourcedir, "surface.jl"))
+include(joinpath(sourcedir, "volume.jl"))
+include(joinpath(sourcedir, "image.jl"))
+include(joinpath(sourcedir, "util.jl"))
+#include(joinpath(sourcedir, "text.jl"))
 
 
 global const RENDER_LIST = RenderObject[]
@@ -42,8 +42,8 @@ Args
 returns:
 	window with window event signals
 =#
-function createdisplay(;async=false, w=500, h=500, eyeposition=Vec3(1,1,0), lookat=Vec3(0)) 
-	global window 	= createwindow("GLPlot", w, h) 
+function createdisplay(;async=false, w=500, h=500, eyeposition=Vec3(1,1,0), lookat=Vec3(0), windowhints=[(GLFW.SAMPLES, 4)], debugging=false) 
+	global window 	= createwindow("GLPlot", w, h, debugging=debugging, windowhints=windowhints) 
 	global pcamera 	= PerspectiveCamera(window.inputs, eyeposition, lookat)
 	global ocamera 	= OrthographicCamera(window.inputs)
 	if async
