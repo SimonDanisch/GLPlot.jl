@@ -4,16 +4,12 @@
 {{in}} vec3 V;
 {{in}} vec4 vert_color;
 
-{{out}} vec4 fragment_color;
-
 uniform vec3 light_position;
 
-struct MyStruct
-{
-  vec2 firstField;
-  vec4 secondField;
-  mat2 thirdField;
-};
+{{out}} vec4 fragment_color;
+{{out}} uvec2 fragment_groupid;
+
+
 vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 {
     // material properties
@@ -44,5 +40,7 @@ void main(){
     vec3 L = normalize(light_position - V);
     vec3 light1 = blinn_phong(N, V, L, vert_color.rgb);
     vec3 light2 = blinn_phong(N, V, -L, vert_color.rgb);
-    fragment_color = vec4(light1 + light2, vert_color.a);
+    fragment_color      = vec4(light1 + light2, vert_color.a);
+    fragment_groupid    = uvec2(0,0);
+    
 }
