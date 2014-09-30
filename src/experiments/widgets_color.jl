@@ -194,22 +194,18 @@ end
 N         = 128
 heightmap = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 
-colorobj, color = toopengl(Input(rgba(1,0,0,1)))
-obj = toopengl(heightmap, color=color, camera=cam)
+colorobj, colorlol = toopengl(Input(rgba(1,0,0,1)))
+obj = toopengl(heightmap, color=colorlol, camera=cam)
 
 
 glClearColor(1,1,1,1)
 const mousehover = Array(Vector2{GLushort}, 1)
-
+lift(x-> glViewport(0,0,x...), window.inputs[:framebuffer_size])
 function renderloop()
-  window_size = window.inputs[:framebuffer_size].value
-  glViewport(0,0, window_size...)
   glBindFramebuffer(GL_FRAMEBUFFER, fb)
   glDrawBuffers(2, [GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1])
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
   render(obj)
-
   render(colorobj)
 
   mousex, mousey = int([color_mousepos.value])
@@ -218,11 +214,14 @@ function renderloop()
     glReadPixels(mousex, mousey, 1,1, stencil.format, stencil.pixeltype, mousehover)
     @async push!(selectiondata, mousehover)
   end
+
   glReadBuffer(GL_COLOR_ATTACHMENT0)
   glBindFramebuffer(GL_READ_FRAMEBUFFER, fb)
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0)
   glClear(GL_COLOR_BUFFER_BIT)
-  glBlitFramebuffer(0,0, window_size..., 0, 0, window_size..., GL_COLOR_BUFFER_BIT, GL_NEAREST)
+
+  window_size = window.inputs[:framebuffer_size].value
+  glBlitFramebuffer(0,0, window_size..., 0,0, window_size..., GL_COLOR_BUFFER_BIT, GL_NEAREST)
 end
 
 

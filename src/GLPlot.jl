@@ -59,6 +59,7 @@ function renderloop(window)
 	glClearColor(1,1,1,0)
 	while !GLFW.WindowShouldClose(window.glfwWindow)
 	    yield()
+	    glViewport(0,0, window.inputs[:framebuffer_size].value...)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		for elem in RENDER_LIST
 	        render(elem)
