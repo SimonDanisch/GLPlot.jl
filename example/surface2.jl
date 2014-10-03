@@ -1,6 +1,6 @@
 using GLAbstraction, GLPlot, Reactive
 
-window = createdisplay(eyeposition=Vec3(4,4,3))
+window = createdisplay(eyeposition=Vec3(4,4,3), w=1920, h=1280)
 
 function zdata(i, j, t)
     x 		= float32(i - 0.5)
@@ -21,7 +21,7 @@ function zcolor(i, j, t)
     return Vec4(r,g,b, 1)
 end
 
-N         = 128
+N         = 80
 texdata   = [zdata(i/N, j/N, 15) for i=1:N, j=1:N]
 color     = [zcolor(i/N, j/N, 15) for i=1:N, j=1:N] # Example on how to use react to change the color over time
 
@@ -32,15 +32,17 @@ obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.05f0, ysc
 # Also, it's pretty easy to extend the shader, which you can find under shader/instance_template.vert
 # Its also planned, that you can just upload your own functions and uniforms, to further move computations to the shader.
 
-# you can also simply update the texture, even though it's not nicely exposed by the API yet.
-
-zscale = obj.uniforms[:zscale]
-tcolor = obj.uniforms[:color]
-
-lift(x-> begin
-	update!(zscale, [zdata(i/N, k/N, sin(x/10)*15) for i=1:N, k=1:N])
-	update!(tcolor, [zcolor(i/N, k/N, (sin(x)+1f0)*4) for i=1:N, k=1:N])
-
-end, every(0.01))
+# you can also update the texture which resides on the GPU.
+# you fetch the texture like this:
+const zscale = obj[:zscale]
+const tcolor = obj[:color]
+counter = 0.0f0
+lift(fpswhen(window.inputs[:open], 30f0)) do x
+	global counter
+	# updating the texture works like this:
+	zscale[1:end, 1:end] = [zdata(i/N, k/N, sin(counter/10)*15) for i=1:N, k=1:N]
+	tcolor[1:end, 1:end] = [zcolor(i/N, k/N, (sin(counter)+1f0)*4) for i=1:N, k=1:N]
+	counter += 0.07f0
+end
 
 renderloop(window)

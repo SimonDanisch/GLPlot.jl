@@ -1,6 +1,6 @@
 using GLAbstraction, GLPlot, Reactive
 
-window = createdisplay(eyeposition=Vec3(2), lookat=Vec3(0.5))
+window = createdisplay(eyeposition=Vec3(1.5), lookat=Vec3(0.5), w=1920, h=1280)
 
 ##########################################################
 # Volume

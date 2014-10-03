@@ -1,23 +1,29 @@
 using GLAbstraction, GLPlot, Reactive
 
-window = createdisplay()
-
+window = createdisplay(w=1920,h=1280)
 
 function zdata(x1, y1, factor)
-    x = (x1 - 0.5) * 15
-    y = (y1 - 0.5) * 15
-    R = sqrt(x^2 + y^2)
+    x = (x1 - 0.5) * 15f0
+    y = (y1 - 0.5) * 15f0
+    R = sqrt(x^2 + y^2) * factor
     Z = sin(R)/R
     Vec1(Z)
 end
 
-N         = 128
+const N   = 256
 texdata   = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 
-color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, every(0.1)) # Example on how to use react to change the color over time
 
-#color     = Texture(Pkg.dir()*"/GLPlot/docs/julia.png") # example for using an image for the color channel
+# Color can be a single line, GLSL (C-dialekt) string.
+# This will soon be extended, to support custom uploaded uniforms (values which you can update and use in your calculation)
+# And will also support using more than one line.
+obj     = glplot(texdata, color="vec4(1-(0.8+xyz.z), 0.2 + xyz.z, 0.5,1.0);") 
 
-obj       = glplot(texdata, primitive=SURFACE(), color=color) # Color can be any matrix or a Vec3
-
+zgpu 	= obj[:z]
+counter = 0f0
+lift(fpswhen(window.inputs[:open], 30.0)) do x
+    global counter
+	zgpu[1:end, 1:end] = [zdata(i/N, j/N, sin(counter)*10f0) for i=1:N, j=1:N]
+    counter += 0.01f0
+end
 renderloop(window)
