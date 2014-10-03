@@ -2,6 +2,7 @@
 
 {{in}} vec2 uv_frag;
 {{out}} vec4 frag_color;
+{{out}} uvec2 frag_groupid;
 
 {{image_type}} image;
 
@@ -40,7 +41,8 @@ vec4 filter_img(float kernel, float norm)
 }
 void main(){
 
-	vec4 color = filter_img(filterkernel, filternorm);
-	frag_color = vec4(color.g / 10000.0, 0,0,1);
+	vec4 color   = filter_img(filterkernel, filternorm);
+  frag_color   = normrange.x + (color * (normrange.y - normrange.x));
+	frag_groupid = uvec2(0,0);
 }
  

@@ -99,7 +99,7 @@ Base.convert{T}(::Type{GLGlyph{T}}, x::Char) = (int(x) >= 0 && int(x) <= 256) ? 
 
 
 rgba(r::Real, g::Real, b::Real, a::Real) = AlphaColorValue(RGB{Float32}(r,g,b), float32(a))
-include("renderfunctions.jl")
+#include("renderfunctions.jl")
 
 function makecompatible(glyph::Char, typ)
 	if int(glyph) >= 0 && int(glyph) <= 256

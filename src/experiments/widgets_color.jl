@@ -1,4 +1,4 @@
-using ModernGL, GLAbstraction, GLWindow, GLFW, Reactive, ImmutableArrays, Images, GLText, Quaternions, Color, FixedPointNumbers
+using ModernGL, GLAbstraction, GLWindow, GLFW, Reactive, ImmutableArrays, Images, GLText, Quaternions, Color, FixedPointNumbers, ApproxFun
 using GLPlot
 
 windowhints = [
@@ -125,6 +125,9 @@ function GLPlot.toopengl{X <: AbstractAlphaColorValue}(colorinput::Signal{X}; ca
 
   obj = RenderObject(data, color_chooser_shader)
   obj[:postrender, render] = (obj.vertexarray,) # Render the vertexarray
+  obj[:prerender, glDisablei] = (GL_BLEND, 1) # Render the vertexarray
+  obj[:prerender, glEnablei] = (GL_BLEND, 0) # Render the vertexarray
+  obj[:prerender, glBlendFunc] = (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) # Render the vertexarray
 
   color = colorinput.value
 
@@ -183,19 +186,45 @@ end # local begin color chooser
 
 
 
+const h = 0.01
+const u0 = TensorFun((x,y)->exp(-10x.^2-20(y-.1).^2))
+const d = Interval()⊗Interval()
+const L = I-h^2*lap(d)
+const B = [ neumann(Interval())⊗I;
+I⊗dirichlet(Interval())]
+const S = schurfact([B,L],100)
+const u = Array(TensorFun,10000)
+u[1] = u0
+u[2] = u0
+n = 2
+ 
+ 
+const xx =-1.:.02:1.
+const yy = xx
+ 
+const N = length(xx)
+vals = evaluate(u[1],xx,yy)
+vals = [
+zeros(1,N+2);
+zeros(N) vals zeros(N);
+zeros(1,N+2)]
+ 
+plotdata = map(Vec1,vals)
 
-function zdata(x1, y1, factor)
-    x = (x1 - 0.5) * 15
-    y = (y1 - 0.5) * 15
-    R = sqrt(x^2 + y^2)
-    Z = sin(R)/R
-    Vec1(Z)
-end
-N         = 128
-heightmap = [zdata(i/N, j/N, 5) for i=1:N, j=1:N]
 
 colorobj, colorlol = toopengl(Input(rgba(1,0,0,1)))
-obj = toopengl(heightmap, color=colorlol, camera=cam)
+ 
+obj = glplot(plotdata, primitive=SURFACE(), color=colorlol, camera=cam)
+ 
+ 
+# this is probably a little opaque, but plotdata ends up in :z, as :z is the default attribute for the data you upload
+zvalues = obj.uniforms[:z]
+# Like this you get a reference to the gpu memory object (a texture in this case)
+ 
+m = 1000
+counter = 2
+ 
+
 
 
 glClearColor(1,1,1,1)
@@ -222,14 +251,23 @@ function renderloop()
 
   window_size = window.inputs[:framebuffer_size].value
   glBlitFramebuffer(0,0, window_size..., 0,0, window_size..., GL_COLOR_BUFFER_BIT, GL_NEAREST)
+  global counter, u, xx,yy, zvalues,n,m
+
+  counter += 1
+  k = mod1(counter, length(u))
+  u[k] = (S\[zeros(4),2u[k-1]-u[k-2]])
+  vals = evaluate(u[k],xx,yy)
+  vals = [vals[:,1] vals vals[:,end]];
+  vals = [vals[1,:]; vals; vals[end,:]]
+  zvalues[1:end, 1:end] = map(Vec1,vals)
 end
 
 
 
 while !GLFW.WindowShouldClose(window.glfwWindow)
   yield() # this is needed for react to work
-
   renderloop()
+  yield()
 
   GLFW.SwapBuffers(window.glfwWindow)
   GLFW.PollEvents()

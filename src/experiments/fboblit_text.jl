@@ -196,7 +196,6 @@ function make_editible(text::Texture{GLGlyph{Uint8}, 1, 2}, selection, pressedke
   end
 end
 
-function make_editible(text::Texture{GLGlyph{Uint8}, 1, 2},
 glClearColor(1,1,1,1)
 const mousehover = Array(Vector2{GLushort},1)
 

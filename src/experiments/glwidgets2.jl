@@ -68,7 +68,7 @@ function GLPlot.toopengl{X <: AbstractAlphaColorValue}(colorinput::Signal{X}; ca
     if bright_trans && bright_trans0
       diff    = mouse - mouse0
       brightness  = max(min(hsv.c.v - (diff[2]/100.0), 1.0), 0.0)
-      alpha     = max(min(hsv.alpha + (diff[1]/100.0), 1.0), 0.0)
+      alpha       = max(min(hsv.alpha + (diff[1]/100.0), 1.0), 0.0)
 
       return (tohsv(hsv.c.h, hsv.c.s, brightness, alpha), hue_sat0, bright_trans, mouse)
     elseif bright_trans && !bright_trans0
