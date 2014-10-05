@@ -206,124 +206,34 @@ function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 2},
   return obj
 end
 
-MATRIX_EDITING_DEFAULTS = [
-:Default => [
-
-:backgroundcolor => rgba(0.9, 0.9, 0.9, 1.0),
-:camera          => GLPlot.pcamera,
-:color           => rgba(0,0,0,1),
-:gap             => Vec3(10, 10, 0),
-:maxdigits       => 5f0,
-:maxlength       => 10f0, 
-:model           => eye(Mat4),
-:window          => window.inputs
-
-]]
-
 # High Level text rendering for one line or multi line text, which is decided by searching for the occurence of '\n' in text
 # Low level text rendering for one line text
 # Low level text rendering for multiple line text
 edit{T <: AbstractArray}(text::Texture{T, 1, 2}, style=Style(:Default); customization...) = edit(style, text, mergedefault!(style, MATRIX_EDITING_DEFAULTS, customization))
 
-function edit{T <: AbstractArray}(style::Style{:Default}, numbertex::Texture{T, 1, 2}, customization::Dict{Symbol,Any})
-
-  backgroundcolor = customization[:backgroundcolor] 
-  camera          = customization[:camera] 
-  color           = customization[:color] 
-  gap             = customization[:gap] 
-  maxdigits       = customization[:maxdigits] 
-  maxlength       = customization[:maxlength] 
-  model           = customization[:model] 
-  _window         = customization[:window] 
-
-  numbers         = data(numbertex) # get data from texture/video memory
-  text            = Array(GLGlyph{Uint8}, int(size(numbers,1)*maxdigits), size(numbers, 2))
-  offset          = Array(Vec3,    size(text))
-
-  fill!(text, GLGlyph(uint8('X'))) # Fill text array with blanks, as we don't need all of them
-  fill!(offset, Vec3(999999f0)) #
-
-  # handle real values 
-  Base.stride(x::Real, i)       = 1
-  # remove f0 
-  makestring(x::Integer)        = string(int(x))
-  makestring(x::FloatingPoint)  = string(float64(x))
-  makestring{T}(x::Vector1{T})  = string(float64(x[1]))
-  makestring{T}(x::Vector1{T}, maxlen) = makestring(float64(x[1]), maxlen)
-
-  makestring(x::Integer, maxlen) = begin
-    tmp = string(int(x))
-    len = length(tmp)
-    if len > maxlen
-        tmp = tmp[1:maxlen]
-    elseif len < maxlen
-      tmp = rpad(tmp, maxlen, " ")
+function edit(style::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 2}, selection, pressedkeys)
+  testinput = foldl(v00, window.inputs[:unicodeinput], textselection, specialkeys) do v0, unicode_array, selection1, specialkey
+    # selection0 tracks, where the carsor is after a new character addition, selection10 tracks the old selection
+    text0, selection0, selection10 = v0
+    # to compare it to the newly selected mouse position
+    if selection10 != selection1
+      return (text0, selection1, selection1)
     end
-    tmp
+    if !isempty(unicode_array)# else unicode input must have occured
+      unicode_char = first(unicode_array)
+
+      text1  = addchar(text0, unicode_char, selection0)
+
+      updatetext(text1, start, rotation, advance_dir, newline_dir, obj)
+
+      return (text1, selection0 + 1, selection1)
+    elseif in(GLFW.KEY_BACKSPACE, specialkey)
+      text1 = delete(text0, selection0)
+      updatetext(text1, start, rotation, advance_dir, newline_dir, obj)
+      return (text1, max(selection0 - 1, 0), selection1)
+    end
+    return (text0, selection0, selection1)
   end
-  makestring(x::FloatingPoint, maxlen) = begin
-    tmp = string(float64(x))
-    len = length(tmp)
-    if len > maxlen
-        tmp = tmp[1:maxlen]
-    elseif len < maxlen
-      tmp = rpad(tmp, maxlen, "0")
-    end
-    tmp
-  end
-  offsetgpu   = Texture(offset)
-  textgpu     =  Texture(text)
-  customization[:offset] = offsetgpu
-  obj         = toopengl(style, textgpu, customization)
-  font        = getfont()
-  advance     = Vec3(font.props[1][1], 0, 0)
-  newline     = Vec3(0, font.props[1][2] + gap[2], 0)
-
-  startposition   = Vec3(0f0)
-  positionrunner  = startposition
-
-  maxlength = 5
-  for i=1:size(numbers,1)
-    for j=1:size(numbers, 2)
-      number = numbers[i,j]
-      i3 = ((i-1)*maxlength) + 1
-      textgpu[i3:i3+maxlength, j:j]   = GLGlyph{Uint8}[GLGlyph(uint8(c)) for c in makestring(number, maxlength)]
-      offsetgpu[i3:i3+maxlength, j:j] = Vec3[positionrunner + (advance*(k-1)) for k=1:maxlength]
-      positionrunner += newline 
-    end
-    positionrunner = startposition + i*(advance * maxlength + (gap.*Vec3(2,0,0)))
-  end
-
-  # We allocated more space on the gpu then needed (length(numbers)*maxdigits)
-  # So we need to update the render method, to render only length(numbers) * maxlength
-  obj[:postrender, renderinstanced] = (obj.vertexarray, length(textgpu))
-
-  # We allocated more space on the gpu then needed (length(numbers)*maxdigits)
-  # So we need to update the render method, to render only length(numbers) * maxlength
-  # ([numbers], zero(eltype(numbers)), -1, -1, -1, Vector2(0.0))
-  foldl(([numbers], zero(eltype(numbers)), -1, -1, -1, Vector2(0.0)), window.inputs[:mouseposition], window.inputs[:mousebuttonspressed], selectiondata) do v0, mposition, mbuttons, selection
-    numbers0, value0, inumbers0, igpu0, mbutton0, mposition0 = v0
-
-    # if over a number           && nothing selected &&         only           left mousebutton clicked
-    if selection[1][1] == obj.id && inumbers0 == -1 && length(mbuttons) == 1 && in(0, mbuttons)
-      iorigin   = selection[1][2]
-      inumbers  = div(iorigin, maxlength) + 1
-      igpu      = int((iorigin - (iorigin%maxlength)) + 1)
-      return (numbers0, numbers0[inumbers], inumbers, igpu, 0, mposition)
-    end
-    # if a number is selected && previous click was left && still only left button ist clicked
-    if inumbers0 > 0 && mbutton0 == 0 && length(mbuttons) == 1 && in(0, mbuttons) 
-      xdiff                    = mposition[1] - mposition0[1]
-      numbers0[inumbers0]      = value0 + (float32(xdiff)/ 50.0f0)
-      numbertex[inumbers0]     = Vec1(numbers0[inumbers0][1])
-      textgpu[igpu0:maxlength] = GLGlyph{Uint8}[GLGlyph(uint8(c)) for c in makestring(numbers0[inumbers0], maxlength)]
-
-      return (numbers0, value0, inumbers0, igpu0, 0, mposition0)
-    end
-    return (numbers0, zero(eltype(numbers0)), -1, -1, -1, Vector2(0.0))
-  end
-
-  obj
 end
 
  
@@ -332,6 +242,7 @@ kernel = Float32[
 -1 -1 -1;
 -1 8 -1;
 -1 -1 -1]
+
 img = glplot(Texture("pic.jpg"), kernel=kernel, filternorm=0.1f0, camera=pcamera)
 
 slider = edit(img[:filterkernel])

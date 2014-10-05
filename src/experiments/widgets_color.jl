@@ -169,7 +169,6 @@ function GLPlot.toopengl{X <: AbstractAlphaColorValue}(colorinput::Signal{X}; ca
     return (hsv, hue_sat, bright_trans, mouse)
   end
   color1 = lift(x -> torgb(x[1]), all_signals)
-  color1 = lift(x -> Vec4(x.c.r, x.c.g, x.c.b, x.alpha), Vec4, color1)
   hue_saturation = lift(x -> x[2], all_signals)
   brightness_transparency = lift(x -> x[3], all_signals)
 
