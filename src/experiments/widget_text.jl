@@ -12,7 +12,6 @@ immutable GLGlyph{T <: Real} <: AbstractVector{T}
   glyph::T
 end
 
-
 immutable Style{StyleValue}
 end
 window  = createdisplay(w=1920, h=1080, windowhints=windowhints)
@@ -45,8 +44,8 @@ cam_inputs    = [
 
 color_inputs  = merge(window.inputs, [:mouseposition => color_mousepos, :scroll_y => Input(0f0), :scroll_x => Input(0f0)])
 
-cam     = PerspectiveCamera(cam_inputs, Vec3(1,1,1), Vec3(0))
-pcamera = OrthographicPixelCamera(window.inputs)
+cam       = PerspectiveCamera(cam_inputs, Vec3(1,1,1), Vec3(0))
+pcamera   = OrthographicPixelCamera(window.inputs)
 
 sourcedir = Pkg.dir("GLPlot", "src", "experiments")
 shaderdir = sourcedir
@@ -85,12 +84,25 @@ lift(window.inputs[:framebuffer_size]) do window_size
   glBindRenderbuffer(GL_RENDERBUFFER, rboDepthStencil[1])
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, window_size...)
 end
-rgba(r::Real, g::Real, b::Real, a::Real) = AlphaColorValue(RGB{Float32}(r,g,b), float32(a))
+
 
 selectiondata = Input(Vector2{GLushort}[Vector2{GLushort}(0,0)])
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+rgba(r::Real, g::Real, b::Real, a::Real) = AlphaColorValue(RGB{Float32}(r,g,b), float32(a))
 
 #GLPlot.toopengl{T <: AbstractRGB}(colorinput::Input{T}) = toopengl(lift(x->AlphaColorValue(x, one(T)), RGBA{T}, colorinput))
 tohsv(rgba)     = AlphaColorValue(convert(HSV, rgba.c), rgba.alpha)
@@ -112,7 +124,7 @@ mergedefault!{S}(style::Style{S}, styles, customdata) = merge!(Dict{Symbol, Any}
 TEXT_DEFAULTS = [
 :Default => [
   :start            => Vec3(0),
-  :offset           => Mat3x2(Vec3(getfont().props[1][1], 0, 0), Vec3(0, getfont().props[1][2], 0)), #Font advance + newline
+  :offset           => Vec2(1, 1.5), #Multiplicator for advance, newline
   :color            => rgba(0,0,0,1),
   :backgroundcolor  => rgba(0,0,0,0),
   :model            => eye(Mat4),
@@ -130,7 +142,13 @@ GLPlot.toopengl(text::Texture{GLGlyph, 1, 2}, style=Style(:Default); customizati
 
 
 #include("renderfunctions.jl")
-
+function GLGlyph(glyph::Char, ::Type{Uint8})
+  if glyph >= 0 && glyph <= 255
+      return GLGlyph(uint8(glyph))
+  else
+    return GLGlyph(uint8(0))
+  end
+end
 function makecompatible(glyph::Char, typ)
   if int(glyph) >= 0 && int(glyph) <= 255
     return convert(typ, glyph)
@@ -139,43 +157,53 @@ function makecompatible(glyph::Char, typ)
   end
 end
 
-
-# Returns either 1D or 2D array, with elements converted to elementtype
-function glsplit(text::String, ElemType::DataType)
-  splitted      = split(text, "\n")
-  maxlinelength = reduce(0, splitted) do v0, x
-       max(length(x), v0)
-  end
-  dimensions = Int[maxlinelength]
-  # If more than one line, or there is a newline in the end, make array 2D
-  if length(splitted) == 1 || isempty(rsearch(text, "\n"))
-    return ElemType[makecompatible(x, ElemType) for x in first(splitted)]
-  else
-    result = Array(ElemType, length(splitted), maxlinelength)
-    fill!(result, convert(ElemType, ' '))
-    for (i, line) in enumerate(splitted)
-      result[i,1:length(line)] = ElemType[makecompatible(x, ElemType) for x in line]
+#=
+The text needs to be uploaded into a 2D texture, with 1D alignement, as there is no way to vary the row length, which would be a big waste of memory.
+This is why there is the need, to prepare offsets information about where exactly new lines reside.
+If the string doesn't contain a new line, the text is restricted to one line, which is uploaded into one 1D texture.
+This is important for differentiation between multi-line and single line text, which might need different treatment
+=#
+function GLPlot.toopengl(style::Style{:Default}, text::String, data::Dict{Symbol, Any})
+  if contains(text, '\n')
+    tab         = 3
+    text        = replace(text, "\t", " "^tab) # replace tabs
+    tlength     = length(text)
+    #Allocate some more memory, to reduce growing the texture residing on VRAM
+    texturesize = div(tlength, 1024) # a texture size of 1024 should be supported on every GPU
+    offset      = Array(Uint32, texturesize, 1024)
+    text1D      = Array(GlGlyph{Uint8}, texturesize, 1024)
+    line        = 0
+    advance     = 0
+    runner      = Vector2(Uint32)
+    for (i,elem) in enumerate(text)
+      if elem == '\n'
+        advance = 0
+        line += 1
+      else
+        advance += 1
+      end
+      offset[mod1(i, 1024)] = Vector2{Uint32}(line, advance)
+      text1D[mod1(i, 1024)] = GLGlyph(elem, Uint8)
     end
-    return result
+    # To make things simple for now, checks if the texture is too big for the GPU are done by Texture and an error gets thrown.
+    data[:offset] = Texture(offset)
+    return toopengl(style, Texture(text1D), data)
+  else
+    return toopengl(style, Texture(reinterpret(GLGlyph{Uint8}, convert(Array{Uint8}, text))), data)
   end
 end
 
 
-function GLPlot.toopengl(s::Style{:Default}, text::String, data::Dict{Symbol, Any})
-  textarray = glsplit(text, GLGlyph{Uint8})
-  toopengl(s, Texture(textarray), data)
-end
-
-# Text rendering for one line text
-function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 1}, data::Dict{Symbol, Any})
-  renderdata  = merge(data, getfont().data)
-
+# This is the low-level text interface, which simply prepares the correct shader and cameras
+function GLPlot.toopengl(::Style{:Default}, text::Union(Texture{GLGlyph{Uint8}, 1, 1}, Texture{GLGlyph{Uint8}, 1, 2}), data::Dict{Symbol, Any})
+  camera      = data[:camera]
+  renderdata  = merge(data, getfont().data) # merge font texture and uv informations -> details @ GLFont/src/types.jl
   view = [
     "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
   ]
 
   renderdata[:text]           = text
-  renderdata[:projectionview] = pcamera.projectionview
+  renderdata[:projectionview] = camera.projectionview
   shader = TemplateProgram(
     Pkg.dir("GLText", "src", "textShader.vert"), Pkg.dir("GLText", "src", "textShader.frag"), 
     view=view, attributes=renderdata, fragdatalocation=[(0, "fragment_color"),(1, "fragment_groupid")]
@@ -185,30 +213,8 @@ function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 1},
   obj[:prerender, enabletransparency] = ()
   return obj
 end
-# Text rendering for multiple line text
-function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 2}, data::Dict{Symbol, Any})
-  renderdata  = merge(data, getfont().data)
 
-  view = [
-    "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
-  ]
 
-  renderdata[:text]           = text
-  renderdata[:projectionview] = pcamera.projectionview
-  shader = TemplateProgram(
-    Pkg.dir("GLText", "src", "textShader.vert"), Pkg.dir("GLText", "src", "textShader.frag"), 
-    view=view, attributes=renderdata, fragdatalocation=[(0, "fragment_color"),(1, "fragment_groupid")]
-  )
-
-  obj = instancedobject(renderdata, shader, length(text))
-  obj[:prerender, enabletransparency] = ()
-
-  return obj
-end
-
-# High Level text rendering for one line or multi line text, which is decided by searching for the occurence of '\n' in text
-# Low level text rendering for one line text
-# Low level text rendering for multiple line text
 edit{T <: AbstractArray}(text::Texture{T, 1, 2}, style=Style(:Default); customization...) = edit(style, text, mergedefault!(style, MATRIX_EDITING_DEFAULTS, customization))
 
 function edit(style::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 2}, selection, pressedkeys)
@@ -221,15 +227,11 @@ function edit(style::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 2}, selec
     end
     if !isempty(unicode_array)# else unicode input must have occured
       unicode_char = first(unicode_array)
-
-      text1  = addchar(text0, unicode_char, selection0)
-
-      updatetext(text1, start, rotation, advance_dir, newline_dir, obj)
+      text1        = addchar(text0, unicode_char, selection0)
 
       return (text1, selection0 + 1, selection1)
     elseif in(GLFW.KEY_BACKSPACE, specialkey)
       text1 = delete(text0, selection0)
-      updatetext(text1, start, rotation, advance_dir, newline_dir, obj)
       return (text1, max(selection0 - 1, 0), selection1)
     end
     return (text0, selection0, selection1)
@@ -237,19 +239,23 @@ function edit(style::Style{:Default}, text::Texture{GLGlyph{Uint8}, 1, 2}, selec
 end
 
  
-# Just for fun, lets apply a laplace filter:
-kernel = Float32[
--1 -1 -1;
--1 8 -1;
--1 -1 -1]
 
-img = glplot(Texture("pic.jpg"), kernel=kernel, filternorm=0.1f0, camera=pcamera)
 
-slider = edit(img[:filterkernel])
-glClearColor(1,1,1,1)
+
+
+
+
+
+
+
+
+
+
+
+
+
 const mousehover = Array(Vector2{GLushort}, 1)
 lift(x-> glViewport(0,0,x...), window.inputs[:framebuffer_size])
-
 
 function renderloop()
   glBindFramebuffer(GL_FRAMEBUFFER, fb)
