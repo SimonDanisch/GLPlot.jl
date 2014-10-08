@@ -333,7 +333,7 @@ function edit(style::Style{:Default}, textGPU::Texture{GLGlyph{Uint16}, 4, 2}, o
 
   leftclick_selection = foldl((Vector2(-1)), keepwhen(changed, Vector2(-1), selectiondata), window.inputs[:mousebuttonspressed]) do v0, data, buttons
     if !isempty(buttons) && first(buttons) == 0  # if any button is pressed && its the left button
-      data #return index
+      data #return index^^^
     else
       v0
     end
@@ -342,9 +342,13 @@ function edit(style::Style{:Default}, textGPU::Texture{GLGlyph{Uint16}, 4, 2}, o
 
   v00       = (obj, obj.alluniforms[:textlength], textGPU, text, leftclick_selection.value, leftclick_selection.value)
   testinput = foldl(edit_text, v00, leftclick_selection, window.inputs[:unicodeinput], specialkeys)
-  lift(x->utf8(Uint8[uint8(elem.glyph) for elem in x[4][1:x[2]]]), testinput)
-    # selection0 tracks, where the carsor is after a new character addition, selection10 tracks the old selection
+
+  return lift(testinput) do tinput
+    Uint8[uint8(elem.glyph) for elem in tinput[4][1:tinput[2]]]
+  end
 end
+
+
 function Base.delete!(s::Array{GLGlyph{Uint16}, 1}, Index::Integer)
   if Index == 0
     return s
@@ -370,15 +374,18 @@ end
 const url = "http://192.168.178.40:8080/findFunctionByName/"
 
 
-obj = toopengl("len\n")
+obj  = toopengl("len\n")
 obj2 = toopengl("search", model=eye(Mat4)*translationmatrix(Vec3(0,-40, 0)))
 
 
 searchterm = edit(obj[:text], obj)
 lift(searchterm) do term
   @async begin
-    term = replace(bytestring(HTTPClient.HTTPC.get(url*term).body), '§', '\n')
-
+    try    
+      term = replace(bytestring(HTTPClient.HTTPC.get(url*ascii(term)).body), '§', '\n')
+    catch ex
+      term = repr(ex)
+    end
     line        = 1
     advance     = 0
     text_array  = Array(GLGlyph{Uint16}, length(term))
