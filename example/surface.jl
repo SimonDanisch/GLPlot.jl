@@ -1,7 +1,7 @@
 using GLAbstraction, GLPlot, Reactive, ModernGL
 
 window = createdisplay(w=1920, h=1280)
-
+lift(println, window.inputs[:buttonspressed])
 
 function zdata(x1, y1, factor)
     x = (x1 - 0.5) * 15

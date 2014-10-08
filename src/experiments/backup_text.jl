@@ -1,5 +1,5 @@
 using ModernGL, GLAbstraction, GLWindow, GLFW, Reactive, ImmutableArrays, Images, GLText, Quaternions, Color, FixedPointNumbers, ApproxFun
-using GLPlot
+using GLPlot, HTTPClient
 
 
 immutable GLGlyph{T} <: TextureCompatible
@@ -8,6 +8,12 @@ immutable GLGlyph{T} <: TextureCompatible
   row::T
   style_index::T
 
+end
+function GLGlyph(glyph::Integer, line::Integer, row::Integer, style_index::Integer)
+  if !isascii(char(glyph))
+    glyph = char('1')
+  end
+  GLGlyph{Uint16}(uint16(glyph), uint16(line), uint16(row), uint16(style_index))
 end
 function GLGlyph(glyph::Char, line::Integer, row::Integer, style_index::Integer)
   if !isascii(glyph)
@@ -102,7 +108,7 @@ function (+){T}(a::GLGlyph{T}, b::GLGlyph{T})
 end
 
 Style(x::Symbol) = Style{x}()
-mergedefault!{S}(style::Style{S}, styles, customdata) = merge!(Dict{Symbol, Any}(customdata), styles[S])
+mergedefault!{S}(style::Style{S}, styles, customdata) = merge!(styles[S], Dict{Symbol, Any}(customdata))
 
 #################################################################################################################################
 #Text Rendering:
@@ -179,7 +185,6 @@ This is important for differentiation between multi-line and single line text, w
 =#
 function GLPlot.toopengl(style::Style{:Default}, text::String, data::Dict{Symbol, Any})
   global operators, brackets, keywords, string_regex, function_regex, comments
-  if contains(text, "\n")
     tab         = 3
     text        = map(x-> isascii(x) ? x : char(1), text)
     text        = utf8(replace(text, "\t", " "^tab)) # replace tabs
@@ -232,9 +237,6 @@ function GLPlot.toopengl(style::Style{:Default}, text::String, data::Dict{Symbol
     data[:lines]        = line
 
     return toopengl(style, Texture(text_array), data)
-  else
-    #return toopengl(style, Texture(reinterpret(GLGlyph{Uint8}, convert(Array{Uint8}, text))), data)
-  end
 end
 
 
@@ -243,9 +245,7 @@ function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint16}, 4, 2}
   camera        = data[:camera]
   font          = getfont()
   renderdata    = merge(data, font.data) # merge font texture and uv informations -> details @ GLFont/src/types.jl
-  linesize      = font.props[1][2] * data[:lines]
-
-  renderdata[:model] = eye(Mat4) * translationmatrix(Vec3(20,1080-20,0))
+  renderdata[:model] = renderdata[:model] * translationmatrix(Vec3(20,1080-20,0))
 
   view = [
     "GLSL_EXTENSIONS" => "#extension GL_ARB_draw_instanced : enable"
@@ -263,7 +263,7 @@ function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint16}, 4, 2}
 end
 
 TEXT_EDIT_DEFAULTS = (Symbol => Any)[:Default => (Symbol => Any)[]]
-edit(text::Texture{GLGlyph{Uint16}, 4, 2}, id, style=Style(:Default); customization...) = edit(style, text, id, mergedefault!(style, TEXT_EDIT_DEFAULTS, customization))
+edit(text::Texture{GLGlyph{Uint16}, 4, 2}, obj, style=Style(:Default); customization...) = edit(style, text, obj, mergedefault!(style, TEXT_EDIT_DEFAULTS, customization))
 
 # Filters a signal. If any of the items is in the signal, the signal is returned.
 # Otherwise default is returned
@@ -279,39 +279,73 @@ end
 
 function edit_text(v0, selection1, unicode_keys, special_keys)
   # selection0 tracks, where the carsor is after a new character addition, selection10 tracks the old selection
-  id, textlength, textGPU, text0, selection0, selection10 = v0
-  v1 = (id, textlength, textGPU, text0, selection0, selection1)
+  obj, textlength, textGPU, text0, selection0, selection10 = v0
+  v1 = (obj, textlength, textGPU, text0, selection0, selection1)
   changed = false 
   try
     # to compare it to the newly selected mouse position
     if selection10 != selection1
-      v1 = (id, textlength, textGPU, text0, selection1, selection1)
+      v1 = (obj, textlength, textGPU, text0, selection1, selection1)
     elseif !isempty(special_keys) && isempty(unicode_keys)
       if in(GLFW.KEY_BACKSPACE, special_keys)
         text0 = delete!(text0, selection0[2])
         textlength -= 1
         changed = true
-        v1 = (id, textlength, textGPU, text0, selection0 - Vector2(0,1), selection1)
+        v1 = (obj, textlength, textGPU, text0, selection0 - Vector2(0,1), selection1)
       elseif in(GLFW.KEY_ENTER, special_keys)
-        text0 = addnewline!(text0, '\n', selection0[2])
+        text0 = addchar(text0, '\n', selection0[2])
         textlength += 1
         changed = true
-        v1 = (id, textlength, textGPU, text0, selection0 + Vector2(0,1), selection1)
+        v1 = (obj, textlength, textGPU, text0, selection0 + Vector2(0,1), selection1)
       end
-    elseif !isempty(unicode_keys) && selection0[1] == id # else unicode input must have occured
+    elseif !isempty(unicode_keys) && selection0[1] == obj.id # else unicode input must have occured
       text0 = addchar(text0, first(unicode_keys), selection0[2])
       textlength += 1
       changed = true
-      v1 = (id, textlength, textGPU, text0, selection0 + Vector2(0,1), selection1)
+      v1 = (obj, textlength, textGPU, text0, selection0 + Vector2(0,1), selection1)
     end
 
     if changed
+
+      line        = 1
+      advance     = 0
+      for i=1:length(text0)
+        if i <= textlength
+          glyph = text0[i].glyph
+          text0[i] = GLGlyph(glyph, line, advance, 0)
+          if glyph == '\n'
+            advance = 0
+            line += 1
+          else
+            advance += 1
+          end
+        else # Fill in default value
+          text0[i] = GLGlyph()
+        end
+      end
+      text = utf8(Uint8[uint8(elem.glyph) for elem in text0[1:textlength]])
+      operators_match         = matchall(operators,         text)
+      brackets_match          = matchall(brackets,          text)
+      keywords_match          = matchall(keywords,          text)
+      stringalike_regex_match = matchall(stringalike_regex, text)
+      function_regex_match    = matchall(function_regex,    text)
+      comments_match          = matchall(comments,          text)
+
+  #    colorize(rgbaU8(0.6,0.6,0,1), string_regex_match, colorarray)
+      colorize(uint16(2), operators_match,         text0)
+      colorize(uint16(1), brackets_match,          text0)
+      colorize(uint16(2), keywords_match,          text0)
+      colorize(uint16(1), function_regex_match,    text0)
+      colorize(uint16(3), stringalike_regex_match, text0)
+      colorize(uint16(4), comments_match,          text0)
+
       if textlength > length(text0) || length(text0) % 1024 != 0
         newlength = 1024 - rem(length(text0)+1024, 1024)
         text0     = [text0, Array(GLGlyph{Uint16}, newlength)]
         resize!(textGPU, [1024, div(length(text0),1024)])
       end
       textGPU[1:0, 1:0] = reshape(text0, 1024, div(length(text0),1024))
+      obj[:postrender, renderinstanced] = (obj.vertexarray, textlength)
     end
   catch err
     Base.show_backtrace(STDERR, catch_backtrace())
@@ -321,10 +355,14 @@ function edit_text(v0, selection1, unicode_keys, special_keys)
   return v1
 end
 
-function edit(style::Style{:Default}, textGPU::Texture{GLGlyph{Uint16}, 4, 2}, id::GLushort, custumization::Dict{Symbol, Any})
+function edit(style::Style{:Default}, textGPU::Texture{GLGlyph{Uint16}, 4, 2}, obj, custumization::Dict{Symbol, Any})
   specialkeys = filteritems(window.inputs[:buttonspressed], [GLFW.KEY_ENTER, GLFW.KEY_BACKSPACE], IntSet())
   # Filter out the selected index, 
-  leftclick_selection = foldl((Vector2(-1)), selectiondata, window.inputs[:mousebuttonspressed]) do v0, data, buttons
+  changed = lift(x->x[1], foldl((true, selectiondata.value), selectiondata) do v0, data
+    (v0[2] != data, data)
+  end)
+
+  leftclick_selection = foldl((Vector2(-1)), keepwhen(changed, Vector2(-1), selectiondata), window.inputs[:mousebuttonspressed]) do v0, data, buttons
     if !isempty(buttons) && first(buttons) == 0  # if any button is pressed && its the left button
       data #return index
     else
@@ -333,7 +371,7 @@ function edit(style::Style{:Default}, textGPU::Texture{GLGlyph{Uint16}, 4, 2}, i
   end
   text      = vec(data(textGPU))
 
-  v00       = (id, length(text), textGPU, text, leftclick_selection.value, leftclick_selection.value)
+  v00       = (obj, obj.alluniforms[:textlength], textGPU, text, leftclick_selection.value, leftclick_selection.value)
   testinput = foldl(edit_text, v00, leftclick_selection, window.inputs[:unicodeinput], specialkeys)
     # selection0 tracks, where the carsor is after a new character addition, selection10 tracks the old selection
 end
@@ -343,73 +381,19 @@ function Base.delete!(s::Array{GLGlyph{Uint16}, 1}, Index::Integer)
   elseif Index == length(s)
     return s[1:end-1]
   end
-  if s[Index].glyph == '\n'
-    newline_occured = false
-    for j=Index+1:length(s)
-      if !newline_occured
-        newline_occured = '\n' == s[j].glyph
-      end
-      s[j] = s[j] + GLGlyph{Uint16}(zero(Uint16), -one(Uint16), newline_occured ? zero(Uint16) : s[Index].row, zero(Uint16))
-    end
-  else
-    for j=Index+1:length(s)
-
-      s[j] = s[j] + GLGlyph{Uint16}(zero(Uint16),zero(Uint16), -one(Uint16),zero(Uint16))
-      if s[j].glyph == '\n'
-        break
-      end
-    end
-  end
   return [s[1:Index-1], s[Index+1:end]]
 end
 
-function addchar(s::Array{GLGlyph{Uint16}, 1}, char::Char, Index::Integer)
-  if Index == 0
-    for j=Index+1:length(s)
-      if s[j].glyph == '\n'
-        break
-      end
-      s[j] = s[j] + GLGlyph{Uint16}(zero(Uint16),zero(Uint16),one(Uint16),zero(Uint16))
-    end
-    return [GLGlyph{Uint16}(char,1,1,1,0), s]
-  elseif Index == length(s)
-    return [s, GLGlyph{Uint16}(char, s[end].line, s[end].row+one(Uint16), s[end].style_index)]
-  elseif Index > length(s) || Index < 0
+addchar(s::Array{GLGlyph{Uint16}, 1}, glyph::Char, Index::Integer) = addchar(s, GLGlyph(glyph, 0, 0, 0), int(Index))
+function addchar(s::Array{GLGlyph{Uint16}, 1}, glyph::GLGlyph{Uint16}, i::Integer)
+  if i == 0
+    return [glyph, s]
+  elseif i == length(s)
+    return [s, glyph]
+  elseif i > length(s) || i < 0
     return s
   end
-  for j=Index+1:length(s)
-    if s[j].glyph == '\n'
-      break
-    end
-    s[j] = s[j] + GLGlyph{Uint16}(zero(Uint16),zero(Uint16),one(Uint16),zero(Uint16))
-  end
-  return [s[1:Index], GLGlyph{Uint16}(char, s[Index].line, s[Index].row+one(Uint16), s[Index].style_index), s[Index+1:end]]
-end
-
-function addnewline!(s::Array{GLGlyph{Uint16}, 1}, char::Char, Index::Integer)
-  newline_occured = false
-  advance = 0
-  for j=Index+1:length(s)
-    if !newline_occured
-      advance += 1
-      newline_occured = '\n' == s[j].glyph
-    end
-    s[j] = GLGlyph{Uint16}(s[j].glyph, s[j].line + 1, newline_occured ? s[j].row : advance, s[j].style_index)
-  end
-  if Index == 0
-    return [GLGlyph{Uint16}(char,1,0,0), s]
-  elseif Index == length(s)
-    return [s, GLGlyph{Uint16}(char, s[end].line, s[end].row+one(Uint16), s[end].style_index)]
-  elseif Index > length(s) || Index < 0
-    return s
-  end
-  addline = s[Index].line
-  row     = s[Index].row+one(Uint16)
-  if Index > 0 && s[Index].glyph == '\n'
-    addline += 1
-    row = 0
-  end
-  return [s[1:Index], GLGlyph{Uint16}(char, addline, row, s[Index].style_index), s[Index+1:end]]
+  return [s[1:i], glyph, s[i+1:end]]
 end
 
 
@@ -417,10 +401,7 @@ end
 obj = toopengl(readall(open(Pkg.dir("GLPlot", "src", "experiments", "widget_text.jl"))))
 
 
-
-edit(obj[:text], obj.id)
-
-
+searchterm = edit(obj[:text], obj)
 
 
 lift(x-> glViewport(0,0,x...), window.inputs[:framebuffer_size])
