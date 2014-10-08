@@ -42,5 +42,4 @@ void main(){
     vec3 light2 = blinn_phong(N, V, -L, vert_color.rgb);
     fragment_color      = vec4(light1 + light2, vert_color.a);
     fragment_groupid    = uvec2(0,0);
-    
 }
