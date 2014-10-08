@@ -344,7 +344,7 @@ function edit(style::Style{:Default}, textGPU::Texture{GLGlyph{Uint16}, 4, 2}, o
   testinput = foldl(edit_text, v00, leftclick_selection, window.inputs[:unicodeinput], specialkeys)
 
   return lift(testinput) do tinput
-    Uint8[uint8(elem.glyph) for elem in tinput[4][1:tinput[2]]]
+    Uint8[isascii(char(elem.glyph)) ? uint8(elem.glyph) : uint8(32) for elem in tinput[4][1:tinput[2]]]
   end
 end
 
@@ -371,18 +371,19 @@ function addchar(s::Array{GLGlyph{Uint16}, 1}, glyph::GLGlyph{Uint16}, i::Intege
 end
 
 
-const url = "http://192.168.178.40:8080/findFunctionByName/"
+const url = "http://192.168.178.40:8080/"
 
 
-obj  = toopengl("len\n")
-obj2 = toopengl("search", model=eye(Mat4)*translationmatrix(Vec3(0,-40, 0)))
+obj  = toopengl("findFunctionByName\nlen\n")
+obj2 = toopengl("search", model=eye(Mat4)*translationmatrix(Vec3(0,-50, 0)))
 
 
 searchterm = edit(obj[:text], obj)
 lift(searchterm) do term
   @async begin
     try    
-      term = replace(bytestring(HTTPClient.HTTPC.get(url*ascii(term)).body), '§', '\n')
+      searchmethod = split(ascii(term), '\n')
+      term = replace(bytestring(HTTPClient.HTTPC.get(url*searchmethod[1]*"/"*searchmethod[2]).body), '§', '\n')
     catch ex
       term = repr(ex)
     end
