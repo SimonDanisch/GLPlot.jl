@@ -6,20 +6,19 @@ immutable GLGlyph{T} <: TextureCompatible
   glyph::T
   line::T
   row::T
-  style_index::T
-
+  style_group::T
 end
-function GLGlyph(glyph::Integer, line::Integer, row::Integer, style_index::Integer)
+function GLGlyph(glyph::Integer, line::Integer, row::Integer, style_group::Integer)
   if !isascii(char(glyph))
     glyph = char('1')
   end
-  GLGlyph{Uint16}(uint16(glyph), uint16(line), uint16(row), uint16(style_index))
+  GLGlyph{Uint16}(uint16(glyph), uint16(line), uint16(row), uint16(style_group))
 end
-function GLGlyph(glyph::Char, line::Integer, row::Integer, style_index::Integer)
+function GLGlyph(glyph::Char, line::Integer, row::Integer, style_group::Integer)
   if !isascii(glyph)
     glyph = char('1')
   end
-  GLGlyph{Uint16}(uint16(glyph), uint16(line), uint16(row), uint16(style_index))
+  GLGlyph{Uint16}(uint16(glyph), uint16(line), uint16(row), uint16(style_group))
 end
 GLGlyph() = GLGlyph(' ', typemax(Uint16), typemax(Uint16), 0)
 
@@ -94,7 +93,7 @@ Base.eltype{T}(::GLGlyph{T})                   = T
 Base.eltype{T}(::Type{GLGlyph{T}})             = T
 Base.size{T}(::GLGlyph{T})                     = (4,)
 
-GLGlyph(x::GLGlyph; glyph=x.glyph, line=x.line, row=x.row, style_index=x.style_index) = GLGlyph(glyph, line, row, style_index)
+GLGlyph(x::GLGlyph; glyph=x.glyph, line=x.line, row=x.row, style_group=x.style_group) = GLGlyph(glyph, line, row, style_group)
 
 import Base: (+)
 
@@ -104,7 +103,7 @@ function (+){T}(a::Array{GLGlyph{T}, 1}, b::GLGlyph{T})
   end
 end
 function (+){T}(a::GLGlyph{T}, b::GLGlyph{T})
-  GLGlyph{T}(a.glyph + b.glyph, a.line + b.line, a.row + b.row, a.style_index + b.style_index)
+  GLGlyph{T}(a.glyph + b.glyph, a.line + b.line, a.row + b.row, a.style_group + b.style_group)
 end
 
 Style(x::Symbol) = Style{x}()
@@ -171,7 +170,6 @@ function colorize(color, substrings, colortexture)
     for elem in substrings
         startorigin = elem.offset+1
         stoporigin  = elem.offset+elem.endof
-
         colortexture[startorigin:stoporigin] = [GLGlyph(elem.glyph, elem.line, elem.row, color) for elem in colortexture[startorigin:stoporigin]]
     end
 end
@@ -381,7 +379,8 @@ obj3  = toopengl("get best implementation for method\n", color=rgbaU8(1,0,0,1), 
 obj4 = toopengl("request ", color=rgbaU8(0.95,0.92,0.9,1), model=eye(Mat4)*translationmatrix(Vec3(0,-90, 0)))
 
 obj5 = toopengl("result" * " "^70 * "\n", color=rgbaU8(0.6,0.5,0.9,1), model=eye(Mat4)*translationmatrix(Vec3(0,-130, 0)))
-#=
+
+
 selectedfunction = foldl("findFunctionByName",selectiondata) do v0, data
   if data[1] == obj1.id
     obj1[:color_lookup][1] = rgbaU8(0,1,0,1)
@@ -403,7 +402,6 @@ selectedfunction = foldl("findFunctionByName",selectiondata) do v0, data
   end
   v0
 end
-=#
 
 searchterm = edit(obj4[:text], obj4)
 lift(searchterm) do term
@@ -458,12 +456,10 @@ while !GLFW.WindowShouldClose(window.glfwWindow)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
   renderloop()
 
-  if runner % 15 == 0
-    mousex, mousey = int([window.inputs[:mouseposition].value])
-    glReadBuffer(GL_COLOR_ATTACHMENT1) 
-    glReadPixels(mousex, mousey, 1,1, stencil.format, stencil.pixeltype, mousehover)
-    @async push!(selectiondata, convert(Vector2{Int}, mousehover[1]))
-  end
+  mousex, mousey = int([window.inputs[:mouseposition].value])
+  glReadBuffer(GL_COLOR_ATTACHMENT1) 
+  glReadPixels(mousex, mousey, 1,1, stencil.format, stencil.pixeltype, mousehover)
+  push!(selectiondata, convert(Vector2{Int}, mousehover[1]))
 
 
   glReadBuffer(GL_COLOR_ATTACHMENT0)
