@@ -371,37 +371,69 @@ function addchar(s::Array{GLGlyph{Uint16}, 1}, glyph::GLGlyph{Uint16}, i::Intege
 end
 
 
-const url = "http://192.168.178.40:8080/"
+const url = "http://192.168.43.157:8080/"
 
 
-obj  = toopengl("findFunctionByName\nlen\n")
-obj2 = toopengl("search", model=eye(Mat4)*translationmatrix(Vec3(0,-50, 0)))
+obj1  = toopengl("find function by name\n", color=rgbaU8(0,1,0,1), model=eye(Mat4)*translationmatrix(Vec3(0, 0, 0)))
+obj2  = toopengl("find methods for function\n", color=rgbaU8(1,0,0,1), model=eye(Mat4)*translationmatrix(Vec3(0,-30, 0)))
+obj3  = toopengl("get best implementation for method\n", color=rgbaU8(1,0,0,1), model=eye(Mat4)*translationmatrix(Vec3(0,-60, 0)))
 
+obj4 = toopengl("request ", color=rgbaU8(0.95,0.92,0.9,1), model=eye(Mat4)*translationmatrix(Vec3(0,-90, 0)))
 
-searchterm = edit(obj[:text], obj)
+obj5 = toopengl("result" * " "^70 * "\n", color=rgbaU8(0.6,0.5,0.9,1), model=eye(Mat4)*translationmatrix(Vec3(0,-130, 0)))
+#=
+selectedfunction = foldl("findFunctionByName",selectiondata) do v0, data
+  if data[1] == obj1.id
+    obj1[:color_lookup][1] = rgbaU8(0,1,0,1)
+    return "findFunctionByName"
+  else
+    obj1[:color_lookup][1] = rgbaU8(1,0,0,1)
+  end
+  if data[1] == obj2.id
+    obj2[:color_lookup][1] = rgbaU8(0,1,0,1)
+    return "findMethodsForFunction"
+  else
+    obj2[:color_lookup][1] = rgbaU8(1,0,0,1)
+  end
+  if data[1] == obj3.id
+    obj3[:color_lookup][1] = rgbaU8(0,1,0,1)
+    return "getBestImplementationForMethod"
+  else
+    obj3[:color_lookup][1] = rgbaU8(1,0,0,1)
+  end
+  v0
+end
+=#
+
+searchterm = edit(obj4[:text], obj4)
 lift(searchterm) do term
   @async begin
-    try    
-      searchmethod = split(ascii(term), '\n')
-      term = replace(bytestring(HTTPClient.HTTPC.get(url*searchmethod[1]*"/"*searchmethod[2]).body), '§', '\n')
+    try   
+      searchstring = strip((ascii(string(url, "findFunctionByName/", ascii(term)))))
+      term = replace(bytestring(HTTPClient.HTTPC.get(searchstring).body), '§', '\n')
     catch ex
       term = repr(ex)
     end
     line        = 1
     advance     = 0
-    text_array  = Array(GLGlyph{Uint16}, length(term))
-    for i=1:length(term)
-      glyph = term[i]
-      text_array[i] = GLGlyph(glyph, line, advance, 0)
-      if glyph == '\n'
-        advance = 0
-        line += 1
+    text_array  = Array(GLGlyph{Uint16}, size(obj5[:text])...)
+    for i=1:length(obj5[:text])
+      if i <= length(term)
+        glyph = term[i]
+        text_array[i] = GLGlyph(glyph, line, advance, 0)
+        if glyph == '\n'
+          advance = 0
+          line += 1
+        else 
+          advance += 1
+        end
       else
-        advance += 1
-      end
+        text_array[i] = GLGlyph()
+      end 
     end
-    obj2[:text][1:0, 1] = text_array
-    obj2[:postrender, renderinstanced] = (obj.vertexarray, length(term))
+    #obj5[:text][1:0, 1:0] = [GLGlyph() for i=size(obj5[:text], 1), j=size(obj5[:text], 2)]
+    obj5[:text][1:0, 1:0] = text_array
+    obj5[:postrender, renderinstanced] = (obj.vertexarray, length(term))
   end
 end
 
@@ -409,8 +441,11 @@ end
 lift(x-> glViewport(0,0,x...), window.inputs[:framebuffer_size])
 glClearColor(39.0/255.0, 40.0/255.0, 34.0/255.0, 1.0)
 function renderloop()
-  render(obj)
+  render(obj1)
   render(obj2)
+  render(obj3)
+  render(obj4)
+  render(obj5)
 end
 
 

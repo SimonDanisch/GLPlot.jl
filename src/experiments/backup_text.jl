@@ -323,7 +323,7 @@ function edit_text(v0, selection1, unicode_keys, special_keys)
           text0[i] = GLGlyph()
         end
       end
-      text = utf8(Uint8[uint8(elem.glyph) for elem in text0[1:textlength]])
+      text = ascii(Uint8[uint8(elem.glyph) for elem in text0[1:textlength]])
       operators_match         = matchall(operators,         text)
       brackets_match          = matchall(brackets,          text)
       keywords_match          = matchall(keywords,          text)

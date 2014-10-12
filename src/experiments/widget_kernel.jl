@@ -332,7 +332,7 @@ kernel = Float32[
 -1 -1 -1;
 -1 8 -1;
 -1 -1 -1]
-img = glplot(Texture("pic.jpg"), kernel=kernel, filternorm=0.1f0, camera=pcamera)
+img = glplot(Texture(Pkg.dir("GLPlot", "docs", "julia.png"), kernel=kernel, filternorm=0.1f0, camera=pcamera)
 
 slider = edit(img[:filterkernel])
 glClearColor(1,1,1,1)

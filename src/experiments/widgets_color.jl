@@ -237,7 +237,7 @@ function renderloop()
   render(colorobj)
 
   mousex, mousey = int([color_mousepos.value])
-  if mousex > 0 && mousey > 0
+  if (mousex > 0 && mousey > 0)
     glReadBuffer(GL_COLOR_ATTACHMENT1) 
     glReadPixels(mousex, mousey, 1,1, stencil.format, stencil.pixeltype, mousehover)
     @async push!(selectiondata, mousehover)
