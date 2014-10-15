@@ -2,12 +2,13 @@ using ModernGL, GLAbstraction, GLWindow, GLFW, Reactive, ImmutableArrays, Images
 using GLPlot, HTTPClient
 
 
-immutable GLGlyph{T} <: TextureCompatible
+immutable GLGlyph{T} <: AbstractFixedVector{T, 4}
   glyph::T
   line::T
   row::T
   style_group::T
 end
+
 function GLGlyph(glyph::Integer, line::Integer, row::Integer, style_group::Integer)
   if !isascii(char(glyph))
     glyph = char('1')
@@ -135,13 +136,6 @@ GLPlot.toopengl(text::Texture{GLGlyph, 1, 2}, style=Style(:Default); customizati
 
 
 
-function makecompatible(glyph::Char, typ)
-  if int(glyph) >= 0 && int(glyph) <= 255
-    return convert(typ, glyph)
-  else
-    return convert(typ, 0)
-  end
-end
 operators = [":", ";","=", "+", "-", "!", "¬", "~", "<", ">","=", "/", "&", "|", "\$", "*"]
 brackets  = ["(", ")", "[", "]", "{", "}"]
 keywords  = ["for", "end", "while", "if", "elseif", "using", "return", "in", "function", "local", "global", "let", "quote", "begin", "const", "do", "false", "true"]
@@ -158,13 +152,77 @@ function escape_regex(x::String)
     end
     result
 end
+
 regreduce(arr, prefix="(", suffix=")") = Regex(reduce((v0, x) -> v0*"|"*prefix*escape_regex(x)*suffix, prefix*escape_regex(arr[1])*suffix, arr[2:end]))
-operators         = regreduce(operators)
-brackets          = regreduce(brackets)
-keywords          = regreduce(keywords, "((?<![[:alpha:]])", "(?![[:alpha:]]))")
-comments          = r"(#=.*=#)|(#.*[\n\r])"
-stringalike_regex = r"(\".*\")|('.*')|((?<!:):[[:alpha:]][[:alpha:]_]*)"
-function_regex    = r"(?<![[:alpha:]])[[:graph:]]*\("
+julia_groups = [
+  1 => regreduce(operators) 
+  2 => regreduce(brackets)
+  3 => regreduce(keywords, "((?<![[:alpha:]])", "(?![[:alpha:]]))")
+  4 => r"(#=.*=#)|(#.*[\n\r])" #Comments
+  5 => r"(\".*\")|('.*')|((?<!:):[[:alpha:]][[:alpha:]_]*)" #String alike
+  6 => r"(?<![[:alpha:]])[[:graph:]]*\(" # functions 
+]
+
+function subs(x::DataType, unions=Any[])
+  for elem in subtypes(x)
+    if !elem.abstract
+      push!(unions, elem)
+    else
+      subs(elem, unions)
+    end
+    unions
+end
+
+function setindex!{T}(a::Vector{AbstractFixedVector{T, CDim}}, x::T, i::Integer, accessor::Integer)
+  @assert length(a) >= i
+  @assert accessor <= CDim
+  ptr = convert(Ptr{T}, pointer(a))
+  unsafe_store!(ptr, x, ((i-1)*4)+accessor)
+end
+function setindex!{T}(a::Vector{GLGlyph{T}}, x::Vector{T}, i::Integer, accessor::UnitRange)
+  @assert length(a) >= i
+  @assert length(accessor) <= 4
+  ptr = convert(Ptr{T}, pointer(a))
+  unsafe_copy!(ptr + (sizeof(T)*((i-1)*4)), pointer(x), length(accessor))
+end
+function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::T, i::Integer, accessor::Integer)
+  a.data[i, accessor] = x
+  a[i] = a.data[i]
+end
+function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::Vector{T}, i::Integer, accessor::UnitRange)
+  a.data[i, accessor] = x
+  a[i] = a.data[i]
+end
+
+
+
+function setindex!{T}(a::Matrix{GLGlyph{T}}, x::Vector{T}, i::Integer, accessor::UnitRange)
+  @assert length(a) >= i
+  @assert length(accessor) <= 4
+  ptr = convert(Ptr{T}, pointer(a))
+  unsafe_copy!(ptr + (sizeof(T)*((i-1)*4)), pointer(x), length(accessor))
+end
+function setindex!{T}(a::Matrix{GLGlyph{T}}, x::T, i::Integer, accessor::Integer)
+  @assert length(a) >= i
+  @assert accessor <= 4
+  ptr = convert(Ptr{T}, pointer(a))
+  unsafe_store!(ptr, x, ((i-1)*4)+accessor)
+end
+
+function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::T, i::Integer, accessor::Integer)
+  @assert length(a) >= i
+  @assert accessor <= 4
+  ptr = convert(Ptr{T}, pointer(a.data))
+  unsafe_store!(ptr, x, ((i-1)*4)+accessor)
+  a[i] = a.data[i]
+end
+function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::Vector{T}, i::Integer, accessor::UnitRange)
+  @assert length(a) >= i
+  @assert length(accessor) <= 4
+  ptr = convert(Ptr{T}, pointer(a.data))
+  unsafe_copy!(ptr + (sizeof(T)*((i-1)*4)), pointer(x), length(accessor))
+  a[i] = a.data[i]
+end
 
 function colorize(color, substrings, colortexture)
     for elem in substrings
@@ -174,6 +232,55 @@ function colorize(color, substrings, colortexture)
     end
 end
 
+function update_textpositions{T}(text_array::AbstractArray{GLGlyph{T}})
+  line = text_array[1].line
+  row  = text_array[1].row
+
+  for i=1:length(text)
+    glyph = text_array[i].glyph
+    text_array[i,2:3] = T[line, row]
+    if glyph == '\n'
+      row = 0
+      line += 1
+    else
+      row += 1
+    end
+  end
+
+end
+
+function update_textpositions(text::String, text_array::Texture{GLGlyph})
+  line = first(text_array).line
+  row  = first(text_array).row
+  for i=1:length(text)
+    glyph = text[i]
+    text_array[i] = GLGlyph(glyph, line, row, 0)
+    if glyph == '\n'
+      row = 0
+      line += 1
+    else
+      row += 1
+    end
+  end
+end
+function preparetext(text::String, tab=3)
+  tab         = 3
+  text        = map(x-> isascii(x) ? x : char(1), text)
+  text        = utf8(replace(text, "\t", " "^tab)) # replace tabs
+
+  #Allocate some more memory, to reduce growing the texture residing on VRAM
+  texturesize = (div(length(text),     1024) + 1) # a texture size of 1024 should be supported on every GPU
+  text_array  = Array(GLGlyph{Uint16}, 1024, texturesize)
+  first(text_array).line = 1
+  first(text_array).row  = 0
+  gentextgrid(text, text_array)
+  color_lookup = Texture([data[:color]])
+
+  # To make things simple for now, checks if the texture is too big for the GPU are done by 'Texture' and an error gets thrown there.
+  data[:color_lookup] = color_lookup
+  data[:textlength]   = length(text)
+  data[:lines]        = line
+end
 
 #=
 The text needs to be uploaded into a 2D texture, with 1D alignement, as there is no way to vary the row length, which would be a big waste of memory.
@@ -207,11 +314,7 @@ function GLPlot.toopengl(style::Style{:Default}, text::String, data::Dict{Symbol
         text_array[i] = GLGlyph()
       end
     end
-
-
-    color_lookup = Texture([
-      data[:color]   
-    ])
+    color_lookup = Texture([data[:color]])
 
     # To make things simple for now, checks if the texture is too big for the GPU are done by 'Texture' and an error gets thrown there.
     data[:color_lookup] = color_lookup
@@ -224,9 +327,9 @@ end
 
 # This is the low-level text interface, which simply prepares the correct shader and cameras
 function GLPlot.toopengl(::Style{:Default}, text::Texture{GLGlyph{Uint16}, 4, 2}, data::Dict{Symbol, Any})
-  camera        = data[:camera]
-  font          = getfont()
-  renderdata    = merge(data, font.data) # merge font texture and uv informations -> details @ GLFont/src/types.jl
+  camera             = data[:camera]
+  font               = getfont()
+  renderdata         = merge(data, font.data) # merge font texture and uv informations -> details @ GLFont/src/types.jl
   renderdata[:model] = renderdata[:model] * translationmatrix(Vec3(20,1080-20,0))
 
   view = [

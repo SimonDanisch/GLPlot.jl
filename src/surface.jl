@@ -1,10 +1,7 @@
 export mix, SURFACE, CIRCLE, CUBE, POINT
 
 
-glsl_attributes = [
-  "instance_functions"  => readall(open(joinpath(shaderdir,"instance_functions.vert"))),
-  "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
-]
+
 SURFACE(scale=1) = [
     :vertex         => Vec3(0),
     :offset         => GLBuffer(Float32[0,0, 0,1, 1,1, 1,0] * scale, 2),
@@ -26,17 +23,22 @@ CIRCLE(r=0.4, x=0, y=0, points=6) = [
     :z              => 0f0,
     :drawingmode    => GL_TRIANGLE_FAN
 ]
-const vertexes, uv, normals, indexes = gencubenormals(Vec3(0), Vec3(1, 0, 0), Vec3(0,1, 0), Vec3(0,0,1))
+begin 
+  local const cubedata = gencubenormals(Vec3(0), Vec3(1, 0, 0), Vec3(0,1, 0), Vec3(0,0,1))
+  function CUBE() 
+    
+    [
+      :vertex         => GLBuffer(cubedata[1]),
+      :normal_vector  => GLBuffer(cubedata[3]),
+      :index          => indexbuffer(cubedata[4]),
 
-CUBE() = [
-  :vertex         => GLBuffer(vertexes),
-  :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
-  :index          => indexbuffer(indexes),
-  :normal_vector  => GLBuffer(normals),
-  :zscale         => 1f0,
-  :z              => 0f0,
-  :drawingmode    => GL_TRIANGLES
-]
+      :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
+      :zscale         => 1f0,
+      :z              => 0f0,
+      :drawingmode    => GL_TRIANGLES
+    ]
+  end
+end
 POINT() = [
   :vertex         => GLBuffer(Vec3[Vec3(0)]),
   :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
@@ -47,17 +49,29 @@ POINT() = [
   :drawingmode    => GL_POINTS
 ]
 
-parameters = [
-    (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
-    (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
-    (GL_TEXTURE_WRAP_S,  GL_REPEAT),
-    (GL_TEXTURE_WRAP_T,  GL_REPEAT),
+SURFACE_DEFAULTS = [
+:Default = [
+
+:primitive      => SURFACE(), 
+:xrange         => (-1,1), 
+:yrange         => (-1,1), 
+:color          => Vec4(0,0,0,1), 
+:lightposition  => Vec3(20, 20, -20), 
+:camera         => pcamera,
+:modelmatrix    => eye(Mat4),
+:interpolate    => false,
+:normal_vector  => 0f0 # meaning, that normal vector needs to be calculated on the gpu
+]
+]
+function toopengl{T <: AbstractArray, CDim}(x::Texture{T, CDim, 2}, attribute::Symbol= :z, style=Style{:Default}; custumization...) 
+  toopengl(style, x, attribute; mergedefault!(style, SURFACE_DEFAULTS, customization))
+end
+
+glsl_attributes = [
+  "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
 ]
 
-function toopengl{T <: Union(AbstractArray, Real)}(
-			attributevalue::Matrix{T}, attribute::Symbol=:z; 
-			primitive=SURFACE(), xrange=(-1,1), yrange=(-1,1), color=Vec4(0,0,0,1), 
-			lightposition=Vec3(20, 20, -20), camera=pcamera, rest...)
+function surf{T <: AbstractArray}(::Style{:Default}, data::Dict{Symbol, Any})
 
   xn  = size(attributevalue, 1)
   yn  = size(attributevalue, 2)
@@ -72,31 +86,25 @@ function toopengl{T <: Union(AbstractArray, Real)}(
   customattributes = (Symbol => Any)[]
   customview = (ASCIIString => ASCIIString)[]
 
+  # transform values to OpenGL types, and create the correct keys for the shader view
   for (key, value) in rest
     if isa(value, Matrix)
       customattributes[key] = Texture(value, parameters=parameters)
     elseif isa(value, ASCIIString)
       customview[string(key)*"_calculation"] = value
       customview[string(key)*"_type"] = "uniform float "
+    elseif isa(value, NTuple{2, Real})
+      customattributes[key] = Vec2(first(value), last(value))
     else
       customattributes[key] = value #todo: check for unsupported types
     end
   end
-  data = merge([
-    attribute       => Texture(attributevalue, parameters=parameters),
-    :xrange         => x,
-    :yrange         => y,
-    :texdimension   => Vec2(xn,yn),
-    :projection     => camera.projection,
-    :view           => camera.view,
-    :normalmatrix   => camera.normalmatrix,
-    :light_position => lightposition,
-    :modelmatrix    => eye(Mat4)
-  ], customattributes)
+
+  data[:projection]   = camera.projection
+  data[:view]         = camera.view
+  data[:normalmatrix] = camera.normalmatrix
+    
   # Depending on what the primitivie is, additional values have to be calculated
-  if !haskey(primitive, :normal_vector)
-    primitive[:normal_vector] = Vec3(0)
-  end
   if !haskey(primitive, :xscale)
     primitive[:xscale] = float32(1 / xn)
   end
@@ -104,7 +112,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
     primitive[:yscale] = float32(1 / yn)
   end
   merged = merge(primitive, data)
-  merge!(glsl_attributes,customview)
+  merge!(glsl_attributes, customview)
 
   fragdatalocation = [(0, "fragment_color"),(1, "fragment_groupid")]
   program = TemplateProgram(

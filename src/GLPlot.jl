@@ -4,6 +4,10 @@ import Mustache
 
 export glplot, createdisplay, renderloop, toopengl,clearplot
 
+Style(x::Symbol) = Style{x}()
+mergedefault!{S}(style::Style{S}, styles, customdata) = merge!(styles[S], Dict{Symbol, Any}(customdata))
+toopengl(x..., style=Style{:Default}; custumization...) = toopengl(style, x...; )
+
 
 const sourcedir = Pkg.dir("GLPlot", "src")
 const shaderdir = joinpath(sourcedir, "shader")
