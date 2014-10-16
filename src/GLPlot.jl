@@ -4,16 +4,17 @@ import Mustache
 
 export glplot, createdisplay, renderloop, toopengl,clearplot
 
+immutable Style{StyleValue}
+end
 Style(x::Symbol) = Style{x}()
 mergedefault!{S}(style::Style{S}, styles, customdata) = merge!(styles[S], Dict{Symbol, Any}(customdata))
-toopengl(x..., style=Style{:Default}; custumization...) = toopengl(style, x...; )
 
 
 const sourcedir = Pkg.dir("GLPlot", "src")
 const shaderdir = joinpath(sourcedir, "shader")
 
 include(joinpath(sourcedir, "grid.jl"))
-include(joinpath(sourcedir, "surface.jl"))
+#include(joinpath(sourcedir, "surface.jl"))
 include(joinpath(sourcedir, "volume.jl"))
 include(joinpath(sourcedir, "image.jl"))
 include(joinpath(sourcedir, "util.jl"))
@@ -50,6 +51,7 @@ function createdisplay(;async=false, w=500, h=500, eyeposition=Vec3(1,1,0), look
 	global window 	= createwindow("GLPlot", w, h, debugging=debugging, windowhints=windowhints) 
 	global pcamera 	= PerspectiveCamera(window.inputs, eyeposition, lookat)
 	global ocamera 	= OrthographicCamera(window.inputs)
+	global pocamera = OrthographicPixelCamera(window.inputs)
 	if async
 		@async renderloop(window)
 	end

@@ -1,4 +1,4 @@
-function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0, model=eye(Mat4))
+function toopengl{T, D}(img::Texture{T, D, 2}; camera = pocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0, model=eye(Mat4))
   w, h  = img.dims
   texparams = [
      (GL_TEXTURE_MIN_FILTER, GL_NEAREST),

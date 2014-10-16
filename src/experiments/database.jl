@@ -22,6 +22,25 @@ function GLGlyph(glyph::Char, line::Integer, row::Integer, style_group::Integer)
   GLGlyph{Uint16}(uint16(glyph), uint16(line), uint16(row), uint16(style_group))
 end
 GLGlyph() = GLGlyph(' ', typemax(Uint16), typemax(Uint16), 0)
+Base.length{T}(::GLGlyph{T})                   = 4
+Base.length{T}(::Type{GLGlyph{T}})             = 4
+Base.eltype{T}(::GLGlyph{T})                   = T
+Base.eltype{T}(::Type{GLGlyph{T}})             = T
+Base.size{T}(::GLGlyph{T})                     = (4,)
+
+GLGlyph(x::GLGlyph; glyph=x.glyph, line=x.line, row=x.row, style_group=x.style_group) = GLGlyph(glyph, line, row, style_group)
+
+import Base: (+)
+
+function (+){T}(a::Array{GLGlyph{T}, 1}, b::GLGlyph{T})
+  for i=1:length(a)
+    a[i] = a[i] + b
+  end
+end
+function (+){T}(a::GLGlyph{T}, b::GLGlyph{T})
+  GLGlyph{T}(a.glyph + b.glyph, a.line + b.line, a.row + b.row, a.style_group + b.style_group)
+end
+
 
 immutable Style{StyleValue}
 end
@@ -88,24 +107,6 @@ tohsv(rgba)     = AlphaColorValue(convert(HSV, rgba.c), rgba.alpha)
 torgb(hsva)     = AlphaColorValue(convert(RGB, hsva.c), hsva.alpha)
 tohsv(h,s,v,a)  = AlphaColorValue(HSV(float32(h), float32(s), float32(v)), float32(a))
 
-Base.length{T}(::GLGlyph{T})                   = 4
-Base.length{T}(::Type{GLGlyph{T}})             = 4
-Base.eltype{T}(::GLGlyph{T})                   = T
-Base.eltype{T}(::Type{GLGlyph{T}})             = T
-Base.size{T}(::GLGlyph{T})                     = (4,)
-
-GLGlyph(x::GLGlyph; glyph=x.glyph, line=x.line, row=x.row, style_group=x.style_group) = GLGlyph(glyph, line, row, style_group)
-
-import Base: (+)
-
-function (+){T}(a::Array{GLGlyph{T}, 1}, b::GLGlyph{T})
-  for i=1:length(a)
-    a[i] = a[i] + b
-  end
-end
-function (+){T}(a::GLGlyph{T}, b::GLGlyph{T})
-  GLGlyph{T}(a.glyph + b.glyph, a.line + b.line, a.row + b.row, a.style_group + b.style_group)
-end
 
 Style(x::Symbol) = Style{x}()
 mergedefault!{S}(style::Style{S}, styles, customdata) = merge!(styles[S], Dict{Symbol, Any}(customdata))
@@ -170,59 +171,66 @@ function subs(x::DataType, unions=Any[])
     else
       subs(elem, unions)
     end
-    unions
+  end
+  Union(unions...)
 end
 
-function setindex!{T}(a::Vector{AbstractFixedVector{T, CDim}}, x::T, i::Integer, accessor::Integer)
+function setindex!{T <: AbstractFixedVector, ElType}(a::Vector{T}, x::ElType, i::Integer, accessor::Integer)
+  @assert eltype(T) == ElType # ugly workaround for not having triangular dispatch
   @assert length(a) >= i
-  @assert accessor <= CDim
-  ptr = convert(Ptr{T}, pointer(a))
-  unsafe_store!(ptr, x, ((i-1)*4)+accessor)
+  cardinality = length(T)
+  @assert accessor <= cardinality
+  ptr = convert(Ptr{ElType}, pointer(a))
+  unsafe_store!(ptr, x, ((i-1)*cardinality)+accessor)
 end
-function setindex!{T}(a::Vector{GLGlyph{T}}, x::Vector{T}, i::Integer, accessor::UnitRange)
+function setindex!{T <: AbstractFixedVector, ElType}(a::Vector{T}, x::Vector{ElType}, i::Integer, accessor::UnitRange)
+  @assert eltype(T) == ElType
   @assert length(a) >= i
-  @assert length(accessor) <= 4
-  ptr = convert(Ptr{T}, pointer(a))
-  unsafe_copy!(ptr + (sizeof(T)*((i-1)*4)), pointer(x), length(accessor))
+  cardinality = length(T)
+  @assert length(accessor) <= cardinality
+  ptr = convert(Ptr{ElType}, pointer(a))
+  unsafe_copy!(ptr + (sizeof(ElType)*((i-1)*cardinality)), pointer(x), length(accessor))
 end
-function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::T, i::Integer, accessor::Integer)
+function setindex!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{T, CDim, 1}, x::ElType, i::Integer, accessor::Integer)
   a.data[i, accessor] = x
   a[i] = a.data[i]
 end
-function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::Vector{T}, i::Integer, accessor::UnitRange)
+function setindex!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{T, CDim, 1}, x::Vector{ElType}, i::Integer, accessor::UnitRange)
   a.data[i, accessor] = x
   a[i] = a.data[i]
 end
 
 
 
-function setindex!{T}(a::Matrix{GLGlyph{T}}, x::Vector{T}, i::Integer, accessor::UnitRange)
+function setindex!{T <: AbstractFixedVector, ElType}(a::Matrix{T}, x::ElType, i::Integer, accessor::Integer)
+  @assert eltype(T) == ElType
   @assert length(a) >= i
-  @assert length(accessor) <= 4
+  cardinality = length(T)
+  @assert length(accessor) <= cardinality
+
   ptr = convert(Ptr{T}, pointer(a))
-  unsafe_copy!(ptr + (sizeof(T)*((i-1)*4)), pointer(x), length(accessor))
+  unsafe_store!(ptr, x, ((i-1)*cardinality)+accessor)
 end
-function setindex!{T}(a::Matrix{GLGlyph{T}}, x::T, i::Integer, accessor::Integer)
+function setindex!{T <: AbstractFixedVector, ElType}(a::Matrix{T}, x::Vector{ElType}, i::Integer, accessor::UnitRange)
+  @assert eltype(T) == ElType
   @assert length(a) >= i
-  @assert accessor <= 4
+  cardinality = length(T)
+  @assert length(accessor) <= cardinality
+
   ptr = convert(Ptr{T}, pointer(a))
-  unsafe_store!(ptr, x, ((i-1)*4)+accessor)
+  unsafe_copy!(ptr + (sizeof(T)*((i-1)*cardinality)), pointer(x), length(accessor))
 end
 
-function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::T, i::Integer, accessor::Integer)
-  @assert length(a) >= i
-  @assert accessor <= 4
-  ptr = convert(Ptr{T}, pointer(a.data))
-  unsafe_store!(ptr, x, ((i-1)*4)+accessor)
+
+function setindex!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{GLGlyph{T}, CDim, 2}, x::T, i::Integer, accessor::Integer)
+  a.data[i, accessor] = x
   a[i] = a.data[i]
 end
-function setindex!{T}(a::Texture{GLGlyph{T},4,1}, x::Vector{T}, i::Integer, accessor::UnitRange)
-  @assert length(a) >= i
-  @assert length(accessor) <= 4
-  ptr = convert(Ptr{T}, pointer(a.data))
-  unsafe_copy!(ptr + (sizeof(T)*((i-1)*4)), pointer(x), length(accessor))
+function setindex!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{GLGlyph{T}, CDim, 2}, x::Vector{T}, i::Integer, accessor::UnitRange)
+  a.data[i, accessor] = x
   a[i] = a.data[i]
 end
+
 
 function colorize(color, substrings, colortexture)
     for elem in substrings
@@ -263,6 +271,7 @@ function update_textpositions(text::String, text_array::Texture{GLGlyph})
     end
   end
 end
+
 function preparetext(text::String, tab=3)
   tab         = 3
   text        = map(x-> isascii(x) ? x : char(1), text)
@@ -367,59 +376,54 @@ function edit_text(v0, selection1, unicode_keys, special_keys)
   obj, textlength, textGPU, text0, selection0, selection10 = v0
   v1 = (obj, textlength, textGPU, text0, selection0, selection1)
   changed = false 
-  try
     # to compare it to the newly selected mouse position
-    if selection10 != selection1
-      v1 = (obj, textlength, textGPU, text0, selection1, selection1)
-    elseif !isempty(special_keys) && isempty(unicode_keys)
-      if in(GLFW.KEY_BACKSPACE, special_keys)
-        text0 = delete!(text0, selection0[2])
-        textlength -= 1
-        changed = true
-        selection = selection0[2] >= 1 ? Vector2(selection0[1], selection0[2] - 1) : Vector2(selection0[1], 0)
-        v1 = (obj, textlength, textGPU, text0, selection, selection1)
-      elseif in(GLFW.KEY_ENTER, special_keys)
-        text0 = addchar(text0, '\n', selection0[2])
-        textlength += 1
-        changed = true
-        v1 = (obj, textlength, textGPU, text0, selection0 + Vector2(0,1), selection1)
-      end
-    elseif !isempty(unicode_keys) && selection0[1] == obj.id # else unicode input must have occured
-      text0 = addchar(text0, first(unicode_keys), selection0[2])
+  if selection10 != selection1
+    v1 = (obj, textlength, textGPU, text0, selection1, selection1)
+  elseif !isempty(special_keys) && isempty(unicode_keys)
+    if in(GLFW.KEY_BACKSPACE, special_keys)
+      text0 = delete!(text0, selection0[2])
+      textlength -= 1
+      changed = true
+      selection = selection0[2] >= 1 ? Vector2(selection0[1], selection0[2] - 1) : Vector2(selection0[1], 0)
+      v1 = (obj, textlength, textGPU, text0, selection, selection1)
+    elseif in(GLFW.KEY_ENTER, special_keys)
+      text0 = addchar(text0, '\n', selection0[2])
       textlength += 1
       changed = true
       v1 = (obj, textlength, textGPU, text0, selection0 + Vector2(0,1), selection1)
     end
+  elseif !isempty(unicode_keys) && selection0[1] == obj.id # else unicode input must have occured
+    text0 = addchar(text0, first(unicode_keys), selection0[2])
+    textlength += 1
+    changed = true
+    v1 = (obj, textlength, textGPU, text0, selection0 + Vector2(0,1), selection1)
+  end
 
-    if changed
-      line        = 1
-      advance     = 0
-      for i=1:length(text0)
-        if i <= textlength
-          glyph = text0[i].glyph
-          text0[i] = GLGlyph(glyph, line, advance, 0)
-          if glyph == '\n'
-            advance = 0
-            line += 1
-          else
-            advance += 1
-          end
-        else # Fill in default value
-          text0[i] = GLGlyph()
+  if changed
+    line        = 1
+    advance     = 0
+    for i=1:length(text0)
+      if i <= textlength
+        glyph = text0[i].glyph
+        text0[i] = GLGlyph(glyph, line, advance, 0)
+        if glyph == '\n'
+          advance = 0
+          line += 1
+        else
+          advance += 1
         end
+      else # Fill in default value
+        text0[i] = GLGlyph()
       end
-
-      if textlength > length(text0) || length(text0) % 1024 != 0
-        newlength = 1024 - rem(length(text0)+1024, 1024)
-        text0     = [text0, Array(GLGlyph{Uint16}, newlength)]
-        resize!(textGPU, [1024, div(length(text0),1024)])
-      end
-      textGPU[1:0, 1:0] = reshape(text0, 1024, div(length(text0),1024))
-      obj[:postrender, renderinstanced] = (obj.vertexarray, textlength)
     end
-  catch err
-    Base.show_backtrace(STDERR, catch_backtrace())
-    println(err)
+
+    if textlength > length(text0) || length(text0) % 1024 != 0
+      newlength = 1024 - rem(length(text0)+1024, 1024)
+      text0     = [text0, Array(GLGlyph{Uint16}, newlength)]
+      resize!(textGPU, [1024, div(length(text0),1024)])
+    end
+    textGPU[1:0, 1:0] = reshape(text0, 1024, div(length(text0),1024))
+    obj[:postrender, renderinstanced] = (obj.vertexarray, textlength)
   end
 
   return v1

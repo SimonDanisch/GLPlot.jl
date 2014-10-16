@@ -50,7 +50,7 @@ POINT() = [
 ]
 
 SURFACE_DEFAULTS = [
-:Default = [
+:Default => [
 
 :primitive      => SURFACE(), 
 :xrange         => (-1,1), 
