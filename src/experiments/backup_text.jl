@@ -135,7 +135,6 @@ GLPlot.toopengl(text::Texture{GLGlyph, 1, 2}, style=Style(:Default); customizati
 #################################################################################################################################
 
 
-
 function makecompatible(glyph::Char, typ)
   if int(glyph) >= 0 && int(glyph) <= 255
     return convert(typ, glyph)
@@ -282,7 +281,6 @@ function edit_text(v0, selection1, unicode_keys, special_keys)
   obj, textlength, textGPU, text0, selection0, selection10 = v0
   v1 = (obj, textlength, textGPU, text0, selection0, selection1)
   changed = false 
-  try
     # to compare it to the newly selected mouse position
     if selection10 != selection1
       v1 = (obj, textlength, textGPU, text0, selection1, selection1)
@@ -347,11 +345,6 @@ function edit_text(v0, selection1, unicode_keys, special_keys)
       textGPU[1:0, 1:0] = reshape(text0, 1024, div(length(text0),1024))
       obj[:postrender, renderinstanced] = (obj.vertexarray, textlength)
     end
-  catch err
-    Base.show_backtrace(STDERR, catch_backtrace())
-    println(err)
-  end
-
   return v1
 end
 
