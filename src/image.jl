@@ -2,7 +2,7 @@
 
 function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
 
-  c, w, h  = img.dims
+  w, h  = img.dims
   dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
   texparams = [
      (GL_TEXTURE_MIN_FILTER, GL_NEAREST),

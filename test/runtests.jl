@@ -25,7 +25,7 @@ for i=1:100
     end
     render(elem)
   end
-  GLFW.SwapBuffers(window.glfwWindow)
+  GLFW.SwapBuffers(window.nativewindow)
   GLFW.PollEvents()
 end
 GLFW.Terminate()

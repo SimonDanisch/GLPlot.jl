@@ -1,5 +1,5 @@
 module GLPlot
-using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, Reactive, GLFW, Images, Quaternions, GLText
+using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, Reactive, GLFW, Images, Quaternions, GLText, Compat
 import Mustache
 
 export glplot, createdisplay, renderloop, toopengl,clearplot
@@ -57,13 +57,14 @@ Renderloop - blocking
 function renderloop(window)
 	global RENDER_LIST
 	glClearColor(1,1,1,0)
-	while !GLFW.WindowShouldClose(window.glfwWindow)
+	while !GLFW.WindowShouldClose(window.nativewindow)
 	    yield()
+	    glViewport(0,0,window.inputs[:framebuffer_size].value...)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		for elem in RENDER_LIST
 	        render(elem)
 	    end
-	    GLFW.SwapBuffers(window.glfwWindow)
+	    GLFW.SwapBuffers(window.nativewindow)
 		GLFW.PollEvents()
 	end
 	GLFW.Terminate()

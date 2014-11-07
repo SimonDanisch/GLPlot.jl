@@ -1,6 +1,6 @@
 using GLAbstraction, GLPlot, Reactive
 
-window = createdisplay()
+window = createdisplay(w=1920, h=1280)
 
 
 function zdata(x1, y1, factor)
@@ -23,6 +23,6 @@ color     = lift(x-> Vec4(sin(x), 0,1,1), Vec4, every(0.1)) # Example on how to 
 
 #color     = Texture(Pkg.dir()*"/GLPlot/docs/julia.png") # example for using an image for the color channel
 
-obj       = glplot(texdata, primitive=CUBE(), color=color) # Color can be any matrix or a Vec3
+obj       = glplot(texdata, primitive=SURFACE(), color=color) # Color can be any matrix or a Vec3
 
 renderloop(window)

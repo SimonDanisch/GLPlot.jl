@@ -1,6 +1,6 @@
 using GLAbstraction, GLPlot, Reactive
 
-window = createdisplay(eyeposition=Vec3(4,4,3))
+window = createdisplay(eyeposition=Vec3(4,4,3), w=1000, h=800)
 
 function zdata(i, j, t)
     x 		= float32(i - 0.5)
@@ -34,14 +34,13 @@ obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.05f0, ysc
 
 # you can also simply update the texture, even though it's not nicely exposed by the API yet.
 
-zscale = obj.uniforms[:zscale]
-tcolor = obj.uniforms[:color]
+zscale = obj[:zscale]
+tcolor = obj[:color]
 
 
 lift(x-> begin
 	update!(zscale, [zdata(i/N, k/N, sin(x/10)*15) for i=1:N, k=1:N])
 	update!(tcolor, [zcolor(i/N, k/N, (sin(x)+1f0)*4) for i=1:N, k=1:N])
-
 end, every(0.01))
 
 renderloop(window)
