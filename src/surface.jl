@@ -1,11 +1,11 @@
 export mix, SURFACE, CIRCLE, CUBE, POINT
 
 
-glsl_attributes = [
+glsl_attributes = @compat Dict(
   "instance_functions"  => readall(open(shaderdir*"/instance_functions.vert")),
   "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
-]
-SURFACE(scale=1) = [
+)
+SURFACE(scale=1) = @compat Dict(
     :vertex         => Vec3(0),
     :offset         => GLBuffer(Float32[0,0, 0,1, 1,1, 1,0] * scale, 2),
     :index          => indexbuffer(GLuint[0,1,2,2,3,0]),
@@ -14,9 +14,9 @@ SURFACE(scale=1) = [
     :zscale         => 1f0,
     :z              => 0f0,
     :drawingmode    => GL_TRIANGLES,
-]
+)
 
-CIRCLE(r=0.4, x=0, y=0, points=6) = [
+CIRCLE(r=0.4, x=0, y=0, points=6) = @compat Dict(
     :vertex         => Vec3(0),
     :offset         => GLBuffer(gencircle(r, x, y, points) , 2),
     :index          => indexbuffer(GLuint[i for i=0:points + 1]),
@@ -25,10 +25,10 @@ CIRCLE(r=0.4, x=0, y=0, points=6) = [
     :zscale         => 1f0,
     :z              => 0f0,
     :drawingmode    => GL_TRIANGLE_FAN
-]
+)
 const vertexes, uv, normals, indexes = gencubenormals(Vec3(0), Vec3(1, 0, 0), Vec3(0,1, 0), Vec3(0,0,1))
 
-CUBE() = [
+CUBE() = @compat Dict(
   :vertex         => GLBuffer(vertexes),
   :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
   :index          => indexbuffer(indexes),
@@ -36,8 +36,8 @@ CUBE() = [
   :zscale         => 1f0,
   :z              => 0f0,
   :drawingmode    => GL_TRIANGLES
-]
-POINT() = [
+)
+POINT() = @compat Dict(
   :vertex         => GLBuffer(Vec3[Vec3(0)]),
   :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
   :index          => indexbuffer(GLuint[0]),
@@ -45,7 +45,7 @@ POINT() = [
   :zscale         => 1f0,
   :z              => 0f0,
   :drawingmode    => GL_POINTS
-]
+)
 
 parameters = [
     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
@@ -69,8 +69,8 @@ function toopengl{T <: Union(AbstractArray, Real)}(
     y   = Vec2(first(yrange), last(yrange))
   end
   push!(rest, (:color, color))
-  customattributes = (Symbol => Any)[]
-  customview = (ASCIIString => ASCIIString)[]
+  customattributes = Dict{Symbol, Any}()
+  customview = Dict{ASCIIString, ASCIIString}()
 
   for (key, value) in rest
     if isa(value, Matrix)
@@ -82,7 +82,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
       customattributes[key] = value #todo: check for unsupported types
     end
   end
-  data = merge( [
+  data = merge(@compat(Dict(
     attribute       => Texture(attributevalue, parameters=parameters),
     :xrange         => x,
     :yrange         => y,
@@ -92,7 +92,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
     :normalmatrix   => camera.normalmatrix,
     :light_position => lightposition,
     :modelmatrix    => eye(Mat4)
-  ], customattributes)
+  )), customattributes)
   # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
     primitive[:normal_vector] = Vec3(0)

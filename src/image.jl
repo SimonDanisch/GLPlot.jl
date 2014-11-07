@@ -20,7 +20,7 @@ function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(
     filterkernel = Texture(float32(kernel), 1, parameters=texparams)
   end
 
-  data = [
+  data = @compat Dict(
     :vertex           => GLBuffer(v, 2),
     :index            => indexbuffer(indexes),
     :uv               => GLBuffer(uv, 2),
@@ -29,7 +29,7 @@ function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(
     :filterkernel     => filterkernel,
     :filternorm       => filternorm,
     :projectionview   => camera.projectionview
-  ]
+  )
 
   textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag", attributes=data)
 

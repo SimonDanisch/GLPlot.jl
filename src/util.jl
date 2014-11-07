@@ -3,7 +3,7 @@ begin
 	local wsize 	= [512, 512]
 	local buffer 	= Array(Uint8, 3, wsize...)
 
-	local imgprops 		= {"colorspace" => "RGB", "spatialorder" => ["x", "y"], "colordim" => 1}
+	local imgprops 		= @compat Dict{Any, Any}("colorspace" => "RGB", "spatialorder" => ["x", "y"], "colordim" => 1)
 
 	function screenshot(window_size, path="screenshot.png")
 		if window_size != wsize

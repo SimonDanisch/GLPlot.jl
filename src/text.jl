@@ -49,10 +49,10 @@ function toopengl(text::String;
 	parameters 		= [(GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE), (GL_TEXTURE_MIN_FILTER, GL_NEAREST)]
 	texttex 		= Texture(ctext, parameters=parameters)
 	offset 			= Texture(offset, parameters=parameters)
-	view = [
+	view = @compat Dict(
 	  "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable",
 	  "offset_calculation"  => "texelFetch(offset, index, 0).rgb;",
-	]
+	)
 	if !isa(color, Vec4)
 		view["color_calculation"] = "texelFetch(color, index, 0);"
 		color = Texture(color, parameters=parameters)
