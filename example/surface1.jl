@@ -2,7 +2,6 @@ using GLAbstraction, GLPlot, Reactive
 
 window = createdisplay(w=1920, h=1280)
 
-
 function zdata(x1, y1, factor)
     x = (x1 - 0.5) * 15
     y = (y1 - 0.5) * 15
