@@ -119,7 +119,7 @@ function surf{T <: AbstractArray}(::Style{:Default}, data::Dict{Symbol, Any})
     joinpath(shaderdir, "instance_template.vert"), joinpath(shaderdir, "phongblinn.frag"), 
     view=glsl_attributes, attributes=merged, fragdatalocation=fragdatalocation
   )
-
+  println(GLENUM(primitive[:drawingmode]))
   obj     = instancedobject(merged, program, xn*yn, primitive[:drawingmode])
   prerender!(obj, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
   obj

@@ -28,25 +28,21 @@ end
 
 lookatvec   = Vec3(0.5)
 eyeposvec   = Vec3(0, 1.5, 1.5)
-up          = Vec3(0,1,0)
 
-view        = lookat(eyeposvec, lookatvec, up)
-fov         = 0.7f0
-projection  = perspectiveprojection(rad2deg(fov), 1f0, 1f0, 100f0)
-focallength = 1.0f0 / tan(fov / 2f0)
-rayorigin   = viewmatrix(eyeposvec, view)
+camera = PerspectiveCamera(window.inputs, eyeposvec, lookatvec)
 
-println(rayorigin)
+focallength = lift(fov->1.0f0 / tan(deg2rad(fov) / 2f0), camera.fov)
+rayorigin   = lift(viewmatrix, camera.eyeposition, camera.view)
 data = [
 #Vertex Shader Data
   :vertex         => GLBuffer(v, 3),
   :indexes        => indexbuffer(indexes),
-  :projection     => projection,
+  :projection     => camera.projection,
 
 #Frag Shader Data
   :Density      => volume,
-  :view         => view,
-  :Modelview    => view,
+  :view         => camera.view,
+  :Modelview    => camera.view,
 
   :FocalLength  => focallength,
   :WindowSize   => Vec2(window.inputs[:window_size].value[3:4]...),

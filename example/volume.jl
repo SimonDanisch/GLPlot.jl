@@ -1,7 +1,6 @@
 using GLAbstraction, GLPlot, Reactive
 
 window = createdisplay(eyeposition=Vec3(1.5), lookat=Vec3(0.5), w=1920, h=1280)
-
 ##########################################################
 # Volume
 
@@ -14,7 +13,6 @@ volume 	= (volume .- min) ./ (max .- min)
 
 #Filter keydown events
 keypressed = window.inputs[:buttonspressed]
-
 #Make some attributes intseractive
 algorithm 	= foldl( (v0, v1) -> in('I', v1) ? 2f0 : in('M', v1) ? 1f0 : v0, 2f0, keypressed) # i for isosurface, m for MIP#
 isovalue 	= foldl( (v0, v1) -> in(GLFW.KEY_UP, v1) ? (v0 + 0.01f0) : (in(GLFW.KEY_DOWN, v1) ? (v0 - 0.01f0) : v0), 0.5f0, keypressed)

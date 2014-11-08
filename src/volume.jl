@@ -106,9 +106,10 @@ function genuvwcube(x, y, z, fb, camera)
   frontface = Texture(Vec4, window.inputs[:window_size].value[3:4])
   backface  = Texture(Vec4, window.inputs[:window_size].value[3:4])
 
-  lift(window.inputs[:window_size]) do window_size
-    resize!(frontface, window_size[3:4])
-    resize!(backface, window_size[3:4])
+  lift(window.inputs[:framebuffer_size]) do window_size
+    resize!(frontface, window_size)
+    resize!(backface, window_size)
+    window_size
   end
   
   rendersetup = () -> begin

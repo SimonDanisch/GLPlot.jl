@@ -50,63 +50,6 @@ lift(window.inputs[:framebuffer_size]) do window_size
 end
 
 
-function Base.setindex!{T <: AbstractFixedVector, ElType}(a::Vector{T}, x::ElType, i::Integer, accessor::Integer)
-  @assert eltype(T) == ElType # ugly workaround for not having triangular dispatch
-  @assert length(a) >= i
-  cardinality = length(T)
-  @assert accessor <= cardinality
-  ptr = convert(Ptr{ElType}, pointer(a))
-  unsafe_store!(ptr, x, ((i-1)*cardinality)+accessor)
-end
-function Base.setindex!{T <: AbstractFixedVector, ElType}(a::Vector{T}, x::Vector{ElType}, i::Integer, accessor::UnitRange)
-  @assert eltype(T) == ElType
-  @assert length(a) >= i
-  cardinality = length(T)
-  @assert length(accessor) <= cardinality
-  ptr = convert(Ptr{ElType}, pointer(a))
-  unsafe_copy!(ptr + (sizeof(ElType)*((i-1)*cardinality)), pointer(x), length(accessor))
-end
-function Base.setindex!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{T, CDim, 1}, x::ElType, i::Integer, accessor::Integer)
-  a.data[i, accessor] = x
-  a[i] = a.data[i]
-end
-function Base.setindex!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{T, CDim, 1}, x::Vector{ElType}, i::Integer, accessor::UnitRange)
-  a.data[i, accessor] = x
-  a[i] = a.data[i]
-end
-
-
-function setindex1D!{T <: AbstractFixedVector, ElType}(a::Matrix{T}, x::ElType, i::Integer, accessor::Integer)
-  @assert eltype(T) == ElType
-  @assert length(a) >= i
-  cardinality = length(T)
-  @assert length(accessor) <= cardinality
-
-  ptr = convert(Ptr{T}, pointer(a))
-  unsafe_store!(ptr, x, ((i-1)*cardinality)+accessor)
-end
-function setindex1D!{T <: AbstractFixedVector, ElType}(a::Matrix{T}, x::Vector{ElType}, i::Integer, accessor::UnitRange)
-  @assert eltype(T) == ElType
-  @assert length(a) >= i
-  cardinality = length(T)
-  @assert length(accessor) <= cardinality
-
-  ptr = convert(Ptr{T}, pointer(a))
-  unsafe_copy!(ptr + (sizeof(T)*((i-1)*cardinality)), pointer(x), length(accessor))
-end
-
-
-function setindex1D!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{GLGlyph{T}, CDim, 2}, x::T, i::Integer, accessor::Integer)
-  a.data[i, accessor] = x
-  a[i] = a.data[i]
-end
-function setindex1D!{T <: AbstractFixedVector, ElType, CDim}(a::Texture{GLGlyph{T}, CDim, 2}, x::Vector{T}, i::Integer, accessor::UnitRange)
-  a.data[i, accessor] = x
-  a[i] = a.data[i]
-end
-
-
-
 
 
 

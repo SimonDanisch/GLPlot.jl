@@ -22,7 +22,7 @@ const float lscale = maxDist / float(numLightSamples);
 const float densityFactor = 5;
 
 const bool Jitter = false;
-
+{{in}} vec3 frag_vert;
 float GetDensity(vec3 pos)
 {
     return texture(Density, pos).x;
@@ -55,54 +55,7 @@ bool IntersectBox(Ray r, AABB aabb, out float t0, out float t1)
 
 void main()
 {
-    vec3 rayDirection;
-    rayDirection.xy = 2.0 * gl_FragCoord.xy / WindowSize - 1.0;
-    rayDirection.x /= WindowSize.y / WindowSize.x;
-    rayDirection.z = -FocalLength;
-    rayDirection = (vec4(rayDirection, 0) * Modelview).xyz;
 
-    Ray eye = Ray( RayOrigin, normalize(rayDirection) );
-    AABB aabb = AABB(vec3(-1), vec3(1));
-
-    float tnear, tfar;
-    IntersectBox(eye, aabb, tnear, tfar);
-    if (tnear < 0.0) tnear = 0.0;
-
-    vec3 rayStart = eye.Origin + eye.Dir * tnear;
-    vec3 rayStop = eye.Origin + eye.Dir * tfar;
-    rayStart = 0.5 * (rayStart + 1.0);
-    rayStop = 0.5 * (rayStop + 1.0);
-
-    vec3 pos = rayStart;
-    vec3 viewDir = normalize(rayStop-rayStart) * StepSize;
-    float T = 1.0;
-    vec3 Lo = Ambient;
-
-
-    float remainingLength = distance(rayStop, rayStart);
-
-    for (int i=0; i < ViewSamples && remainingLength > 0.0;
-        ++i, pos += viewDir, remainingLength -= StepSize) {
-
-        float density = GetDensity(pos);
-        vec3 lightColor = vec3(1);
-        if (pos.z < 0.1) {
-            density = 10;
-            lightColor = 3*Ambient;
-        } else if (density <= 0.01) {
-            continue;
-        }
-
-        T *= 1.0 - density * StepSize * Absorption;
-        if (T <= 0.01)
-            break;
-
-        vec3 Li = lightColor;
-        Lo += Li * T * density * StepSize;
-    }
-
-    //Lo = 1-Lo;
-
-    FragColor.rgb = rayStart;
+    FragColor.rgb = frag_vert;
     FragColor.a = 1;
 }
