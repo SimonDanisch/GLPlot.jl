@@ -40,7 +40,7 @@ function toopengl{T <: Real}(img::Array{T, 3};
 
   cubedata[:light_position] = lightposition
 
-  volume = RenderObject(cubedata, volumeshader)
+  volume = RenderObject(cubedata, volumeshader, volumeshader)
 
   rendertouvwtexture = () -> begin
     render(cube1)
@@ -62,7 +62,7 @@ function genuvwcube(x, y, z, fb, camera)
     :uvw            => GLBuffer(uvw, 3),
     :indexes        => indexbuffer(indexes),
     :projectionview => camera.projectionview
-  )), uvwshader)
+  )), uvwshader, uvwshader)
   frontface = Texture(Vec4, [window.inputs[:framebuffer_size].value...])
   backface  = Texture(Vec4, [window.inputs[:framebuffer_size].value...])
 
