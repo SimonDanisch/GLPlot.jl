@@ -1,9 +1,8 @@
 using Base.Test
 using GLPlot, GLAbstraction, ModernGL
-
 window = createdisplay(eyeposition=Vec3(2), lookat=Vec3(0.5))
-
 glplot(Vec1[Vec1(sin(i)*sin(j) / 4f0) for i=0:0.1:10, j=0:0.1:10], color = Vec4(1,0,0,1))
+
 glplot(Texture(Vec4[Vec4(sin(i), sin(j), cos(i), sin(j)*cos(i)) for i=1:0.1:12, j=1:0.1:12]))
 N = 128
 

@@ -1,5 +1,3 @@
-
-
 function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
 
   w, h  = img.dims
@@ -33,7 +31,7 @@ function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(
 
   textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag", attributes=data)
 
-  obj = RenderObject(data, textureshader, textureshader)
+  obj = RenderObject(data, textureshader)
   prerender!(obj, glDisable, GL_DEPTH_TEST, enabletransparency,  glDisable, GL_CULL_FACE)
   postrender!(obj, render, obj.vertexarray)
   obj
