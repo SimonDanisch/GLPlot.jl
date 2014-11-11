@@ -48,10 +48,10 @@ POINT() = @compat Dict(
 )
 
 parameters = [
-    (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
-    (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
-    (GL_TEXTURE_WRAP_S,  GL_REPEAT),
-    (GL_TEXTURE_WRAP_T,  GL_REPEAT),
+    (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
+    (GL_TEXTURE_MAG_FILTER, GL_LINEAR),
+    (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
   ]
 
 function toopengl{T <: Union(AbstractArray, Real)}(
@@ -62,8 +62,8 @@ function toopengl{T <: Union(AbstractArray, Real)}(
   xn  = size(attributevalue, 1)
   yn  = size(attributevalue, 2)
   if isa(xrange, Matrix)
-    x = Texture(xrange, 1, parameters=parameters)
-    y = Texture(yrange, 1, parameters=parameters)
+    x = Texture(xrange, parameters=parameters)
+    y = Texture(yrange, parameters=parameters)
   else
     x   = Vec2(first(xrange), last(xrange))
     y   = Vec2(first(yrange), last(yrange))
@@ -82,6 +82,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
       customattributes[key] = value #todo: check for unsupported types
     end
   end
+
   data = merge(@compat(Dict(
     attribute       => Texture(attributevalue, parameters=parameters),
     :xrange         => x,
@@ -106,7 +107,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
   merged = merge(primitive, data)
   merge!(glsl_attributes,customview)
   program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
-  obj     = instancedobject(merged, xn*yn, program, primitive[:drawingmode])
+  obj     = instancedobject(merged, (xn)*(yn), program, primitive[:drawingmode])
   prerender!(obj, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
   obj
 end
