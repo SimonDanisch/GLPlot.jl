@@ -67,6 +67,7 @@ function renderloop(window)
 	    end
 	    GLFW.SwapBuffers(window.nativewindow)
 		GLFW.PollEvents()
+		sleep(0.001)
 	end
 	GLFW.Terminate()
 	empty!(RENDER_LIST)

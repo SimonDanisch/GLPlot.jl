@@ -33,22 +33,42 @@ vec2 stretch(vec2 uv, vec2 from, vec2 to)
  {
    return from + (uv * (to - from));
  }
+
+const vec3 up = vec3(0,0,1);
+
 mat3 rotation(vec3 direction)
 {
-    vec3 up = vec3(0,1,0);
     if(direction == up)
     {
         return mat3(1.0);
     }
-    vec3 xaxis = normalize(cross(up, direction));
-    vec3 yaxis = normalize(cross(direction, xaxis));
-    mat3 rotation_mat = mat3(0.0);
-    rotation_mat[0] = normalize(direction);
-    rotation_mat[2] = normalize(cross(direction, up));
-    rotation_mat[1] = normalize(cross(rotation_mat[2], direction));
-    return rotation_mat;
-}
+    vec3 zaxis = normalize(direction);
+    vec3 xaxis = normalize(cross(up, zaxis));
+    vec3 yaxis = normalize(cross(zaxis, xaxis));
 
+    mat3 viewMatrix = mat3(1.0);
+    viewMatrix[0] = xaxis;
+    viewMatrix[1] = yaxis;
+    viewMatrix[2] = zaxis;
+    
+    return viewMatrix;
+}
+/*
+mat3 lookat(vec3 eyePos)
+{
+    vec3 zaxis = normalize(eyePos);
+    vec3 xaxis = normalize(cross(up, zaxis));
+    vec3 yaxis = normalize(cross(zaxis, xaxis));
+
+    mat3 viewMatrix = mat3(1.0);
+    viewMatrix[0] = xaxis;
+    viewMatrix[1] = yaxis;
+    viewMatrix[2] = zaxis;
+    mat3 translationmatrix = mat3(1.0);
+    translationmatrix[]
+    return viewMatrix * translationmatrix(-eyePos)
+}
+*/
 void main(){
     ivec3 cubesize    = textureSize(vectorfield, 0);
     ivec3 fieldindex  = ivec3(gl_InstanceID / (cubesize.y * cubesize.z), (gl_InstanceID / cubesize.z) % cubesize.y, gl_InstanceID % cubesize.z);
