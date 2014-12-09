@@ -14,6 +14,7 @@ include(sourcedir*"volume.jl")
 include(sourcedir*"image.jl")
 include(sourcedir*"util.jl")
 include(sourcedir*"text.jl")
+include(sourcedir*"vectorfield.jl")
 
 
 global const RENDER_LIST = RenderObject[]
