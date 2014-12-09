@@ -16,13 +16,14 @@ local glsl_attributes = @compat Dict(
   "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
 )
 
-local const cube = gencubenormals(Vec3(0), Vec3(0.01, 0, 0), Vec3(0,0.01, 0), Vec3(0,0,0.01))
+local const cubez = gencubenormals(Vec3(0), Vec3(0.001, 0, 0), Vec3(0,0.001, 0), Vec3(0,0,0.01))
 
 local const parameters = [
     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
     (GL_TEXTURE_MAG_FILTER, GL_NEAREST),
     (GL_TEXTURE_WRAP_S,  GL_CLAMP_TO_EDGE),
     (GL_TEXTURE_WRAP_T,  GL_CLAMP_TO_EDGE),
+    (GL_TEXTURE_WRAP_R,  GL_CLAMP_TO_EDGE),
   ]
 function toopengl(
             vectorfield::Array{Vector3{Float32}, 3}; 
@@ -41,9 +42,9 @@ function toopengl(
     :normalmatrix   => camera.normalmatrix,
     :light_position => lightposition,
     :modelmatrix    => eye(Mat4),
-    :vertex         => GLBuffer(cube[1]),
-    :index          => indexbuffer(cube[4]),
-    :normal_vector  => GLBuffer(cube[3]),
+    :vertex         => GLBuffer(cubez[1]),
+    :index          => indexbuffer(cubez[4]),
+    :normal_vector  => GLBuffer(cubez[3]),
   )), Dict{Symbol, Any}(rest), primitive)
   # Depending on what the primitivie is, additional values have to be calculated
   program = TemplateProgram(shaderdir*"vectorfield.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=data)

@@ -104,7 +104,7 @@ void main(){
     normal      = getnormal(z, uv, normal_vector);
     N           = normalize(normalmatrix * normal);
 
-    vert_color  = {{color_calculation}}
+    vert_color  = vec4(abs(normalize(cross(vec3(0,0,1), normal))),1);
 
     V           = vec3(view * vec4(xyz, 1.0));
     vert        = {{vertex_calculation}}

@@ -36,20 +36,16 @@ vec2 stretch(vec2 uv, vec2 from, vec2 to)
 mat3 rotation(vec3 direction)
 {
     vec3 up = vec3(0,1,0);
+    if(direction == up)
+    {
+        return mat3(1.0);
+    }
     vec3 xaxis = normalize(cross(up, direction));
     vec3 yaxis = normalize(cross(direction, xaxis));
-    mat3 rotation_mat;
-    rotation_mat[0][0] = xaxis.x;
-    rotation_mat[0][1] = yaxis.x;
-    rotation_mat[0][2] = direction.x;
-
-    rotation_mat[1][0] = xaxis.y;
-    rotation_mat[1][1] = yaxis.y;
-    rotation_mat[1][2] = direction.y;
-
-    rotation_mat[2][0] = xaxis.z;
-    rotation_mat[2][1] = yaxis.z;
-    rotation_mat[2][2] = direction.z;
+    mat3 rotation_mat = mat3(0.0);
+    rotation_mat[0] = normalize(direction);
+    rotation_mat[2] = normalize(cross(direction, up));
+    rotation_mat[1] = normalize(cross(rotation_mat[2], direction));
     return rotation_mat;
 }
 
@@ -65,8 +61,9 @@ void main(){
 
     N           = normalize(normalmatrix * normal_vector);
 
-    vert_color  = texture(colormap, stretch(vlength, color_range.x, color_range.y));
-    V           = vectororigin + vec3(view * modelmatrix * vec4(rotation_mat * vertex, 1));
+    vert_color  = texture(colormap, vlength);
+    vec3 xyz    = vec3(view * modelmatrix * vec4(((rotation_mat*(vertex*vec3(0.005,0.005,0.05)))+vectororigin), 1));
+    V           = xyz;
 
-    gl_Position = projection * vec4(V,1);
+    gl_Position = projection * vec4(xyz,1);
 }

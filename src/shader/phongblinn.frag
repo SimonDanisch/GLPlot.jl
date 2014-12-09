@@ -39,5 +39,5 @@ void main(){
     vec3 L = normalize(light_position - V);
     vec3 light1 = blinn_phong(N, V, L, vert_color.rgb);
     vec3 light2 = blinn_phong(N, V, -L, vert_color.rgb);
-    fragment_color = vec4(light1 + light2, vert_color.a);
+    fragment_color = vec4(light1+light2, vert_color.a);
 }
