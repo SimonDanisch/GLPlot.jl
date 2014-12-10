@@ -11,7 +11,7 @@ glplot(volume, stepsize=0.001f0)
 
 glClearColor(1,1,1,0)
 windowsize = window.inputs[:window_size].value[3:4]
-for i=1:100
+for i=1:500
   yield()
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
   for (i,elem) in enumerate(GLPlot.RENDER_LIST)

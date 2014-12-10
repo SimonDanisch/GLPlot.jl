@@ -5,7 +5,7 @@ function creategrid(;xrange::(Real, Real)=(-1,1), yrange::(Real, Real)=(-1,1), z
 	
 	v,uv,n,i = mergemesh(xyplane, zyplane, zxplane)
 
-	grid = RenderObject([
+	grid = RenderObject(@compat(Dict(
 			:vertexes 			  	=> GLBuffer(v),
 			:indexes			   	=> indexbuffer(i),
 			#:grid_color 		  => Float32[0.1,.1,.1, 1.0],
@@ -13,7 +13,7 @@ function creategrid(;xrange::(Real, Real)=(-1,1), yrange::(Real, Real)=(-1,1), z
 			:grid_thickness  		=> Input(Vec3(2)),
 			:gridsteps  		  	=> Input(Vec3(10)),
 			:mvp 				    => camera.projectionview
-		], gridshader)
+		)), gridshader)
 	prerender!(grid, glDisable, GL_DEPTH_TEST, glDisable, GL_CULL_FACE, enabletransparency)
 	postrender!(grid, render, grid.vertexarray)
 	return grid

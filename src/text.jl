@@ -57,7 +57,7 @@ function toopengl(text::String;
 		view["color_calculation"] = "texelFetch(color, index, 0);"
 		color = Texture(color, parameters=parameters)
 	end
-	data = merge([
+	data = merge(@compat(Dict(
 		:index_offset		=> convert(GLint, 0),
 	    :rotation 			=> Vec4(textrotation.s, textrotation.v1, textrotation.v2, textrotation.v3),
 	    :text 				=> texttex,
@@ -66,7 +66,7 @@ function toopengl(text::String;
 	    :color 				=> color,
 	    :backgroundcolor 	=> backgroundcolor,
 	    :projectionview 	=> camera.projectionview
-	], font.data)
+	)), font.data)
 
 	program = TemplateProgram(
 		Pkg.dir()*"/GLText/src/textShader.vert", Pkg.dir()*"/GLText/src/textShader.frag", 

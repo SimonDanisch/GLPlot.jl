@@ -14,12 +14,12 @@ function toopengl{T <: Real}(img::Array{T, 3};
     )
   v, uvw, indexes = gencube(spacing...)
 
-  cubedata = [
+  cubedata = @compat(Dict(
       :vertex         => GLBuffer(v, 3),
       :uvw            => GLBuffer(uvw, 3),
       :indexes        => GLBuffer(indexes, 1, buffertype = GL_ELEMENT_ARRAY_BUFFER),
       :projectionview => camera.projectionview
-  ]
+  ))
   
 
   cube1,frontf1, backf1 = genuvwcube(1f0, 1f0, 1f0, uvwposition_framebuffer, camera)
