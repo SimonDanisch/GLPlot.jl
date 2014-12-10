@@ -14,6 +14,6 @@ void main(){
 
 	V = vec3(view  * vec4(vertex,1.0));       
    	N = normalize(normalmatrix * normal);
-   	vert_color = vec4(abs(normal),1);
+   	vert_color = vec4(1,0,0,1);
    	gl_Position = projection * view * model * vec4(vertex, 1.0);
 }
