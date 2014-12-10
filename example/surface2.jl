@@ -33,7 +33,6 @@ obj = glplot(texdata, :zscale, primitive=CUBE(), color=color, xscale=0.05f0, ysc
 # Its also planned, that you can just upload your own functions and uniforms, to further move computations to the shader.
 
 # you can also simply update the texture, even though it's not nicely exposed by the API yet.
-println(obj.uniforms)
 zscale = obj[:zscale]
 tcolor = obj[:color]
 

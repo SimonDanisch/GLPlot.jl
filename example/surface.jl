@@ -12,7 +12,7 @@ y=float32(r*sin(t)')
 
 f(x,y)  = exp(-10x.^2-20y.^2)  # arbitrary function of f
 z       = Float32[float32(f(x[k,j],y[k,j])) for k=1:size(x,1),j=1:size(x,2)]
-obj     = glplot(z, xrange=x, yrange=y, color="xyz.z>0 ? vec4(.1,.1,0.5+3*xyz.z, xyz.z) : vec4(.1,.1-3*xyz.z,0.5, xyz.z);")
+obj     = glplot(z, xrange=x, yrange=y, color="xyz.z>0 ? vec4(.1,.1,0.5+3*xyz.z, 1.0) : vec4(.1,.1-3*xyz.z,0.5,  1.0);")
 
 
 renderloop(window)
