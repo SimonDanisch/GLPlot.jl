@@ -43,8 +43,8 @@ Args
 returns:
 	window with window event signals
 =#
-function createdisplay(;async=false, w=500, h=500, eyeposition=Vec3(1,1,0), lookat=Vec3(0)) 
-	global window 	= createwindow("GLPlot", w, h) 
+function createdisplay(;async=false, w=500, h=500, eyeposition=Vec3(1,1,0), lookat=Vec3(0), debugging=false) 
+	global window 	= createwindow("GLPlot", w, h, debugging=debugging) 
 	global pcamera 	= PerspectiveCamera(window.inputs, eyeposition, lookat)
 	global ocamera 	= OrthographicCamera(window.inputs)
 	if async

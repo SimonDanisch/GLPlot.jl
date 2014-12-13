@@ -1,16 +1,16 @@
-using GLPlot, GLAbstraction
+using GLPlot, GLAbstraction, Images, Color, FixedPointNumbers
 
-window = createdisplay()
+window = createdisplay(debugging=true)
 
 ##########################################################
 # Image
 
 # Using ImmutableArrays for colors (Vec4 --> Vector4{Float32):
-a = Texture(Vec4[Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])
+#a = Texture(Vec4[Vec4(i/512,j/512,0,1)for i=1:512, j=1:512])
 # Without ImmutableArays, the color dimension is not known and you need to supply it
-b = Texture(Float32[(i*j)/512^2 for i=1:512, j=1:512]) 
-c = Texture("../docs/julia.png")
-
+#b = Texture(Float32[(i*j)/512^2 for i=1:512, j=1:512]) 
+c = Texture(Matrix{RGB{Ufixed8}}[imread("../docs/julia.png").data])
+println(c)
 # default usage will just bring the texture on your screen with zooming and panning enabled:
 glplot(c)
 # these are the keyword arguments:
