@@ -4,7 +4,7 @@ using GLPlot, GLAbstraction, ModernGL
 window = createdisplay(w=1000,h=1000,eyeposition=Vec3(1.,1.,1.), lookat=Vec3(0.,0.,0.));
 
 function funcy(x,y,z)
-    Vec3(sin(x),cos(y),sin(z))
+    Vec3(0,1,1)
 end
 
 N = 20

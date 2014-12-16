@@ -83,6 +83,11 @@ function toopengl{T <: Union(AbstractArray, Real)}(
     end
   end
 
+  const light         = Vec3[Vec3(1.0,1.0,1.0), Vec3(0.1,0.1,0.1), Vec3(0.9,0.9,0.9), Vec3(20.0,20.0,20.0)] 
+  const material      = Vec3[Vec3(1.0,0.0,0.0), Vec3(0.1), Vec3(0.1), Vec3(60.0)]
+  const tmaterial      = Vec4[Vec4(1.0,1.0,1.0,1.0), Vec4(1.0,1.0,1.0,1.0), Vec4(1.0,1.0,1.0,1.0), Vec4(1.0,1.0,1.0,1.0)]
+  const tmaterialused  = GLint[-1,-1,-1,-1]
+
   data = merge(@compat(Dict(
     attribute       => Texture(attributevalue, parameters=parameters),
     :xrange         => x,
@@ -91,8 +96,14 @@ function toopengl{T <: Union(AbstractArray, Real)}(
     :projection     => camera.projection,
     :view           => camera.view,
     :normalmatrix   => camera.normalmatrix,
+    :eyeposition    => camera.eyeposition,
     :light_position => lightposition,
-    :modelmatrix    => eye(Mat4)
+    :modelmatrix    => eye(Mat4),
+    :texture_maps   => Texture(Matrix{RGBA{Ufixed8}}[fill(rgbaU8(0,0,0,0), 1,1)]),
+    :material       => material,
+    :light          => light,
+    :tmaterialused  => tmaterialused,
+    :textures_used  => false
   )), customattributes)
   # Depending on what the primitivie is, additional values have to be calculated
   if !haskey(primitive, :normal_vector)
@@ -106,7 +117,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
   end
   merged = merge(primitive, data)
   merge!(glsl_attributes,customview)
-  program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
+  program = TemplateProgram(shaderdir*"surface.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
   obj     = instancedobject(merged, (xn)*(yn), program, primitive[:drawingmode])
   prerender!(obj, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
   obj

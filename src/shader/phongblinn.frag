@@ -2,12 +2,10 @@
 #extension GL_ARB_shading_language_420pack : enable
 
 {{in}} vec3 o_normal;
-{{in}} vec3 o_toLight;
-{{in}} vec3 o_toCamera;
-{{in}} vec2 o_texcoords;
+{{in}} vec3 o_lightdir;
+{{in}} vec3 o_vertex;
+{{in}} vec2 o_uv;
 
-
-bool textures_used;
 
 const int diffuse = 0;
 const int ambient = 1;
@@ -19,32 +17,33 @@ const int position = 3;
 
 uniform vec3 material[4];
 uniform vec3 light[4];
-uniform int tmaterialused[4];
+uniform int textures_used[4];
 
-vec4 tmaterial[4] = { 
-    vec4(1),
-    vec4(1),
-    vec4(1),
-    vec4(1),
-};
+
 
 uniform sampler2DArray texture_maps;
 
 vec4[4] set_textures(int matu[4], vec2 uv)
 {
-    if(matu[diffuse] > -1)
+    vec4 tmaterial[4] = { 
+    vec4(0),
+    vec4(0),
+    vec4(0),
+    vec4(0),
+};
+    if(matu[diffuse] >= 0)
     {
         tmaterial[diffuse] =  texture(texture_maps, vec3(uv, matu[diffuse]));
     }
-    if(matu[ambient] > -1)
+    if(matu[ambient] >= 0)
     {
         tmaterial[ambient] = texture(texture_maps, vec3(uv, matu[ambient]));
     }
-    if(matu[specular] > -1)
+    if(matu[specular] >= 0)
     {
         tmaterial[specular] = texture(texture_maps, vec3(uv, matu[specular]));
     }
-    if(matu[bump] > -1)
+    if(matu[bump] >= 0)
     {
         tmaterial[bump] = texture(texture_maps, vec3(uv, matu[bump]));
     }
@@ -67,17 +66,25 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec3 mat[4], vec4 tmat[4
         spec_coeff = 0.0;
 
     // final lighting model
-    return  light[ambient]  * mat[ambient]  * tmat[ambient].rgb +
-            light[diffuse]  * mat[diffuse] * tmat[diffuse].rgb  * diff_coeff +
-            light[specular] * mat[specular] * tmat[specular].rgb * spec_coeff;
+    return  light[ambient]  * mat[ambient]  +
+            light[diffuse]  * mat[diffuse]  * diff_coeff +
+            light[specular] * mat[specular] * spec_coeff;
 }
 
 void main(){
-    vec3 L = normalize(o_toLight);
-    vec3 V = normalize(o_toCamera);
-    vec3 N = normalize(o_normal);
 
-    vec4[4] tmat = set_textures(tmaterialused, vec2(o_texcoords.x, 1-o_texcoords.y));
+    vec3 spec = vec3(0.0);
+    vec3 l = normalize(o_lightdir);
+    vec3 e = normalize(o_vertex);
+    vec3 n = normalize(o_normal);
 
-    fragment_color = vec4(blinn_phong(N, V, L, light, material, tmat), 1);
+    float intensity = max(dot(n,l), 0.0);
+    if (intensity > 0.0) {
+        vec3 h = normalize(l + e);
+        float intSpec = max(dot(h,n), 0.0);
+        spec = vec3(0.2) * pow(intSpec, 60);
+    }
+   
+
+    fragment_color = vec4(max(intensity * vec3(0.8,0.0,0.0) + spec, material[ambient]),1);
 }

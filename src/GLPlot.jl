@@ -1,5 +1,18 @@
 module GLPlot
-using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, Reactive, GLFW, Images, Quaternions, GLText, Compat
+
+using GLWindow
+using GLAbstraction
+using ModernGL
+using ImmutableArrays
+using Reactive
+using GLFW
+using Images
+using Quaternions
+using GLText
+using Compat
+using FixedPointNumbers
+using Color
+
 import Mustache
 
 export glplot, createdisplay, renderloop, toopengl,clearplot
@@ -15,6 +28,7 @@ include(sourcedir*"image.jl")
 include(sourcedir*"util.jl")
 include(sourcedir*"text.jl")
 include(sourcedir*"vectorfield.jl")
+include(sourcedir*"mesh.jl")
 
 
 global const RENDER_LIST = RenderObject[]
