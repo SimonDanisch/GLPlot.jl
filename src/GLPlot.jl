@@ -1,5 +1,5 @@
 module GLPlot
-using GLWindow, GLAbstraction, ModernGL, ImmutableArrays, Reactive, GLFW, Images, Quaternions, GLText, Compat
+using GLWindow, GLAbstraction, ModernGL, FixedPointNumbers, ImmutableArrays, Reactive, GLFW, Images, Quaternions, GLText, Compat, Color
 import Mustache
 
 export glplot, createdisplay, renderloop, toopengl,clearplot

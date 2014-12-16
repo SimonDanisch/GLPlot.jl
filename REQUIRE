@@ -10,3 +10,5 @@ GLWindow
 GLText
 Quaternions
 Compat
+Color
+FixedPointNumbers
