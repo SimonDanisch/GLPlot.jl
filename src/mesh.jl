@@ -204,11 +204,11 @@ function collect_for_gl(mesh::GLMesh)
         :model         => mesh.model
     )))
 end
-GLPlot.toopengl(mesh::Meshes.Mesh) = toopengl(convert(GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}, mesh))
+toopengl(mesh::Meshes.Mesh) = toopengl(convert(GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}, mesh))
 
 const MESH_SHADER = Any[]
 const light       = Vec3[Vec3(1.0,1.0,1.0), Vec3(0.1,0.1,0.1), Vec3(0.9,0.9,0.9), Vec3(10.0, 10.0,10.0)]
-function GLPlot.toopengl(mesh::GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}; camera=pcamera)
+function toopengl(mesh::GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}; camera=pcamera)
     if isempty(MESH_SHADER)
         push!(MESH_SHADER, TemplateProgram(Pkg.dir("GLPlot", "src", "shader", "standard.vert"), Pkg.dir("GLPlot", "src", "shader", "phongblinn.frag")))
     end

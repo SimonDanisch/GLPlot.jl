@@ -1,4 +1,4 @@
-function toopengl{T, D}(img::Texture{T, D, 3}; camera = ocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
+function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(0,1), kernel=1f0, filternorm=1f0)
 
   w, h  = img.dims
   dims = w > h ? (float32((w/h)), 1f0) : (1f0, float32((h/w)))
