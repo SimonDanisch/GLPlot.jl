@@ -11,7 +11,6 @@
 {{out}} vec2 o_uv;
 
 uniform mat4 projection, view, model;
-uniform mat3 normalmatrix;
 uniform vec3 light[4];
 uniform vec3 eyeposition;
 
@@ -21,6 +20,7 @@ const int position = 3;
 
 void render(vec3 vertex, vec3 normal, vec2 uv,  mat4 model)
 {
+    mat3 normalmatrix           = mat3(transpose(inverse(view*model)));
     vec4 position_camspace      = view * model * vec4(vertex, 1);
     vec4 lightposition_camspace = view * vec4(light[position],1);
     // normal in world space

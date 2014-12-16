@@ -53,7 +53,7 @@ vec4[4] set_textures(int matu[4], vec2 uv)
 
 {{out}} vec4 fragment_color;
 
-vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec3 mat[4], vec4 tmat[4])
+vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec3 mat[4])
 {
 
     float diff_coeff = max(dot(L,N), 0.0);
@@ -71,20 +71,17 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec3 mat[4], vec4 tmat[4
             light[specular] * mat[specular] * spec_coeff;
 }
 
+vec3 diffuse_lighting(vec3 L, vec3 N, vec3 Ld, vec3 Kd)
+{
+    return Ld * Kd * max( dot(L, N), 0.0);
+}
+
 void main(){
 
     vec3 spec = vec3(0.0);
-    vec3 l = normalize(o_lightdir);
-    vec3 e = normalize(o_vertex);
-    vec3 n = normalize(o_normal);
-
-    float intensity = max(dot(n,l), 0.0);
-    if (intensity > 0.0) {
-        vec3 h = normalize(l + e);
-        float intSpec = max(dot(h,n), 0.0);
-        spec = vec3(0.2) * pow(intSpec, 60);
-    }
+    vec3 L = normalize(o_lightdir);
+    vec3 V = normalize(o_vertex);
+    vec3 N = normalize(o_normal);
    
-
-    fragment_color = vec4(max(intensity * vec3(0.8,0.0,0.0) + spec, material[ambient]),1);
+    fragment_color = vec4(blinn_phong(N, V, L, light, material),1);
 }

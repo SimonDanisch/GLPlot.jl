@@ -98,8 +98,10 @@ vec2 getuv(vec2 texdim, int index, vec2 offset)
     return (vec2(u,v) + offset) / (texdim+1);
 }
 
+
 void render(vec3 vertex, vec3 normal, vec2 uv,  mat4 model)
 {
+    mat3 normalmatrix           = mat3(transpose(inverse(view*model)));
     vec4 position_camspace      = view * model * vec4(vertex, 1);
     vec4 lightposition_camspace = view * vec4(light[position],1);
     // normal in world space

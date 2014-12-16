@@ -66,7 +66,7 @@ function gen_normals(faces, verts)
   reinterpret(Normal{Float32}, normals_result)
 end
 
-Material() = Material(RGB(0.2f0), RGB(0.2f0), RGB(0.2f0), 60f0)
+Material() = Material(RGB(0.9f0), RGB(0.9f0), RGB(0.9f0), 90f0)
 
 function GLMesh(data...; material=Material(), textures=Dict(:default => fill(rgbaU8(0,0,0,0), 1,1)), model=eye(Mat4))
     result = (Symbol => DataType)[]
@@ -207,7 +207,7 @@ end
 toopengl(mesh::Meshes.Mesh) = toopengl(convert(GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}, mesh))
 
 const MESH_SHADER = Any[]
-const light       = Vec3[Vec3(1.0,1.0,1.0), Vec3(0.1,0.1,0.1), Vec3(0.9,0.9,0.9), Vec3(10.0, 10.0,10.0)]
+const light       = Vec3[Vec3(1.0,0.9,0.8), Vec3(0.01,0.01,0.1), Vec3(1.0,0.9,0.9), Vec3(10.0, 10.0,10.0)]
 function toopengl(mesh::GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}; camera=pcamera)
     if isempty(MESH_SHADER)
         push!(MESH_SHADER, TemplateProgram(Pkg.dir("GLPlot", "src", "shader", "standard.vert"), Pkg.dir("GLPlot", "src", "shader", "phongblinn.frag")))
@@ -219,7 +219,6 @@ function toopengl(mesh::GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}
     data = merge(collect_for_gl(mesh), @compat(Dict(
         :view            => camera.view,
         :projection      => camera.projection,
-        :normalmatrix    => camera.normalmatrix,
         :model           => eye(Mat4),
         :eyeposition     => camera.eyeposition,
         :light           => light,
