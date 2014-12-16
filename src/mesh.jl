@@ -127,10 +127,11 @@ function Base.convert{T, TI}(::Type{GLMesh{( Face{TI}, Normal{T},Vertex{T})}}, m
 end
 
 function texturesused(mesh::GLMesh)
-    usedtextures = fill(-one(GLint), length(names(TextureUsed)))
+    usedtextures = fill(-1f0, length(names(TextureUsed)))
     for (i,attribute) in enumerate(names(TextureUsed))
-        usedtextures[i] = haskey(mesh.textures, attribute) ? i : -1
+        usedtextures[i] = haskey(mesh.textures, attribute) ? float32(i)-1 : -1f0
     end
+    println(usedtextures)
     usedtextures
 end
 RGBAU8 = AlphaColorValue{RGB{Ufixed8}, Ufixed8}

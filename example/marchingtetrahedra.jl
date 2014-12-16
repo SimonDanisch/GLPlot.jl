@@ -269,54 +269,9 @@ end
 isosurface(lsf,isoval) = isosurface(lsf,isoval, convert(eltype(lsf), 0.001))
 
 N1 = 10
-N = 128
+N = 400
 volume1  = Float32[sin(x/15f0)+sin(y/15f0)+sin(z/15f0) for x=1:N1, y=1:N1, z=1:N1]
 volume  = Float32[sin(x/15f0)+sin(y/15f0)+sin(z/15f0) for x=1:N, y=1:N, z=1:N]
 
 @time isosurface(volume1, 0.5f0, 0.001f0)
 @time isosurface(volume, 0.5f0, 0.001f0)
-test = isosurface(volume, 0.5f0, 0.001f0)
-
-window = createdisplay(eyeposition=Vec3(2), lookat=Vec3(0.5))
-shaderdir = Pkg.dir("GLPlot", "src", "shader")
-program = TemplateProgram(joinpath(shaderdir,"standard.vert"), joinpath(shaderdir,"phongblinn.frag"))
-
-function normals(verts, faces)
-  normals_result = fill(Vec3(0), length(verts))
-  for face in faces
-    i1 = face.v1 + 1
-    i2 = face.v2 + 1
-    i3 = face.v3 + 1
-
-    v1 = verts[i1]
-    v2 = verts[i2]
-    v3 = verts[i3]
-    a = v1 - v2
-    b = v1 - v3
-    n = cross(a,b)
-    normals_result[i1] = unit(n+normals_result[i1])
-    normals_result[i2] = unit(n+normals_result[i2])
-    normals_result[i3] = unit(n+normals_result[i3])
-  end
-  normals_result
-end
-
-obj = RenderObject(Dict(
-:vertex=>GLBuffer(test[1]),
-:indexes=>indexbuffer(reinterpret(IType, test[2])),
-:normal => GLBuffer(normals(test[1], test[2])),
-:view => GLPlot.pcamera.view,
-:projection => GLPlot.pcamera.projection,
-:normalmatrix => GLPlot.pcamera.normalmatrix,
-:model => eye(Mat4),
-:light_position=>Vec3(20, 20, -20)
-),program)
-prerender!(obj, glEnable, GL_DEPTH_TEST,  glDisable, GL_CULL_FACE)
-postrender!(obj, render, obj.vertexarray)
-
-glplot(obj)
-
-
-
-
-renderloop(window)

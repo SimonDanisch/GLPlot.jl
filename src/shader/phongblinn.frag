@@ -17,43 +17,36 @@ const int position = 3;
 
 uniform vec3 material[4];
 uniform vec3 light[4];
-uniform int textures_used[4];
+uniform float textures_used[4];
 
 
 
 uniform sampler2DArray texture_maps;
 
-vec4[4] set_textures(int matu[4], vec2 uv)
+
+
+vec4[4] set_textures(float texused[4], vec3 mat[4], vec2 uv)
 {
-    vec4 tmaterial[4] = { 
-    vec4(0),
-    vec4(0),
-    vec4(0),
-    vec4(0),
-};
-    if(matu[diffuse] >= 0)
-    {
-        tmaterial[diffuse] =  texture(texture_maps, vec3(uv, matu[diffuse]));
-    }
-    if(matu[ambient] >= 0)
-    {
-        tmaterial[ambient] = texture(texture_maps, vec3(uv, matu[ambient]));
-    }
-    if(matu[specular] >= 0)
-    {
-        tmaterial[specular] = texture(texture_maps, vec3(uv, matu[specular]));
-    }
-    if(matu[bump] >= 0)
-    {
-        tmaterial[bump] = texture(texture_maps, vec3(uv, matu[bump]));
-    }
-    return tmaterial;
+    vec4 merged_material[4] = { 
+        vec4(mat[0],1),
+        vec4(mat[1],1),
+        vec4(mat[2],1),
+        vec4(mat[3],1),
+    };
+    if(texused[diffuse]  >= 0)
+        merged_material[diffuse] = texture(texture_maps, vec3(vec2(uv.x, 1-uv.y), texused[diffuse]));
+    if(texused[ambient]  >= 0)
+        merged_material[ambient] = texture(texture_maps, vec3(vec2(uv.x, 1-uv.y), texused[ambient]));
+    if(texused[specular]  >= 0)
+        merged_material[specular] = texture(texture_maps, vec3(vec2(uv.x, 1-uv.y), texused[specular]));
+    //merged_material[bump]       = texused[bump] >= 0 ? texture(texture_maps, vec3(uv, texused[bump])) : vec4(mat[bump], 1);
+    return merged_material;
 }
 
 
 {{out}} vec4 fragment_color;
 
-vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec3 mat[4])
+vec4 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec4 mat[4])
 {
 
     float diff_coeff = max(dot(L,N), 0.0);
@@ -66,9 +59,11 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec3 mat[4])
         spec_coeff = 0.0;
 
     // final lighting model
-    return  light[ambient]  * mat[ambient]  +
-            light[diffuse]  * mat[diffuse]  * diff_coeff +
-            light[specular] * mat[specular] * spec_coeff;
+    return  vec4(
+            light[ambient]  * mat[ambient].rgb  +
+            light[diffuse]  * mat[diffuse].rgb  * diff_coeff +
+            light[specular] * mat[specular].rgb * spec_coeff, 
+            1);
 }
 
 vec3 diffuse_lighting(vec3 L, vec3 N, vec3 Ld, vec3 Kd)
@@ -82,6 +77,8 @@ void main(){
     vec3 L = normalize(o_lightdir);
     vec3 V = normalize(o_vertex);
     vec3 N = normalize(o_normal);
-   
-    fragment_color = vec4(blinn_phong(N, V, L, light, material),1);
+
+    vec4 mat[4] = set_textures(textures_used, material, o_uv);
+
+    fragment_color = blinn_phong(N, V, L, light, mat);
 }
