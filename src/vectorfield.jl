@@ -39,7 +39,14 @@ function RandSphere()
   msh = Meshes.isosurface(distance,lambda)
   convert(GLMesh{(Face{GLuint}, Normal{Float32}, UV{Float32}, Vertex{Float32})}, msh)
 end
-
+#=
+immutable Light{T}
+  diffuse::RGB{T}
+  ambient::RGB{T}
+  specular::RGB{T}
+  position::Vec3{T}
+end
+=#
 function toopengl(
             vectorfield::Array{Vector3{Float32}, 3}; 
             primitive=RandSphere(), xrange=(-1,1), yrange=(-1,1), zrange=(-1,1), colorrange=(-1,1), 
@@ -60,8 +67,15 @@ function toopengl(
     :light          => Vec3[Vec3(1.0,1.0,1.0), Vec3(0.1,0.1,0.1), Vec3(0.9,0.9,0.9), Vec3(20.0,20.0,20.0)],
 
   )), Dict{Symbol, Any}(rest), collect_for_gl(primitive))
+  
   # Depending on what the primitivie is, additional values have to be calculated
   program = TemplateProgram(shaderdir*"vectorfield.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=data)
+  for (key,elem) in program.uniformloc
+    println(key, " ", elem)
+  end
+  for (key,elem) in program.nametype
+    println(key, " ", GLENUM(elem).name)
+  end
   obj     = instancedobject(data, length(vectorfield), program, GL_TRIANGLES)
   prerender!(obj, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
   obj
