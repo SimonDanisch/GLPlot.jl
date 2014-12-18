@@ -6,6 +6,13 @@
 {{in}} vec3 o_vertex;
 {{in}} vec2 o_uv;
 
+struct Light
+{
+  vec3 diffuse;
+  vec3 ambient;
+  vec3 specular;
+  vec3 position;
+} thelight;
 
 const int diffuse = 0;
 const int ambient = 1;
@@ -22,6 +29,10 @@ uniform float textures_used[4];
 
 
 uniform sampler2DArray texture_maps;
+uniform sampler2DArray diffuse_maps;
+uniform sampler2DArray ambient_maps;
+uniform sampler2DArray specular_maps;
+uniform sampler2DArray bump_maps;
 
 
 
@@ -46,7 +57,7 @@ vec4[4] set_textures(float texused[4], vec3 mat[4], vec2 uv)
 
 {{out}} vec4 fragment_color;
 
-vec4 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec4 mat[4])
+vec4 blinn_phong(vec3 N, vec3 V, vec3 L, Light light, vec4 mat[4])
 {
 
     float diff_coeff = max(dot(L,N), 0.0);
@@ -60,9 +71,9 @@ vec4 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 light[4], vec4 mat[4])
 
     // final lighting model
     return  vec4(
-            light[ambient]  * mat[ambient].rgb  +
-            light[diffuse]  * mat[diffuse].rgb  * diff_coeff +
-            light[specular] * mat[specular].rgb * spec_coeff, 
+            light.ambient  * mat[ambient].rgb  +
+            light.diffuse  * mat[diffuse].rgb  * diff_coeff +
+            light.specular * mat[specular].rgb * spec_coeff, 
             1);
 }
 
@@ -80,5 +91,5 @@ void main(){
 
     vec4 mat[4] = set_textures(textures_used, material, o_uv);
 
-    fragment_color = blinn_phong(N, V, L, light, mat);
+    fragment_color = blinn_phong(N, V, L, thelight, mat);
 }

@@ -2,7 +2,7 @@
 {{GLSL_EXTENSIONS}}
 
 {{vertex_type}} vertex;
-{{normal_vector_type}} normal_vector; // normal might not be an uniform, whereas the other will be allways uniforms
+{{normal_type}} normal; // normal might not be an uniform, whereas the other will be allways uniforms
 {{offset_type}} offset; //offset for texture look up. Needed to get neighbouring vertexes, when rendering the surface
 
 {{xrange_type}} xrange; 
@@ -16,12 +16,10 @@
 {{color_type}} color;
 
 uniform vec2 texdimension;
-uniform mat3 normalmatrix;
-uniform mat4 modelmatrix;
-uniform mat4 projection, view, model;
-uniform vec3 eyeposition;
-uniform vec3 light[4];
 
+uniform mat4 projection, view, model;
+
+uniform vec3 light[4];
 
 const int position = 3;
 
@@ -101,9 +99,9 @@ vec2 getuv(vec2 texdim, int index, vec2 offset)
 
 void render(vec3 vertex, vec3 normal, vec2 uv,  mat4 model)
 {
-    mat3 normalmatrix           = mat3(transpose(inverse(view*model)));
-    vec4 position_camspace      = view * model * vec4(vertex, 1);
-    vec4 lightposition_camspace = view * vec4(light[position],1);
+    mat3 normalmatrix           = mat3(transpose(inverse(view*model))); // shoudl really be done on the cpu
+    vec4 position_camspace      = view * model * vec4(vertex,  1);
+    vec4 lightposition_camspace = view * vec4(light[position], 1);
     // normal in world space
     o_normal            = normalize(normalmatrix * normal);
     // direction to light
@@ -116,7 +114,7 @@ void render(vec3 vertex, vec3 normal, vec2 uv,  mat4 model)
     gl_Position         = projection * position_camspace; 
 }
 void main(){
-    vec3 xyz, scale, normal, vert;
+    vec3 xyz, scale, N, V;
 
     vec2 uv     = getuv(texdimension, gl_InstanceID, offset);
     xyz.xy      = getcoordinate(xrange, yrange, uv);
@@ -124,11 +122,9 @@ void main(){
     scale.x     = {{xscale_calculation}}
     scale.y     = {{yscale_calculation}}
     scale.z     = {{zscale_calculation}}
-    
 
-    normal      = getnormal(z, uv, normal_vector);
-    vert        = {{vertex_calculation}}
+    N           = getnormal(z, uv, normal);
+    V           = {{vertex_calculation}}
 
-
-    render(vert, normal,uv, modelmatrix * getmodelmatrix(xyz, scale));
+    render(V, N, uv, model * getmodelmatrix(xyz, scale));
 }

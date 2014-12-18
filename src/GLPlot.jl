@@ -13,6 +13,7 @@ using Compat
 using FixedPointNumbers
 using Color
 
+import Meshes
 import Mustache
 
 export glplot, createdisplay, renderloop, toopengl,clearplot
@@ -21,6 +22,8 @@ export glplot, createdisplay, renderloop, toopengl,clearplot
 const sourcedir = Pkg.dir()*"/GLPlot/src/"
 const shaderdir = sourcedir*"shader/"
 
+include(sourcedir*"mesh_util.jl")
+include(sourcedir*"color_util.jl")
 include(sourcedir*"grid.jl")
 include(sourcedir*"surface.jl")
 include(sourcedir*"volume.jl")

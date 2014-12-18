@@ -32,7 +32,7 @@ CUBE() = @compat Dict(
   :vertex         => GLBuffer(vertexes),
   :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
   :index          => indexbuffer(indexes),
-  :normal_vector  => GLBuffer(normals),
+  :normal         => GLBuffer(normals),
   :zscale         => 1f0,
   :z              => 0f0,
   :drawingmode    => GL_TRIANGLES
@@ -41,11 +41,13 @@ POINT() = @compat Dict(
   :vertex         => GLBuffer(Vec3[Vec3(0)]),
   :offset         => Vec2(0), # For other geometry, the texture lookup offset is zero
   :index          => indexbuffer(GLuint[0]),
-  :normal_vector  => GLBuffer(Vec3[Vec3(0,0,1)]),
+  :normal         => GLBuffer(Vec3[Vec3(0,0,1)]),
   :zscale         => 1f0,
   :z              => 0f0,
   :drawingmode    => GL_POINTS
 )
+
+
 
 parameters = [
     (GL_TEXTURE_MIN_FILTER, GL_LINEAR),
@@ -86,7 +88,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
   const light         = Vec3[Vec3(1.0,1.0,1.0), Vec3(0.1,0.1,0.1), Vec3(0.9,0.9,0.9), Vec3(20.0,20.0,20.0)] 
   const material      = Vec3[Vec3(1.0,0.0,0.0), Vec3(0.1), Vec3(0.1), Vec3(60.0)]
   const tmaterial      = Vec4[Vec4(1.0,1.0,1.0,1.0), Vec4(1.0,1.0,1.0,1.0), Vec4(1.0,1.0,1.0,1.0), Vec4(1.0,1.0,1.0,1.0)]
-  const tmaterialused  = GLint[-1,-1,-1,-1]
+  const textures_used  = Float32[-1,-1,-1,-1]
 
   data = merge(@compat(Dict(
     attribute       => Texture(attributevalue, parameters=parameters),
@@ -95,19 +97,15 @@ function toopengl{T <: Union(AbstractArray, Real)}(
     :texdimension   => Vec2(xn,yn),
     :projection     => camera.projection,
     :view           => camera.view,
-    :normalmatrix   => camera.normalmatrix,
-    :eyeposition    => camera.eyeposition,
-    :light_position => lightposition,
-    :modelmatrix    => eye(Mat4),
+    :model          => eye(Mat4),
     :texture_maps   => Texture(Matrix{RGBA{Ufixed8}}[fill(rgbaU8(0,0,0,0), 1,1)]),
     :material       => material,
     :light          => light,
-    :tmaterialused  => tmaterialused,
-    :textures_used  => false
+    :textures_used  => textures_used
   )), customattributes)
   # Depending on what the primitivie is, additional values have to be calculated
-  if !haskey(primitive, :normal_vector)
-    primitive[:normal_vector] = Vec3(0)
+  if !haskey(primitive, :normal)
+    primitive[:normal] = Vec3(0)
   end
   if !haskey(primitive, :xscale)
     primitive[:xscale] = float32(1 / xn)

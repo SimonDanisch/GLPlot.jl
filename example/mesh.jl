@@ -3,11 +3,17 @@ using Meshes
 
 window = createdisplay(w=1920, h=1280)
 
+N = 10
+sigma = 1.0
+distance = Float32[ sqrt(float32(i*i+j*j+k*k)) for i = -N:N, j = -N:N, k = -N:N ]
+distance = distance + sigma*rand(2*N+1,2*N+1,2*N+1)
 
+# Extract an isosurface.
+#
+lambda = N-2*sigma # isovalue
 
-N = 50
-const vol = Float32[sin(x/15f0)+sin(y/15f0)+sin(z/15f0) for x=1:N, y=1:N, z=1:N]
-const msh = Meshes.isosurface(vol, 0.5f0, 0.001f0)
+msh = isosurface(distance,lambda)
+
 
 glplot(msh)
 
