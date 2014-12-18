@@ -68,7 +68,7 @@ end
 
 Material() = Material(RGB(0.9f0), RGB(0.9f0), RGB(0.9f0), 90f0)
 
-function GLMesh(data...; material=Material(), textures=Dict(:default => fill(rgbaU8(0,0,0,0), 1,1)), model=eye(Mat4))
+function GLMesh(data...; material=Material(), textures=@compat(Dict(:default => fill(rgbaU8(0,0,0,0), 1,1))), model=eye(Mat4))
     result = (Symbol => DataType)[]
     meshattributes = Dict{Symbol, Any}()
     for elem in data
