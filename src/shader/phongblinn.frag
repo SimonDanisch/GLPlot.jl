@@ -1,5 +1,4 @@
 {{GLSL_VERSION}}
-#extension GL_ARB_shading_language_420pack : enable
 
 {{in}} vec3 o_normal;
 {{in}} vec3 o_lightdir;
@@ -27,12 +26,12 @@ uniform sampler2DArray texture_maps;
 
 vec4[4] set_textures(float texused[4], vec3 mat[4], vec2 uv)
 {
-    vec4 merged_material[4] = { 
+    vec4 merged_material[4] = vec4[4]( 
         vec4(mat[0],1),
         vec4(mat[1],1),
         vec4(mat[2],1),
-        vec4(mat[3],1),
-    };
+        vec4(mat[3],1));
+
     if(texused[diffuse]  >= 0)
         merged_material[diffuse] = texture(texture_maps, vec3(vec2(uv.x, 1-uv.y), texused[diffuse]));
     if(texused[ambient]  >= 0)
