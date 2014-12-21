@@ -29,6 +29,10 @@ function glplot(x::RenderObject)
 	push!(RENDER_LIST, x)
 	x
 end
+function glplot(x::Vector{RenderObject})
+	append!(RENDER_LIST, x)
+	x
+end
 clearplot() = empty!(RENDER_LIST)
 
 

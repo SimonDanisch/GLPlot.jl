@@ -1,6 +1,6 @@
-using GLWindow, GLAbstraction, GLFW, ModernGL
+using GLWindow, GLAbstraction, GLFW, ModernGL, GLPlot
 
-global const window = createwindow("Mesh Display", 1000, 1000, debugging = false) # debugging just works on linux and windows
+global const window = createwindow("Mesh Display", 1000, 1000) # debugging just works on linux and windows
 const cam = PerspectiveCamera(window.inputs, Vec3(2, 2, 0.5), Vec3(0.5))
 
 vert = "
@@ -73,21 +73,23 @@ lines = RenderObject([
 postrender!(lines, render, lines.vertexarray, GL_LINES)
 
 
+glplot([obj, lines])
+renderloop(window)
+#=
 glClearColor(1,1,1,0)
-@async begin while !GLFW.WindowShouldClose(window.glfwWindow)
+while window.inputs[:open].value
+  yield() # this is needed for react to work
 
-	  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-	  render(obj)
-	  render(lines)
-	  #render(axis)
-	  yield() # this is needed for react to work
-	  GLFW.SwapBuffers(window.glfwWindow)
-	  GLFW.PollEvents()
+  render(obj)
+  render(lines)
+  #render(axis)
+  GLFW.SwapBuffers(window.nativewindow)
+  GLFW.PollEvents()
 
-	end
 end
-#GLFW.Terminate()
-
+GLFW.Terminate()
+=#
 
 
