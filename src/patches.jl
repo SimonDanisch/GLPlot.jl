@@ -26,7 +26,7 @@ frag = "
 
 {{out}} vec4 frag_color;
 void main(){
-   	frag_color = vec4(vert_color, 1); // put in transparency
+   	frag_color = vec4(vert_color, 0.5); // put in transparency
 }
 "
 linevert = "
@@ -51,10 +51,10 @@ void main(){
 lineshader 	= TemplateProgram(linevert, linefrag, "linevert", "linefrag")
 shader 		= TemplateProgram(vert, frag, "vert", "frag")
 
-N  = 5
+N  = 100
 PD = 4
 
-verts 	= GLBuffer(Vec3[Vec3(sin(i), cos(i), cos(i)) for i=1:N*PD]) #  Vec3 == Vector3{Float32} GLSL alike alias for immutable array
+verts 	= GLBuffer(Vec3[Vec3(sin(i)+(i/10f0), sin(i/10f0), sin(i*4f0)) for i=1:N*PD]) #  Vec3 == Vector3{Float32} GLSL alike alias for immutable array
 color 	= GLBuffer(Vec3[Vec3(rand(Float32), rand(Float32), rand(Float32)) for i=1:N*PD]) #random edge color
 
 obj = RenderObject([
@@ -63,6 +63,7 @@ obj = RenderObject([
     :color            => color,
     :projectionview   => cam.projectionview
 ], shader)
+prerender!(obj, glDisable, GL_DEPTH_TEST, enabletransparency)
 postrender!(obj, render, obj.vertexarray)
 
 lines = RenderObject([
@@ -70,6 +71,7 @@ lines = RenderObject([
     :index            => indexbuffer(vcat([GLuint[0,1,1,2,2,3,3,0] + i for i=0:(N-1)]...)),
     :projectionview   => cam.projectionview
 ], lineshader)	
+prerender!(lines, glEnable, GL_DEPTH_TEST)
 postrender!(lines, render, lines.vertexarray, GL_LINES)
 
 
