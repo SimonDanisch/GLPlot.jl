@@ -73,7 +73,7 @@ function GLMesh(data...; material=Material(), textures=@compat(Dict(:default => 
     meshattributes = Dict{Symbol, Any}()
     for elem in data
         typ                     = isa(elem, Vector) ? eltype(elem) : typeof(elem)
-        keyname                 = symbol(lowercase(replace(string(typ.name), r"\d", "")))
+        keyname                 = symbol(lowercase(replace(string(typ.name.name), r"\d", "")))
         result[keyname]         = typ
         meshattributes[keyname] = elem
     end
@@ -204,7 +204,7 @@ function collect_for_gl(mesh::GLMesh)
         :model         => mesh.model
     )))
 end
-toopengl(mesh::Meshes.Mesh) = toopengl(convert(GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}, mesh))
+toopengl(mesh::Meshes.Mesh; camera=pcamera) = toopengl(convert(GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}, mesh), camera=camera)
 
 const MESH_SHADER = Any[]
 const light       = Vec3[Vec3(1.0,0.9,0.8), Vec3(0.01,0.01,0.1), Vec3(1.0,0.9,0.9), Vec3(10.0, 10.0,10.0)]
@@ -215,6 +215,7 @@ function toopengl(mesh::GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}
     shader = first(MESH_SHADER)
     #cam     = customizations[:camera]
     #light   = customizations[:light]
+    println(keys(mesh.data))
     mesh[:vertex] = unitGeometry(mesh[:vertex])
     data = merge(collect_for_gl(mesh), @compat(Dict(
         :view            => camera.view,
