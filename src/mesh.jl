@@ -215,8 +215,7 @@ function toopengl(mesh::GLMesh{(Face{GLuint}, Normal{Float32}, Vertex{Float32})}
     shader = first(MESH_SHADER)
     #cam     = customizations[:camera]
     #light   = customizations[:light]
-    println(keys(mesh.data))
-    mesh[:vertex] = unitGeometry(mesh[:vertex])
+    #mesh[:vertex] = unitGeometry(mesh[:vertex])
     data = merge(collect_for_gl(mesh), @compat(Dict(
         :view            => camera.view,
         :projection      => camera.projection,
