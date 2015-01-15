@@ -1,19 +1,26 @@
 using GLAbstraction, GLPlot, Reactive
 
 window = createdisplay(h=1000,w=1500, eyeposition=Vec3(2,0,0))
-text = "whatup internet!?\n#Crusont"
+# one way of creating different texts:
+time_signal = fpswhen( window.inputs[:open], 30)
+text = lift(time_signal) do x
+	"time for one frame: $x"
+end
+# the other option would be to call push! somewhere in your renderloop:
+# text = Input("start text")
+# push!(text, "new text") <- can stand anywhere, but in a lift
 
-glplot(text, scale=Vec2(1/50), color=Vec4[Vec4(rand(), rand(), 0,1) for i=1:length(text)]) # You can either, supply a texture with colors
-#glplot(text, scale=Vec2(1/50), color=Vec4(0,1,0,1)) # or just supply one color
-#full api:
-#=
-gplot(text::String; 
-					start=Vec3(0), scale=Vec2(1/500), color=Vec4(0,0,1,1), backgroundcolor=Vec4(0), 
-					lineheight=Vec3(0,0,0), advance=Vec3(0,0,0), rotation=Quaternion(1f0,0f0,0f0,0f0), textrotation=Quaternion(1f0,0f0,0f0,0f0),
-					camera=pcamera
-				)
-=#
-# For all attributes you can either supply values per glyph with a texture, or a scalar value for the whole text.
+pivot_point = lift(window.area) do x
+	x.w-(x.w/2), x.h-(x.h/2)
+end
+counter = foldl(+, 0f0, time_signal) 
+translation = lift(pivot_point, counter) do pivot, i
+	x, y = pivot
+    translationmatrix(Vec3(x+100*sin(i/5),y+100*cos(i/5), 0))
+end
+glplot(text, model=translation) 
+
+
 
 
 renderloop(window)

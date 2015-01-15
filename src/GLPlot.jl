@@ -15,12 +15,13 @@ using Color
 
 import Mustache
 
-export glplot, createdisplay, renderloop, toopengl,clearplot
+export glplot, createdisplay, renderloop, toopengl, clearplot
 
 
 const sourcedir = Pkg.dir()*"/GLPlot/src/"
 const shaderdir = sourcedir*"shader/"
 
+include(sourcedir*"color.jl")
 include(sourcedir*"grid.jl")
 include(sourcedir*"surface.jl")
 include(sourcedir*"volume.jl")
@@ -64,7 +65,7 @@ returns:
 function createdisplay(;async=false, w=500, h=500, eyeposition=Vec3(1,1,0), lookat=Vec3(0), debugging=false) 
 	global window 	= createwindow("GLPlot", w, h, debugging=debugging) 
 	global pcamera 	= PerspectiveCamera(window.inputs, eyeposition, lookat)
-	global ocamera 	= OrthographicCamera(window.inputs)
+	global ocamera 	= OrthographicPixelCamera(window.inputs)
 	if async
 		@async renderloop(window)
 	end
