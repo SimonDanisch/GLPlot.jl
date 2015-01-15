@@ -166,6 +166,8 @@ function patch(disp::MeshDisplay, verts::Vector{Vec3}, faces::Vector{GLuint}, li
 	
 	glplot(obj)
 	glplot(lines)
+	grid = creategrid(camera=disp.cam, bg_color=Vec4(0,0,0,0.01), grid_color=Vec4(1,1,1,0.2), xrange=(0,5), gridsteps=Vec3(5), grid_thickness=Vec3(3))
+	glplot(grid)
 	return nothing
 end
 end

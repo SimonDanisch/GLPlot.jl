@@ -15,5 +15,5 @@ void main()
     vec3  df 		= fwidth(v);
     vec3  g  		= smoothstep(vec3(1.0) - vec3(0.01), vec3(1.0), f) * df;
     float c  		= max(g.x, max(g.y, g.z))*10;
-    fragment_color 	= mix(bg_color, vec4(vposition, 0.2), c);
+    fragment_color 	= mix(bg_color, grid_color, c);
 }
