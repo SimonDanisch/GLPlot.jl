@@ -23,7 +23,7 @@ function creategrid(; bg_color=Vec4(1, 1, 1, 0.01), grid_color=Vec4(0,0,0,0.2),
 	return grid
 end
 
-initgrid() = global gridshader = TemplateProgram(shaderdir*"grid.vert", shaderdir*"grid.frag")
+initgrid() = global gridshader = TemplateProgram(joinpath(shaderdir,"grid.vert"), joinpath(shaderdir,"grid.frag"))
 init_after_context_creation(initgrid)
 
 export creategrid

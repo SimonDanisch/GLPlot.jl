@@ -2,7 +2,7 @@ export mix, SURFACE, CIRCLE, CUBE, POINT
 
 
 glsl_attributes = @compat Dict(
-  "instance_functions"  => readall(open(shaderdir*"/instance_functions.vert")),
+  "instance_functions"  => readall(open(joinpath(shaderdir,"instance_functions.vert"))),
   "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
 )
 SURFACE(scale=1) = @compat Dict(
@@ -106,7 +106,7 @@ function toopengl{T <: Union(AbstractArray, Real)}(
   end
   merged = merge(primitive, data)
   merge!(glsl_attributes,customview)
-  program = TemplateProgram(shaderdir*"instance_template.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=merged)
+  program = TemplateProgram(joinpath(shaderdir, "instance_template.vert"), joinpath(shaderdir, "phongblinn.frag"), view=glsl_attributes, attributes=merged)
   obj     = instancedobject(merged, (xn)*(yn), program, primitive[:drawingmode])
   prerender!(obj, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
   obj

@@ -2,11 +2,11 @@
 
 {{in}} vec3 N;
 {{in}} vec3 V;
+{{in}} vec3 L;
 {{in}} vec4 vert_color;
 
 {{out}} vec4 fragment_color;
 
-uniform vec3 light_position;
 
 
 vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
@@ -35,9 +35,9 @@ vec3 blinn_phong(vec3 N, vec3 V, vec3 L, vec3 diffuse)
 
 
 void main(){
-
-    vec3 L = normalize(light_position - V);
-    vec3 light1 = blinn_phong(N, V, L, vert_color.rgb);
-    vec3 light2 = blinn_phong(N, V, -L, vert_color.rgb);
-    fragment_color = vec4(light1+light2, vert_color.a);
+    vec3 Lt        = normalize(L);
+    vec3 Vt        = normalize(V);
+    vec3 Nt        = normalize(N);
+    fragment_color = vec4(blinn_phong(Nt, Vt, Lt, vert_color.rgb), vert_color.a);
+    fragment_color += vec4(blinn_phong(Nt, Vt, -Lt, vert_color.rgb), vert_color.a);
 }

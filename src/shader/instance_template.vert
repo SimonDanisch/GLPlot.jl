@@ -16,12 +16,16 @@
 {{color_type}} color;
 
 uniform vec2 texdimension;
-uniform mat3 normalmatrix;
 uniform mat4 modelmatrix;
 uniform mat4 projection, view;
 
+uniform vec3 light_position;
+
+
 {{out}} vec3 N;
 {{out}} vec3 V;
+{{out}} vec3 L;
+
 {{out}} vec4 vert_color;
 
 {{instance_functions}} //It's rather a bad idea, but I outsourced the functions to another file
@@ -90,8 +94,27 @@ vec2 getuv(vec2 texdim, int index, vec2 offset)
     float v = float((index / int(texdim.x)));
     return (vec2(u,v) + offset) / (texdim+1);
 }
+
+
+void render(vec3 vertex, vec3 normal, mat4 model)
+{
+    mat4 modelview              = view * model;
+    mat3 normalmatrix           = mat3(modelview); // shoudl really be done on the cpu
+    vec4 position_camspace      = modelview * vec4(vertex,  1);
+    vec4 lightposition_camspace = view * vec4(light_position, 1);
+    // normal in world space
+    N            = normalize(normalmatrix * normal);
+    // direction to light
+    L            = normalize(lightposition_camspace.xyz - position_camspace.xyz);
+    // direction to camera
+    V            = -position_camspace.xyz;
+    // texture coordinates to fragment shader
+    // screen space coordinates of the vertex
+    gl_Position  = projection * position_camspace; 
+}
+
 void main(){
-    vec3 xyz, scale, normal, vert;
+    vec3 xyz, scale, Nt, Vt;
 
     vec2 uv     = getuv(texdimension, gl_InstanceID, offset);
     xyz.xy      = getcoordinate(xrange, yrange, uv);
@@ -99,15 +122,9 @@ void main(){
     scale.x     = {{xscale_calculation}}
     scale.y     = {{yscale_calculation}}
     scale.z     = {{zscale_calculation}}
-    
 
-    normal      = getnormal(z, uv, normal_vector);
-    N           = normalize(normalmatrix * normal);
-
-    vert_color  = {{color_calculation}}
-
-    V           = vec3(view * vec4(xyz, 1.0));
-    vert        = {{vertex_calculation}}
-
-    gl_Position = projection * view * modelmatrix * getmodelmatrix(xyz, scale) * vec4(vert.xyz, 1.0);
+    Nt           = getnormal(z, uv, normal_vector);
+    Vt           = {{vertex_calculation}}
+    vert_color   = {{color_calculation}}
+    render(Vt, Nt, modelmatrix * getmodelmatrix(xyz, scale));
 }

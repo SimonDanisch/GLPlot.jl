@@ -1,6 +1,6 @@
 function initvolume()
-  const global volumeshader = TemplateProgram(shaderdir*"simple.vert"     , shaderdir*"iso.frag")
-  const global uvwshader    = TemplateProgram(shaderdir*"uvwposition.vert", shaderdir*"uvwposition.frag")
+  const global volumeshader = TemplateProgram(joinpath(shaderdir, "simple.vert")    , joinpath(shaderdir, "iso.frag"))
+  const global uvwshader    = TemplateProgram(joinpath(shaderdir, "uvwposition.vert"), joinpath(shaderdir, "uvwposition.frag"))
    
   const global uvwposition_framebuffer = glGenFramebuffers() 
 end

@@ -12,11 +12,10 @@ tohsva(h,s,v,a)  = AlphaColorValue(HSV(float32(h), float32(s), float32(v)), floa
 
 begin
 local glsl_attributes = @compat Dict(
-  "instance_functions"  => readall(open(shaderdir*"/instance_functions.vert")),
+  "instance_functions"  => readall(open(joinpath(shaderdir,"instance_functions.vert"))),
   "GLSL_EXTENSIONS"     => "#extension GL_ARB_draw_instanced : enable"
 )
 
-local const cubez = gencubenormals(Vec3(0), Vec3(0.001, 0, 0), Vec3(0,0.001, 0), Vec3(0,0,0.01))
 
 local const parameters = [
     (GL_TEXTURE_MIN_FILTER, GL_NEAREST),
@@ -29,6 +28,9 @@ function toopengl(
             vectorfield::Array{Vector3{Float32}, 3}; 
             primitive=CUBE(), xrange=(-1,1), yrange=(-1,1), zrange=(-1,1), colorrange=(-1,1),
             lightposition=Vec3(20, 20, -20), camera=pcamera, colormap=RGBAU8[rgbaU8(1,0,0,1), rgbaU8(1,1,0,1), rgbaU8(0,1,0,1)], rest...)
+
+
+  const cubez = gencubenormals(Vec3(0), Vec3(0.007, 0, 0), Vec3(0,0.007, 0), Vec3(0,0,0.07))
 
   data = merge(@compat(Dict(
     :vectorfield    => Texture(vectorfield, parameters=parameters),
@@ -45,9 +47,9 @@ function toopengl(
     :vertex         => GLBuffer(cubez[1]),
     :index          => indexbuffer(cubez[4]),
     :normal_vector  => GLBuffer(cubez[3]),
-  )), Dict{Symbol, Any}(rest), primitive)
+  )), Dict{Symbol, Any}(rest))
   # Depending on what the primitivie is, additional values have to be calculated
-  program = TemplateProgram(shaderdir*"vectorfield.vert", shaderdir*"phongblinn.frag", view=glsl_attributes, attributes=data)
+  program = TemplateProgram(joinpath(shaderdir, "vectorfield.vert"), joinpath(shaderdir, "phongblinn.frag"), view=glsl_attributes, attributes=data)
   obj     = instancedobject(data, length(vectorfield), program, GL_TRIANGLES)
   prerender!(obj, glEnable, GL_DEPTH_TEST, glDepthFunc, GL_LEQUAL, glDisable, GL_CULL_FACE, enabletransparency)
   obj

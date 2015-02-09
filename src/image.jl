@@ -29,7 +29,7 @@ function toopengl{T, D}(img::Texture{T, D, 2}; camera = ocamera, normrange=Vec2(
     :projectionview   => camera.projectionview
   )
 
-  textureshader = TemplateProgram(shaderdir*"uv_vert.vert", shaderdir*"texture.frag", attributes=data)
+  textureshader = TemplateProgram(joinpath(shaderdir,"uv_vert.vert"), joinpath(shaderdir,"texture.frag"), attributes=data)
 
   obj = RenderObject(data, textureshader)
   prerender!(obj, glDisable, GL_DEPTH_TEST, enabletransparency,  glDisable, GL_CULL_FACE)

@@ -5,16 +5,16 @@ import Mustache
 export glplot, createdisplay, renderloop, toopengl,clearplot
 
 
-const sourcedir = Pkg.dir()*"/GLPlot/src/"
-const shaderdir = sourcedir*"shader/"
+const sourcedir = Pkg.dir("GLPlot", "src")
+const shaderdir = joinpath(sourcedir, "shader")
 
-include(sourcedir*"grid.jl")
-include(sourcedir*"surface.jl")
-include(sourcedir*"volume.jl")
-include(sourcedir*"image.jl")
-include(sourcedir*"util.jl")
-include(sourcedir*"text.jl")
-include(sourcedir*"vectorfield.jl")
+include(joinpath(sourcedir, "grid.jl"))
+include(joinpath(sourcedir, "surface.jl"))
+include(joinpath(sourcedir, "volume.jl"))
+include(joinpath(sourcedir, "image.jl"))
+include(joinpath(sourcedir, "util.jl"))
+include(joinpath(sourcedir, "text.jl"))
+include(joinpath(sourcedir, "vectorfield.jl"))
 
 
 global const RENDER_LIST = RenderObject[]
