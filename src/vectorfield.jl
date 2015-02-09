@@ -30,7 +30,7 @@ function toopengl(
             lightposition=Vec3(20, 20, -20), camera=pcamera, colormap=RGBAU8[rgbaU8(1,0,0,1), rgbaU8(1,1,0,1), rgbaU8(0,1,0,1)], rest...)
 
 
-  const cubez = gencubenormals(Vec3(0), Vec3(0.007, 0, 0), Vec3(0,0.007, 0), Vec3(0,0,0.07))
+  const cubez = gencubenormals(Vec3(0), Vec3(0.009, 0, 0), Vec3(0,0.009, 0), Vec3(0,0,0.09))
 
   data = merge(@compat(Dict(
     :vectorfield    => Texture(vectorfield, parameters=parameters),
