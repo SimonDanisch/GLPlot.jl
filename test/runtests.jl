@@ -11,21 +11,25 @@ glplot(volume, stepsize=0.001f0)
 
 glClearColor(1,1,1,0)
 windowsize = window.inputs[:window_size].value[3:4]
-for i=1:500
-  yield()
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  for (i,elem) in enumerate(GLPlot.RENDER_LIST)
-    if i == 1
-      glViewport(0, 0, (windowsize/2)...)
-    elseif i == 2
-      glViewport(windowsize[1]/2, 0, (windowsize/2)...)
-    elseif i == 3
-      glViewport(window.inputs[:window_size].value...)
+function test()
+  for i=1:1000
+    yield()
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    for (i,elem) in enumerate(GLPlot.RENDER_LIST)
+      if i == 1
+        glViewport(0, 0, (windowsize/2)...)
+      elseif i == 2
+        glViewport(windowsize[1]/2, 0, (windowsize/2)...)
+      elseif i == 3
+        glViewport(window.inputs[:window_size].value...)
+      end
+      render(elem)
     end
-    render(elem)
+    GLFW.SwapBuffers(window.nativewindow)
+    GLFW.PollEvents()
   end
-  GLFW.SwapBuffers(window.nativewindow)
-  GLFW.PollEvents()
+  GLFW.Terminate()
+  println("\033[32;1mSUCCESS\033[0m")
+
 end
-GLFW.Terminate()
-println("\033[32;1mSUCCESS\033[0m")
+test()
