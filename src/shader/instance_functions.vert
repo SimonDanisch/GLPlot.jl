@@ -34,5 +34,5 @@ float rangewidth(vec3 range)
 }
 float maptogridcoordinates(int index, vec3 range)
 {
-  return range.x + float((index % int(rangewidth(range) - range.x )));
+  return range.x + float((index % Int(rangewidth(range) - range.x )));
 }

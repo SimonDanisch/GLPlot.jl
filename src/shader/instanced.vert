@@ -33,8 +33,8 @@ vec2 getuv(ivec2 texdim, int index)
 }
 vec2 getuv(vec2 texdim, int index, vec2 offset)
 {
-  float u = float((index % int(texdim.x)));
-  float v = float((index / int(texdim.y)));
+  float u = float((index % Int(texdim.x)));
+  float v = float((index / Int(texdim.y)));
   return (vec2(u,v) + offset) / texdim;
 }
 vec2 stretch(vec2 uv, vec2 from, vec2 to)
@@ -52,7 +52,7 @@ float rangewidth(vec3 range)
 }
 float maptogridcoordinates(int index, vec3 range)
 {
-  return range.x + float((index % int(rangewidth(range) - range.x )));
+  return range.x + float((index % Int(rangewidth(range) - range.x )));
 }
 void main(){
     ivec2 texsize = ivec2(200,200);

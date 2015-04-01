@@ -90,8 +90,8 @@ vec2 getcoordinate(vec2 xrange, vec2 yrange, vec2 uv)
 }
 vec2 getuv(vec2 texdim, int index, vec2 offset)
 {
-    float u = float((index % int(texdim.x)));
-    float v = float((index / int(texdim.x)));
+    float u = float((index % Int(texdim.x)));
+    float v = float((index / Int(texdim.x)));
     return (vec2(u,v) + offset) / (texdim+1);
 }
 

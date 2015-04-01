@@ -24,7 +24,7 @@ Base.length{T}(::GLGlyph{T}) 		= 1
 Base.length{T}(::Type{GLGlyph{T}})  = 1
 Base.eltype{T}(::GLGlyph{T}) 		= T
 Base.eltype{T}(::Type{GLGlyph{T}}) 	= T
-Base.convert{T}(::Type{GLGlyph{T}}, x::Char) = (int(x) >= 0 && int(x) <= 256) ? GLGlyph(convert(T, x)) : error("This char: ", x, " can't be converted to GLGlyph")
+Base.convert{T}(::Type{GLGlyph{T}}, x::Char) = (Int(x) >= 0 && Int(x) <= 256) ? GLGlyph(convert(T, x)) : error("This char: ", x, " can't be converted to GLGlyph")
 
 
 test_images = {
