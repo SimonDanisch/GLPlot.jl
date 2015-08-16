@@ -1,5 +1,5 @@
 # GLPlot
-#### Attention: major rebuild with GLVisualize on the way, which will turn GLPlot into a thin wrapper over GLVisualize, only implementing ploting related API's
+#### Attention: major rebuild with [GLVisualize](https://github.com/JuliaGL/GLVisualize.jl) on the way, which will turn GLPlot into a thin wrapper over GLVisualize, only implementing ploting related API's
 
 While GLPlot is not well documented and development is currently on hold, I try to add documentation, features and fixes on demand.
 Just open an issue or chat me up via gitter.
