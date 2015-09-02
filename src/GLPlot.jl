@@ -1,81 +1,29 @@
+VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
+
 module GLPlot
-using GLWindow, GLAbstraction, ModernGL, FixedPointNumbers, ImmutableArrays, Reactive, GLFW, Images, Quaternions, GLText, Compat, Color
-import Mustache
 
-export glplot, createdisplay, renderloop, toopengl,clearplot
+using GLVisualize, GLWindow, ModernGL, GeometryTypes
 
+export clearplot, glplot, windowroot
 
-const sourcedir = Pkg.dir("GLPlot", "src")
-const shaderdir = joinpath(sourcedir, "shader")
-
-include(joinpath(sourcedir, "grid.jl"))
-include(joinpath(sourcedir, "surface.jl"))
-include(joinpath(sourcedir, "volume.jl"))
-include(joinpath(sourcedir, "image.jl"))
-include(joinpath(sourcedir, "util.jl"))
-include(joinpath(sourcedir, "text.jl"))
-include(joinpath(sourcedir, "vectorfield.jl"))
-
-
-global const RENDER_LIST = RenderObject[]
-
-
-function glplot(args...;keyargs...)
-	obj = toopengl(args...;keyargs...)
-	push!(RENDER_LIST, obj)
-	obj
-end
-function glplot(x::RenderObject)
-	push!(RENDER_LIST, x)
-	x
-end
-function glplot(x::Vector{RenderObject})
-	append!(RENDER_LIST, x)
-	x
-end
-clearplot() = empty!(RENDER_LIST)
-
-
-
-#=
-Args
-		async: if true, renderloop gets started asyncronously, if not, you eed to start it yourself
-			w: window width      
-			h: window height
-  eyeposition: position of the camera
-  	   lookat: point the camera looks at
-returns:
-	window with window event signals
-=#
-function createdisplay(;async=false, w=500, h=500, eyeposition=Vec3(1,1,0), lookat=Vec3(0)) 
-	global window 	= createwindow("GLPlot", w, h) 
-	global pcamera 	= PerspectiveCamera(window.inputs, eyeposition, lookat)
-	global ocamera 	= OrthographicCamera(window.inputs)
-	if async
-		@async renderloop(window)
-	end
-	window
-end
-#=
-Renderloop - blocking
-=#
-function renderloop(window)
-	global RENDER_LIST
-	glClearColor(1,1,1,0)
-	while !GLFW.WindowShouldClose(window.nativewindow)
-	    yield()
-	    glViewport(0,0,window.inputs[:framebuffer_size].value...)
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		for elem in RENDER_LIST
-	        render(elem)
-	    end
-	    GLFW.SwapBuffers(window.nativewindow)
-		GLFW.PollEvents()
-		sleep(0.001)
-	end
-	GLFW.Terminate()
-	empty!(RENDER_LIST)
+function glplot(args...;window=WindowRoot, keyargs...)
+	robj = visualize(args...;keyargs...)
+	view(robj, window)
+	bb = robj.boundingbox.value 
+	view(visualize(AABB{Float32}(bb.minimum, bb.maximum*2f0), :grid), window)
+	robj
 end
 
+clearplot(w::Screen=WindowRoot) = empty!(w.renderlist)
+
+windowroot() = WindowRoot
+
+function __init__()
+	w, r = glscreen()
+	glClearColor(1,1,1,1)
+	global WindowRoot = w 
+	@async r()
+
+end
 
 end
