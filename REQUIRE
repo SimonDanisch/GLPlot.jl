@@ -1,14 +1,5 @@
-julia 0.3-
-ImmutableArrays
-Images
-Reactive
-Mustache
-GLFW
-GLAbstraction
-ModernGL
+julia 0.4-
+GLVisualize
 GLWindow
-GLText
-Quaternions
-Compat
-Color
-FixedPointNumbers
+ModernGL
+GeometryTypes
