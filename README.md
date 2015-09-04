@@ -28,5 +28,6 @@ Pkg.checkout("Meshes", "ntuples")
 Pkg.checkout("ModernGL")
 Pkg.checkout("GLWindow")
 Pkg.checkout("GLAbstraction")
+Pkg.clone("https://github.com/SimonDanisch/GLPlot.jl.git")
 
 ```
