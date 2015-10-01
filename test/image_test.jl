@@ -29,7 +29,7 @@ Base.convert{T}(::Type{GLGlyph{T}}, x::Char) = (int(x) >= 0 && int(x) <= 256) ? 
 
 test_images = {
 	[float32(33) for i=1:N, j=1:N], 
-	[GLGlyph{Uint8}(33) for i=1:N, j=1:N], 
+	[GLGlyph{UInt8}(33) for i=1:N, j=1:N], 
 	[Vector3{Ufixed8}(0, 1, 0) for i=1:N, j=1:N], 
 	[Vec4(0,1,0,1) for i=1:N, j=1:N], 
 	[Vec3(0,1,0)   for i=1:N, j=1:N],
