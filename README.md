@@ -19,5 +19,5 @@ Pkg.checkout("GLWindow")
 Pkg.checkout("GeometryTypes")
 Pkg.checkout("Packing")
 Pkg.checkout("FreeType")
-Pkg.clone("https://github.com/SimonDanisch/GLPlot.jl.git")
+Pkg.clone("GLPlot")
 ```
