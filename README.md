@@ -12,18 +12,12 @@ https://github.com/SimonDanisch/GLPlot.jl/wiki
 Please read about the installation process:
 Installation of master is a little tricky, but not overly complicated if you execute this script:
 ```Julia
-Pkg.clone("https://github.com/JuliaIO/FileIO.jl.git")
-Pkg.clone("https://github.com/JuliaIO/MeshIO.jl.git")
-Pkg.clone("https://github.com/JuliaGeometry/Packing.jl.git")
-Pkg.clone("https://github.com/JuliaIO/ImageMagick.jl.git")
-Pkg.build("ImageMagick")
-Pkg.clone("https://github.com/JuliaGL/GLVisualize.jl.git")
-Pkg.checkout("Images", "sd/fileio")
-Pkg.checkout("GeometryTypes")
-Pkg.checkout("FixedSizeArrays")
-Pkg.checkout("Meshes", "ntuples")
-Pkg.checkout("ModernGL")
-Pkg.checkout("GLWindow")
+Pkg.clone("GLVisualize")
+Pkg.checkout("Reactive")
 Pkg.checkout("GLAbstraction")
+Pkg.checkout("GLWindow")
+Pkg.checkout("GeometryTypes")
+Pkg.checkout("Packing")
+Pkg.checkout("FreeType")
 Pkg.clone("https://github.com/SimonDanisch/GLPlot.jl.git")
 ```
