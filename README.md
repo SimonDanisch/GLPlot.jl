@@ -12,12 +12,6 @@ https://github.com/SimonDanisch/GLPlot.jl/wiki
 Please read about the installation process:
 Installation of master is a little tricky, but not overly complicated if you execute this script:
 ```Julia
-Pkg.clone("GLVisualize")
-Pkg.checkout("Reactive")
-Pkg.checkout("GLAbstraction")
-Pkg.checkout("GLWindow")
-Pkg.checkout("GeometryTypes")
-Pkg.checkout("Packing")
-Pkg.checkout("FreeType")
-Pkg.clone("GLPlot")
+Pkg.add("GLPlot")
+Pkg.checkout("GLPlot")
 ```
