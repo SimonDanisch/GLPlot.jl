@@ -1,5 +1,5 @@
 using Reactive, GLVisualize, GeometryTypes, Colors, GLWindow, GLAbstraction
-w = glscreen();@async renderloop(w)
+w = glscreen()
 
 tarea = map(w.area) do pa
     SimpleRectangle(0, 0, 120, pa.h)
@@ -78,5 +78,45 @@ end
 tool_clicked = map(on_click, key_pressed)
 
 
+view(robj, toolbar_screen, camera=:fixed_pixel)
+view(visualize(rand(Float32, 32,32)))
+@async renderloop(w)
+
+
+
+tarea = map(toolbar_area, w.area)
+button_pos = Signal(Point2f0(w.area.value.w, w.area.value.h/2))
+edit_screen_show_button = visualize(
+    (Rectangle(10,10,10,20), button_pos), 
+    color=RGBA{Float32}(0.6,0.6,0.6,1)
+)
+
+show_edit_screen = toggle(edit_screen_show_button, w)
+view(edit_screen_show_button, camera=:fixed_pixel)
+edit_screen_area = map(edit_rectangle, 
+    show_edit_screen, w.area, Signal(button_pos)
+)
+
+toolbar_screen = Screen(w, area=tarea)
+
+edit_screen = Screen(w, area=edit_screen_area, color=RGBA{Float32}(0,0,0,1))
+
+tools = 5
+
+ma_posis = zeros(Point2f0, tools)
+ma_colsis = zeros(RGBA{Float32}, tools)
+
+ps = foldp(update_positions,
+    (ma_posis, ma_colsis),
+    w.inputs[:mouseposition], tarea
+)
+
+key_pressed = const_lift(GLAbstraction.singlepressed, w.inputs[:mouse_buttons_pressed], GLFW.MOUSE_BUTTON_LEFT)
+const m2id = mouse2id(w)
+scale = Signal(Vec2f0(74))
+robj = visualize((Circle, map(first, ps)), scale=scale, glow_width=2f0, glow_color=map(last, ps))
+
+
+tool_clicked = map(on_click, key_pressed)
 view(robj, toolbar_screen, camera=:fixed_pixel)
 view(visualize(rand(Float32, 32,32)))
