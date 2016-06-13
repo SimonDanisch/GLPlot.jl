@@ -2,7 +2,7 @@ using Reactive, GLVisualize, GeometryTypes, Colors, GLWindow, GLAbstraction, GLF
 w = glscreen()
 @async renderloop(w)
 function imload(name)
-    rotr90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
+    rotl90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
 end
 key_pressed = const_lift(GLAbstraction.singlepressed,
     w.inputs[:mouse_buttons_pressed],
