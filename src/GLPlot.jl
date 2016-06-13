@@ -4,9 +4,9 @@ module GLPlot
 
 export glplot
 
-using GLVisualize, GLWindow, ModernGL, GeometryTypes, Reactive, GLAbstraction, Colors, ModernGL
-using Reactive, GLVisualize, GeometryTypes, Colors, GLWindow, GLAbstraction, GLFW, FileIO
-
+using GLVisualize, GLWindow, ModernGL, Reactive, GLAbstraction, Colors
+using GeometryTypes, GLFW, FileIO, FixedSizeArrays
+include("editing.jl")
 function imload(name)
     rotl90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
 end
@@ -63,10 +63,10 @@ function edit_rectangle(visible, area, tarea, arrow_pos_s)
     SimpleRectangle(x, 0, w, area.h)
 end
 
-function item_area(la, deleted)
-    y = la.y-la.h-2
-    deleted && return SimpleRectangle(la.x, y, la.w, 0)
-    return SimpleRectangle(la.x, y, la.w, 45)
+function item_area(la, deleted, item_height)
+    y = la.y-item_height-2
+    deleted && return SimpleRectangle(la.x, la.y, la.w, 0)
+    return SimpleRectangle(la.x, y, la.w, item_height)
 end
 
 function glplot(arg1, style=:default; kw_args...)
@@ -76,37 +76,52 @@ function glplot(arg1, style=:default; kw_args...)
     delete_button, del_signal = button(
         imload("delete.png"), edit_screen
     )
+    edit_button, edit_signal = toggle_button(
+        imload("play.png"), rotr90(imload("play.png")), edit_screen
+    )
+    icon_size = 45f0
+    item_height = Signal(Int(icon_size))
     robj = visualize(arg1, style; visible=visible_toggle, kw_args...).children[]
     view(robj, viewing_screen)
-    not_del_signal = droprepeats(foldp(false, del_signal) do v0, x
+    not_del_signal = droprepeats(foldp(false, del_signal) do v0, to_delete
         v0 && return v0
-        if x
-            for (i, r) in enumerate(viewing_screen.renderlist)
-                if robj.id == r.id
-                    splice!(viewing_screen.renderlist, i)
-                    return x
-                end
-            end
-        end
-        return x
+        to_delete && delete!(viewing_screen, robj)
+        return to_delete
     end)
-    icon_size = 45f0
-
+    scroll = edit_screen.inputs[:menu_scroll]
     if isempty(edit_screen.children)
-        last_area = map(edit_screen.area, not_del_signal) do a, deleted
-            deleted && return SimpleRectangle(0, a.h-2, a.w, 0)
-            is = Int(icon_size)
-            return SimpleRectangle(0, a.h-2, a.w, is)
+        last_area = map(edit_screen.area, not_del_signal, item_height, scroll) do a, deleted, ih, s
+            deleted && return SimpleRectangle(0, a.h+s, a.w, 0)
+            return SimpleRectangle(0, a.h-ih+s, a.w, ih)
         end
     else
         last_area = last(edit_screen.children).area
     end
-    new_item_screen = Screen(edit_screen, area=map(item_area, last_area, not_del_signal))
+    itemarea = map(item_area, last_area, not_del_signal, item_height)
+    new_item_screen = Screen(edit_screen, area=itemarea)
+    offset = 0f0
+    for elem in (visible_button, delete_button, edit_button)
+        layout!(SimpleRectangle(offset*icon_size, 0f0, icon_size, icon_size), elem)
+        view(elem, new_item_screen, camera=:fixed_pixel)
+        offset += 1
+    end
 
-    robj1 = layout!(SimpleRectangle(0f0, 0f0, icon_size, icon_size), visible_button)
-    robj2 = layout!(SimpleRectangle(icon_size, 0f0, icon_size, icon_size), delete_button)
-    view(robj1, new_item_screen, camera=:fixed_pixel)
-    view(robj2, new_item_screen, camera=:fixed_pixel)
+    preserve(foldp((false, value(item_height)), edit_signal) do v0, edit
+        if edit
+            if !v0[1] # only do this at the first time
+                new_heights = extract_edit_menu(robj, new_item_screen)
+                nh = ceil(Int, new_heights)
+                push!(item_height, nh)
+                return true, nh
+            else
+                push!(item_height, v0[2])
+            end
+        else
+            push!(item_height, Int(icon_size))
+        end
+        return v0
+    end)
+
     robj
 end
 
@@ -193,6 +208,8 @@ function __init__()
     end
     view(cube, toolbar_screen, camera=:fixed_pixel)
     view(edit_screen_show_button, viewing_screen, camera=:fixed_pixel)
-
+    edit_screen.inputs[:menu_scroll] = foldp(0, edit_screen.inputs[:scroll]) do v0, s
+        v0+(s[2]*5)
+    end
 end
 end
