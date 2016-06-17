@@ -69,6 +69,11 @@ function item_area(la, deleted, item_height)
     return SimpleRectangle(la.x, y, la.w, item_height)
 end
 
+function edit_item_area(la, item_height)
+    y = la.y-item_height-2
+    return SimpleRectangle(la.x+3, y, la.w-6, item_height)
+end
+
 function glplot(arg1, style=:default; kw_args...)
     visible_button, visible_toggle = toggle_button(
         imload("showing.png"), imload("notshowing.png"), edit_screen
@@ -76,11 +81,11 @@ function glplot(arg1, style=:default; kw_args...)
     delete_button, del_signal = button(
         imload("delete.png"), edit_screen
     )
-    edit_button, edit_signal = toggle_button(
+    edit_button, no_edit_signal = toggle_button(
         imload("play.png"), rotr90(imload("play.png")), edit_screen
     )
     icon_size = 45f0
-    item_height = Signal(Int(icon_size))
+    item_height = Signal(0)
     robj = visualize(arg1, style; visible=visible_toggle, kw_args...).children[]
     view(robj, viewing_screen)
     not_del_signal = droprepeats(foldp(false, del_signal) do v0, to_delete
@@ -90,26 +95,28 @@ function glplot(arg1, style=:default; kw_args...)
     end)
     scroll = edit_screen.inputs[:menu_scroll]
     if isempty(edit_screen.children)
-        last_area = map(edit_screen.area, not_del_signal, item_height, scroll) do a, deleted, ih, s
+        last_area = map(edit_screen.area, not_del_signal, Signal(Int(icon_size)), scroll) do a, deleted, ih, s
             deleted && return SimpleRectangle(0, a.h+s, a.w, 0)
             return SimpleRectangle(0, a.h-ih+s, a.w, ih)
         end
     else
         last_area = last(edit_screen.children).area
     end
-    itemarea = map(item_area, last_area, not_del_signal, item_height)
+    edit_signal = map(!, no_edit_signal)
+    itemarea = map(item_area, last_area, not_del_signal, Signal(Int(icon_size)))
+    edititemarea = map(edit_item_area, itemarea, item_height)
     new_item_screen = Screen(edit_screen, area=itemarea)
+    edit_item_screen = Screen(edit_screen, area=edititemarea)
     offset = 0f0
     for elem in (visible_button, delete_button, edit_button)
         layout!(SimpleRectangle(offset*icon_size, 0f0, icon_size, icon_size), elem)
         view(elem, new_item_screen, camera=:fixed_pixel)
         offset += 1
     end
-
     preserve(foldp((false, value(item_height)), edit_signal) do v0, edit
         if edit
             if !v0[1] # only do this at the first time
-                new_heights = extract_edit_menu(robj, new_item_screen)
+                new_heights = extract_edit_menu(robj, edit_item_screen, edit_signal)
                 nh = ceil(Int, new_heights)
                 push!(item_height, nh)
                 return true, nh
@@ -117,7 +124,7 @@ function glplot(arg1, style=:default; kw_args...)
                 push!(item_height, v0[2])
             end
         else
-            push!(item_height, Int(icon_size))
+            push!(item_height, 0)
         end
         return v0
     end)
@@ -156,7 +163,10 @@ function __init__()
         color=RGBA{Float32}(1,1,1,1)
     )
     global const toolbar_screen = Screen(w, area=tarea)
-    global const edit_screen = Screen(w, area=edit_screen_area, color=RGBA{Float32}(0.95,0.95,0.95,1))
+    global const edit_screen = Screen(
+        w, area=edit_screen_area, 
+        color=RGBA{Float32}(0.95,0.95,0.95,1)
+    )
 
 
 
@@ -208,8 +218,13 @@ function __init__()
     end
     view(cube, toolbar_screen, camera=:fixed_pixel)
     view(edit_screen_show_button, viewing_screen, camera=:fixed_pixel)
-    edit_screen.inputs[:menu_scroll] = foldp(0, edit_screen.inputs[:scroll]) do v0, s
-        v0+(s[2]*5)
+    @materialize scroll, mouseposition = edit_screen.inputs
+    should_scroll = map(mouseposition) do mb
+        isinside(value(w.area), mb...)
+    end
+    scroll = filterwhen(should_scroll, value(scroll), scroll)
+    edit_screen.inputs[:menu_scroll] = foldp(0, scroll) do v0, s
+        v0+(ceil(Int, s[2])*15)
     end
 end
 end
