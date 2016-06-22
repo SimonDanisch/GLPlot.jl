@@ -8,6 +8,8 @@ function is_editable(k, v_v)
         k == Symbol("position.multiplicator") ||
         k == Symbol("position.dims") ||
         k == Symbol("resolution") ||
+        startswith(string(k), "boundingbox") ||
+        (k == Symbol("color") && isa(v, AbstractArray)) ||
         k in fieldnames(PerspectiveCamera) ||
         k == :instances ||
         isa(v, Symbol) ||
@@ -66,7 +68,7 @@ function extract_edit_menu(robj, edit_screen, isvisible)
     end
     view(visualize(
             join(labels), position=textpositions,
-            color=RGBA{Float32}(0.9, 0.9, 0.9, 1.0)
+            color=RGBA{Float32}(0.8, 0.8, 0.8, 1.0)
         ), edit_screen, camera=:fixed_pixel
     )
     view(visualize(

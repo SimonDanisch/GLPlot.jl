@@ -6,7 +6,10 @@ export glplot
 
 using GLVisualize, GLWindow, ModernGL, Reactive, GLAbstraction, Colors
 using GeometryTypes, GLFW, FileIO, FixedSizeArrays
+export toggle_button, imload
+
 include("editing.jl")
+
 function imload(name)
     rotl90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
 end
@@ -53,8 +56,9 @@ function toggle(robj::Context, window, default=true)
     toggle(robj.children[], window, default)
 end
 
+const w_dividor = 18
 
-toolbar_area(pa) = SimpleRectangle(0, 0, round(Int, icon_percent*pa.w), pa.h)
+toolbar_area(pa) = SimpleRectangle(0, 0, round(Int, pa.w/w_dividor), pa.h)
 viewing_area(area_l, area_r) = SimpleRectangle(area_l.w, 0, area_r.x-area_l.w, area_r.h)
 function edit_rectangle(visible, area, tarea, arrow_pos_s)
     w = visible ? div(area.w,4) : 0
@@ -71,9 +75,14 @@ end
 
 function edit_item_area(la, item_height)
     y = la.y-item_height-2
-    return SimpleRectangle(la.x+3, y, la.w-6, item_height)
+    return SimpleRectangle(3, y, la.w, item_height)
 end
-
+layout_pos_ho(i) = map(icon_percent) do ip
+    SimpleRectangle{Float32}(0, i*ip + i*2, ip, ip)
+end
+layout_pos_ver(i, border) = map(icon_percent) do ip
+    SimpleRectangle{Float32}(i*ip + i*border, 0, ip, ip)
+end
 function glplot(arg1, style=:default; kw_args...)
     visible_button, visible_toggle = toggle_button(
         imload("showing.png"), imload("notshowing.png"), edit_screen
@@ -84,7 +93,6 @@ function glplot(arg1, style=:default; kw_args...)
     edit_button, no_edit_signal = toggle_button(
         imload("play.png"), rotr90(imload("play.png")), edit_screen
     )
-    icon_size = 45f0
     item_height = Signal(0)
     robj = visualize(arg1, style; visible=visible_toggle, kw_args...).children[]
     view(robj, viewing_screen)
@@ -94,22 +102,23 @@ function glplot(arg1, style=:default; kw_args...)
         return to_delete
     end)
     scroll = edit_screen.inputs[:menu_scroll]
+    icon_size = map(Int, icon_percent)
     if isempty(edit_screen.children)
-        last_area = map(edit_screen.area, not_del_signal, Signal(Int(icon_size)), scroll) do a, deleted, ih, s
-            deleted && return SimpleRectangle(0, a.h+s, a.w, 0)
-            return SimpleRectangle(0, a.h-ih+s, a.w, ih)
+        last_area = map(edit_screen.area, not_del_signal, icon_size, scroll) do a, deleted, ih, s
+            deleted && return SimpleRectangle(3, a.h+s, a.w-6, 0)
+            return SimpleRectangle(3, a.h-ih+s, a.w-6, ih)
         end
     else
         last_area = last(edit_screen.children).area
     end
     edit_signal = map(!, no_edit_signal)
-    itemarea = map(item_area, last_area, not_del_signal, Signal(Int(icon_size)))
+    itemarea = map(item_area, last_area, not_del_signal, icon_size)
     edititemarea = map(edit_item_area, itemarea, item_height)
     new_item_screen = Screen(edit_screen, area=itemarea)
     edit_item_screen = Screen(edit_screen, area=edititemarea)
     offset = 0f0
     for elem in (visible_button, delete_button, edit_button)
-        layout!(SimpleRectangle(offset*icon_size, 0f0, icon_size, icon_size), elem)
+        layout!(layout_pos_ver(offset, 2), elem)
         view(elem, new_item_screen, camera=:fixed_pixel)
         offset += 1
     end
@@ -139,15 +148,16 @@ function __init__()
     w = glscreen()
     @async renderloop(w)
 
-    global const icon_percent = 1//20 # of screen
-
+    global const icon_percent = map(w.area) do a
+        round(a.w / w_dividor)  # of screen
+    end
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
         GLFW.MOUSE_BUTTON_LEFT
     )
     button_pos = Signal([Point2f0(w.area.value.w, w.area.value.h/2)])
     edit_screen_show_button = visualize(
-        (SimpleRectangle(-10,-10,10,20), button_pos),
+        (SimpleRectangle(-15,-15, 15, 30), button_pos),
         color=RGBA{Float32}(0.6,0.6,0.6,1)
     )
     tarea = map(toolbar_area, w.area)
@@ -165,10 +175,8 @@ function __init__()
     global const toolbar_screen = Screen(w, area=tarea)
     global const edit_screen = Screen(
         w, area=edit_screen_area, 
-        color=RGBA{Float32}(0.95,0.95,0.95,1)
+        color=RGBA{Float32}(0.9,0.9,0.9,1)
     )
-
-
 
     play_record, record_sig = toggle_button(imload("record.png"), imload("break.png"), w)
     persp_ortho, persp_ortho_toggle_sig = toggle_button(imload("perspective.png"), imload("ortho.png"), w)
@@ -191,14 +199,14 @@ function __init__()
 
     tools = [center_b, screenshot_b, play_record, persp_ortho]
     tools_robjs = Any[]
-    pos = 50f0
+
+    i = 0
     for tool in tools
-        robj = layout!(SimpleRectangle(0f0, pos, 45f0, 45f0), visualize(tool))
+        robj = layout!(layout_pos_ho(i), visualize(tool))
         view(robj, toolbar_screen, camera=:fixed_pixel)
         push!(tools_robjs, robj.children[])
-        pos += 49
+        i += 1
     end
-    pos += 20
     preserve(map(center_s) do pressed
         if pressed
             center!(viewing_screen)
@@ -213,8 +221,9 @@ function __init__()
     end)
     rot = cube.children[][:model]
 
-    cube.children[][:model] = map(rot) do r
-        translationmatrix(Vec3f0(21,pos,0))*r*scalematrix(Vec3f0(17))
+    cube.children[][:model] = map(rot, icon_percent) do r, ip
+        half = ip/2
+        translationmatrix(Vec3f0(half,i*ip + i*2 + half,0))*r*scalematrix(Vec3f0(half))
     end
     view(cube, toolbar_screen, camera=:fixed_pixel)
     view(edit_screen_show_button, viewing_screen, camera=:fixed_pixel)
