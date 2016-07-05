@@ -56,7 +56,7 @@ function toggle(robj::Context, window, default=true)
     toggle(robj.children[], window, default)
 end
 
-const w_dividor = 18
+const w_dividor = 21
 
 toolbar_area(pa) = SimpleRectangle(0, 0, round(Int, pa.w/w_dividor), pa.h)
 viewing_area(area_l, area_r) = SimpleRectangle(area_l.w, 0, area_r.x-area_l.w, area_r.h)
@@ -95,7 +95,7 @@ function glplot(arg1, style=:default; kw_args...)
     )
     item_height = Signal(0)
     robj = visualize(arg1, style; visible=visible_toggle, kw_args...).children[]
-    view(robj, viewing_screen)
+    _view(robj, viewing_screen)
     not_del_signal = droprepeats(foldp(false, del_signal) do v0, to_delete
         v0 && return v0
         to_delete && delete!(viewing_screen, robj)
@@ -119,7 +119,7 @@ function glplot(arg1, style=:default; kw_args...)
     offset = 0f0
     for elem in (visible_button, delete_button, edit_button)
         layout!(layout_pos_ver(offset, 2), elem)
-        view(elem, new_item_screen, camera=:fixed_pixel)
+        _view(elem, new_item_screen, camera=:fixed_pixel)
         offset += 1
     end
     preserve(foldp((false, value(item_height)), edit_signal) do v0, edit
@@ -141,12 +141,47 @@ function glplot(arg1, style=:default; kw_args...)
     robj
 end
 
+function save_record(frames)
+    path = joinpath(homedir(), "Desktop")
+    GLVisualize.create_video(frames, "test.webm", path, 1)
+end
 
+const COMPUTE_CALLBACK = []
+register_compute(f) = push!(COMPUTE_CALLBACK, f)
+export register_compute
+function glplot_renderloop(window, compute_s, record_s)
+    was_recording = false
+    frames = []
+    i = 1
+    while isopen(window)
+        if !value(compute_s) && !isempty(COMPUTE_CALLBACK)
+            COMPUTE_CALLBACK[end](i)
+            i += 1
+        end
+        render_frame(window)
+        record = !value(record_s)
+        if record
+            push!(frames, screenbuffer(window))
+        elseif was_recording && !record
+            save_record(frames)
+            frames = []
+            gc()
+        end
+        GLFW.PollEvents()
+        #GLFW.WaitEvents()
+        #@threadcall((:glfwWaitEvents, GLFW.lib), Void, ())
+        Reactive.run_timer()
+        #wait(Reactive._messages)
+        Reactive.run_till_now()
+        Reactive.run_till_now() # execute secondary cycled events!
+        was_recording = record
+        yield()
+    end
+end
 
-function __init__()
+function init()
 
     w = glscreen()
-    @async renderloop(w)
 
     global const icon_percent = map(w.area) do a
         round(a.w / w_dividor)  # of screen
@@ -179,6 +214,7 @@ function __init__()
     )
 
     play_record, record_sig = toggle_button(imload("record.png"), imload("break.png"), w)
+    compute_record, compute_sig = toggle_button(imload("play.png"), imload("break.png"), w)
     persp_ortho, persp_ortho_toggle_sig = toggle_button(imload("perspective.png"), imload("ortho.png"), w)
     persp_ortho_sig = map(persp_ortho_toggle_sig) do isp
         isp && return GLAbstraction.PERSPECTIVE
@@ -186,24 +222,18 @@ function __init__()
     end
     cube = cubecamera(viewing_screen, persp_ortho_sig)
 
-    map(record_sig) do should_record
-        if should_record
-
-        end
-
-    end
     image_names = ["center", "screenshot"]
     tools = Matrix{BGRA{U8}}[imload("$name.png") for name in image_names]
     center_b, center_s = button(tools[1], w)
     screenshot_b, screenshot_s = button(tools[2], w)
 
-    tools = [center_b, screenshot_b, play_record, persp_ortho]
+    tools = [center_b, screenshot_b, play_record, persp_ortho, compute_record]
     tools_robjs = Any[]
 
     i = 0
     for tool in tools
         robj = layout!(layout_pos_ho(i), visualize(tool))
-        view(robj, toolbar_screen, camera=:fixed_pixel)
+        _view(robj, toolbar_screen, camera=:fixed_pixel)
         push!(tools_robjs, robj.children[])
         i += 1
     end
@@ -225,8 +255,8 @@ function __init__()
         half = ip/2
         translationmatrix(Vec3f0(half,i*ip + i*2 + half,0))*r*scalematrix(Vec3f0(half))
     end
-    view(cube, toolbar_screen, camera=:fixed_pixel)
-    view(edit_screen_show_button, viewing_screen, camera=:fixed_pixel)
+    _view(cube, toolbar_screen, camera=:fixed_pixel)
+    _view(edit_screen_show_button, viewing_screen, camera=:fixed_pixel)
     @materialize scroll, mouseposition = edit_screen.inputs
     should_scroll = map(mouseposition) do mb
         isinside(value(w.area), mb...)
@@ -235,5 +265,6 @@ function __init__()
     edit_screen.inputs[:menu_scroll] = foldp(0, scroll) do v0, s
         v0+(ceil(Int, s[2])*15)
     end
+    @async glplot_renderloop(w, compute_sig, record_sig)
 end
 end

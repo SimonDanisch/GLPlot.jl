@@ -53,7 +53,7 @@ function extract_edit_menu(robj, edit_screen, isvisible)
             mini = minimum(bb)
             to_origin = -Vec3f0(mini[1], mini[2], 0)
             GLAbstraction.transform!(vis, translationmatrix(Vec3f0(20,pos,0)+to_origin))
-            view(vis, edit_screen, camera=:fixed_pixel)
+            _view(vis, edit_screen, camera=:fixed_pixel)
             pos += round(Int, height) + 10
 
             label = string(k)*":"
@@ -66,12 +66,12 @@ function extract_edit_menu(robj, edit_screen, isvisible)
 
         end
     end
-    view(visualize(
+    _view(visualize(
             join(labels), position=textpositions,
             color=RGBA{Float32}(0.8, 0.8, 0.8, 1.0)
         ), edit_screen, camera=:fixed_pixel
     )
-    view(visualize(
+    _view(visualize(
         lines, :linesegment, thickness=1f0, color=RGBA{Float32}(0.9, 0.9, 0.9, 1.0)
     ), edit_screen, camera=:fixed_pixel)
 
