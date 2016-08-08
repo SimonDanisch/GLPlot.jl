@@ -6,7 +6,10 @@ export glplot
 
 using GLVisualize, GLWindow, ModernGL, Reactive, GLAbstraction, Colors
 using GeometryTypes, GLFW, FileIO, FixedSizeArrays
-export toggle_button, imload
+import GLVisualize: toggle_button, toggle, button
+
+export imload
+
 
 include("editing.jl")
 
@@ -14,49 +17,7 @@ function imload(name)
     rotl90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
 end
 
-function button(a, window)
-    robj = visualize(a).children[]
-    const m2id = mouse2id(window)
-    is_pressed = droprepeats(map(window.inputs[:key_pressed]) do isclicked
-        isclicked && value(m2id).id == robj.id
-    end)
-
-    robj[:model] = const_lift(is_pressed, robj[:model], boundingbox(robj)) do ip, old, bb
-        ip && return old
-        scalematrix(Vec3f0(0.95))*old
-    end
-    robj, is_pressed
-end
-
-function toggle_button(a, b, window)
-    id = Signal(0)
-    ab_bool = toggle(id, window)
-    a_b = map(ab_bool) do aORb
-        aORb ? a : b
-    end
-    robj = visualize(a_b)
-    push!(id, robj.children[].id)
-    robj, ab_bool
-end
-function toggle(id1::Union{Signal{Int}, Int}, window, default=true)
-    droprepeats(foldp(default, window.inputs[:mouse_buttons_pressed]) do v0, mbp
-        if GLAbstraction.singlepressed(mbp, GLFW.MOUSE_BUTTON_LEFT)
-            id2, index = value(mouse2id(window))
-            if value(id1)==id2
-                return !v0
-            end
-        end
-        v0
-    end)
-end
-function toggle(robj::RenderObject, window, default=true)
-    toggle(Int(robj.id), window, default)
-end
-function toggle(robj::Context, window, default=true)
-    toggle(robj.children[], window, default)
-end
-
-const w_dividor = 21
+const w_dividor = 32
 
 toolbar_area(pa) = SimpleRectangle(0, 0, round(Int, pa.w/w_dividor), pa.h)
 viewing_area(area_l, area_r) = SimpleRectangle(area_l.w, 0, area_r.x-area_l.w, area_r.h)
@@ -146,16 +107,17 @@ function save_record(frames)
     GLVisualize.create_video(frames, "test.webm", path, 1)
 end
 
-const COMPUTE_CALLBACK = []
-register_compute(f) = push!(COMPUTE_CALLBACK, f)
+const _compute_callbacks = []
+register_compute(f) = push!(_compute_callbacks, f)
 export register_compute
+
 function glplot_renderloop(window, compute_s, record_s)
     was_recording = false
     frames = []
     i = 1
     while isopen(window)
-        if !value(compute_s) && !isempty(COMPUTE_CALLBACK)
-            COMPUTE_CALLBACK[end](i)
+        if !value(compute_s) && !isempty(_compute_callbacks)
+            _compute_callbacks[end](i)
             i += 1
         end
         render_frame(window)
@@ -168,23 +130,19 @@ function glplot_renderloop(window, compute_s, record_s)
             gc()
         end
         GLFW.PollEvents()
-        #GLFW.WaitEvents()
-        #@threadcall((:glfwWaitEvents, GLFW.lib), Void, ())
-        Reactive.run_timer()
-        #wait(Reactive._messages)
-        Reactive.run_till_now()
-        Reactive.run_till_now() # execute secondary cycled events!
         was_recording = record
         yield()
+        GLWindow.swapbuffers(window)
     end
+    destroy!(window)
 end
 
 function init()
 
-    w = glscreen()
+    w = glscreen("GLPlot")
 
     global const icon_percent = map(w.area) do a
-        round(a.w / w_dividor)  # of screen
+        round(a.w / w_dividor) # of screen
     end
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
@@ -209,7 +167,7 @@ function init()
     )
     global const toolbar_screen = Screen(w, area=tarea)
     global const edit_screen = Screen(
-        w, area=edit_screen_area, 
+        w, area=edit_screen_area,
         color=RGBA{Float32}(0.9,0.9,0.9,1)
     )
 
@@ -266,5 +224,7 @@ function init()
         v0+(ceil(Int, s[2])*15)
     end
     @async glplot_renderloop(w, compute_sig, record_sig)
+    viewing_screen
 end
+
 end

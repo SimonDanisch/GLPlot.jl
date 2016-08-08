@@ -44,9 +44,9 @@ function extract_edit_menu(robj, edit_screen, isvisible)
     for (k,v) in robj.uniforms
         is_editable(k, v) || continue
         s = makesignal2(v)
-        if applicable(vizzedit, s, edit_screen)
+        if applicable(widget, s, edit_screen)
 
-            sig, vis = vizzedit(s, edit_screen, visible=isvisible)
+            sig, vis = widget(s, edit_screen, visible=isvisible)
             robj[k] = sig
             bb = value(boundingbox(vis))
             height = widths(bb)[2]
