@@ -1,11 +1,11 @@
-VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
-
+__precompile__(true)
 module GLPlot
 
 export glplot
 
 using GLVisualize, GLWindow, ModernGL, Reactive, GLAbstraction, Colors
-using GeometryTypes, GLFW, FileIO, FixedSizeArrays
+using FixedPointNumbers, FreeType, SignedDistanceFields, Images, Packing
+using GeometryTypes, GLFW, FileIO, FixedSizeArrays, Quaternions
 import GLVisualize: toggle_button, toggle, button
 
 export imload
@@ -226,5 +226,8 @@ function init()
     @async glplot_renderloop(w, compute_sig, record_sig)
     viewing_screen
 end
+
+
+include("glp_userimg.jl")
 
 end
