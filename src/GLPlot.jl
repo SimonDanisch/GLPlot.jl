@@ -137,13 +137,18 @@ function glplot_renderloop(window, compute_s, record_s)
     destroy!(window)
 end
 
+
+function get_dpi(window)
+    monitor = GLFW.GetPrimaryMonitor()
+    props = GLWindow.MonitorProperties(monitor)
+    props.dpi
+end
 function init()
 
     w = glscreen("GLPlot")
+    dpi = (285/get_dpi(w)[1])
 
-    global const icon_percent = map(w.area) do a
-        round(a.w / w_dividor) # of screen
-    end
+    global const icon_percent = Signal(round(Int, 50dpi))
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
         GLFW.MOUSE_BUTTON_LEFT

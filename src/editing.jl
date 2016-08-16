@@ -1,4 +1,7 @@
-
+"""
+There's a lot of noise if we just go through all parameters of a visualization.
+This function filters out the internal values
+"""
 function is_editable(k, v_v)
     v = value(v_v)
     !(
@@ -8,6 +11,7 @@ function is_editable(k, v_v)
         k == Symbol("position.multiplicator") ||
         k == Symbol("position.dims") ||
         k == Symbol("resolution") ||
+        k == :visible ||
         startswith(string(k), "boundingbox") ||
         (k == Symbol("color") && isa(v, AbstractArray)) ||
         k in fieldnames(PerspectiveCamera) ||
@@ -15,15 +19,17 @@ function is_editable(k, v_v)
         isa(v, Symbol) ||
         isa(v, Void) ||
         isa(v, NativeMesh) ||
-        isa(v, Bool) ||
-        isa(v, Integer) ||
+        isa(v, Int) ||
+        isa(v, Int32) ||
+        isa(v, UInt32) ||
+        isa(v, UInt) ||
         (isa(v, FixedVector) && eltype(v) <: Integer)
     )
 end
 makesignal2(s::Signal)   = s
 makesignal2(v)           = Signal(v)
 makesignal2(v::GPUArray) = v
-
+    
 function mytransform!(vis::RenderObject, mat)
     vis[:model] = const_lift(*, mat, vis[:model])
 end
