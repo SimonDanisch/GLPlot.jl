@@ -146,8 +146,9 @@ end
 function init()
 
     w = glscreen("GLPlot")
-    dpi = (285/get_dpi(w)[1])
+    dpi = 1/(150/get_dpi(w)[1])
 
+    
     global const icon_percent = Signal(round(Int, 50dpi))
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
