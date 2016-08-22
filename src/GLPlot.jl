@@ -20,13 +20,52 @@ end
 const w_dividor = 32
 
 toolbar_area(pa) = SimpleRectangle(0, 0, round(Int, pa.w/w_dividor), pa.h)
-viewing_area(area_l, area_r) = SimpleRectangle(area_l.w, 0, area_r.x-area_l.w, area_r.h)
-function edit_rectangle(visible, area, tarea, arrow_pos_s)
-    w = visible ? div(area.w,4) : 0
+function viewing_area(area_l, area_r)
+    SimpleRectangle(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
+end
+function edit_rectangle(visible, area, tarea)
+    w = visible ? div(area.w,4) : 15
     x = area.w-w
-    push!(arrow_pos_s, [Point2f0(x-tarea.w, area.h/2)])
+    #push!(arrow_pos_s, [Point2f0(x-tarea.w, area.h/2)])
     SimpleRectangle(x, 0, w, area.h)
 end
+
+
+layout_pos_ho(i) = map(icon_percent) do ip
+    SimpleRectangle{Float32}(0, i*ip + i*2, ip, ip)
+end
+layout_pos_ver(i, border) = map(icon_percent) do ip
+    SimpleRectangle{Float32}(i*ip + i*border, 0, ip, ip)
+end
+
+function update_arg!(robj, sym, to_update::GPUArray, value)
+    GLAbstraction.update!(to_update, value)
+end
+function update_arg!(robj, sym, to_update, value)
+    robj[sym] = value
+end
+function update_arg!(robj, sym, to_update::Signal, value::Signal)
+    robj[sym] = value
+end
+function update_arg!(robj, sym, to_update::Signal, value)
+    push!(to_update, value)
+end
+function set_arg!(robj::RenderObject, sym, value)
+    current_val = robj[sym]
+    update_arg!(robj, sym, current_val, value)
+    nothing
+end
+function set_arg!(robj::Context, sym, value)
+    set_arg!(robj.children, sym, value)
+    nothing
+end
+function set_arg!(robj::Vector, sym, value)
+    for elem in robj
+        set_arg!(elem, sym, value)
+    end
+    nothing
+end
+
 
 function item_area(la, deleted, item_height)
     y = la.y-item_height-2
@@ -34,20 +73,26 @@ function item_area(la, deleted, item_height)
     return SimpleRectangle(la.x, y, la.w, item_height)
 end
 
-function edit_item_area(la, item_height)
+function edit_item_area(la, item_height, left_gap)
     y = la.y-item_height-2
-    return SimpleRectangle(3, y, la.w, item_height)
+    return SimpleRectangle(left_gap, y, la.w, item_height)
 end
-layout_pos_ho(i) = map(icon_percent) do ip
-    SimpleRectangle{Float32}(0, i*ip + i*2, ip, ip)
+
+export register_plot!
+function register_plot!(robj::Vector, screen=viewing_screen)
+    vcat(map(robj) do elem
+        register_plot!(elem, screen)
+    end...)
 end
-layout_pos_ver(i, border) = map(icon_percent) do ip
-    SimpleRectangle{Float32}(i*ip + i*border, 0, ip, ip)
+function register_plot!(robj::Context, screen=viewing_screen)
+    register_plot!(robj.children, screen)
 end
-function glplot(arg1, style=:default; kw_args...)
+function register_plot!(robj::RenderObject, screen=viewing_screen)
+    left_gap = 3
     visible_button, visible_toggle = toggle_button(
         imload("showing.png"), imload("notshowing.png"), edit_screen
     )
+    set_arg!(robj, :visible, visible_toggle)
     delete_button, del_signal = button(
         imload("delete.png"), edit_screen
     )
@@ -55,26 +100,27 @@ function glplot(arg1, style=:default; kw_args...)
         imload("play.png"), rotr90(imload("play.png")), edit_screen
     )
     item_height = Signal(0)
-    robj = visualize(arg1, style; visible=visible_toggle, kw_args...).children[]
-    _view(robj, viewing_screen)
     not_del_signal = droprepeats(foldp(false, del_signal) do v0, to_delete
         v0 && return v0
-        to_delete && delete!(viewing_screen, robj)
+        if to_delete
+            push!(item_height, 0)
+            delete!(screen, robj)
+        end
         return to_delete
     end)
     scroll = edit_screen.inputs[:menu_scroll]
     icon_size = map(Int, icon_percent)
     if isempty(edit_screen.children)
         last_area = map(edit_screen.area, not_del_signal, icon_size, scroll) do a, deleted, ih, s
-            deleted && return SimpleRectangle(3, a.h+s, a.w-6, 0)
-            return SimpleRectangle(3, a.h-ih+s, a.w-6, ih)
+            deleted && return SimpleRectangle(left_gap, a.h+s, a.w-2left_gap, 0)
+            return SimpleRectangle(left_gap, a.h-ih+s, a.w-2left_gap, ih)
         end
     else
         last_area = last(edit_screen.children).area
     end
     edit_signal = map(!, no_edit_signal)
     itemarea = map(item_area, last_area, not_del_signal, icon_size)
-    edititemarea = map(edit_item_area, itemarea, item_height)
+    edititemarea = map(edit_item_area, itemarea, item_height, Signal(left_gap))
     new_item_screen = Screen(edit_screen, area=itemarea)
     edit_item_screen = Screen(edit_screen, area=edititemarea)
     offset = 0f0
@@ -86,7 +132,7 @@ function glplot(arg1, style=:default; kw_args...)
     preserve(foldp((false, value(item_height)), edit_signal) do v0, edit
         if edit
             if !v0[1] # only do this at the first time
-                new_heights = extract_edit_menu(robj, edit_item_screen, edit_signal)
+                new_heights = extract_edit_menu(robj::Any, edit_item_screen, edit_signal)
                 nh = ceil(Int, new_heights)
                 push!(item_height, nh)
                 return true, nh
@@ -98,7 +144,13 @@ function glplot(arg1, style=:default; kw_args...)
         end
         return v0
     end)
+    [del_signal]
+end
 
+function glplot(arg1, style=:default; kw_args...)
+    robj = visualize(arg1, style; kw_args...)
+    _view(robj, viewing_screen)
+    register_plot!(robj)
     robj
 end
 
@@ -110,17 +162,19 @@ end
 const _compute_callbacks = []
 register_compute(f) = push!(_compute_callbacks, f)
 export register_compute
-
+poll_reactive() = (Base.n_avail(Reactive._messages) > 0) && Reactive.run_till_now()
 function glplot_renderloop(window, compute_s, record_s)
     was_recording = false
     frames = []
     i = 1
+    #Reactive.stop()
     while isopen(window)
         if !value(compute_s) && !isempty(_compute_callbacks)
             _compute_callbacks[end](i)
             i += 1
         end
         render_frame(window)
+        GLWindow.swapbuffers(window)
         record = !value(record_s)
         if record
             push!(frames, screenbuffer(window))
@@ -130,9 +184,9 @@ function glplot_renderloop(window, compute_s, record_s)
             gc()
         end
         GLFW.PollEvents()
+        #poll_reactive()
         was_recording = record
         yield()
-        GLWindow.swapbuffers(window)
     end
     destroy!(window)
 end
@@ -146,28 +200,31 @@ end
 function init()
 
     w = glscreen("GLPlot")
-    dpi = 1/(150/get_dpi(w)[1])
+    global const dpi = 1/(150/get_dpi(w)[1])
 
-    
+
     global const icon_percent = Signal(round(Int, 50dpi))
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
         GLFW.MOUSE_BUTTON_LEFT
     )
-    button_pos = Signal([Point2f0(w.area.value.w, w.area.value.h/2)])
+    button_pos = map(w.area) do a
+        Point2f0[(0,a.h/2)]
+    end
     edit_screen_show_button = visualize(
-        (SimpleRectangle(-15,-15, 15, 30), button_pos),
+        (SimpleRectangle(0,-15, 15, 30), button_pos),
         color=RGBA{Float32}(0.6,0.6,0.6,1)
     )
     tarea = map(toolbar_area, w.area)
 
     show_edit_screen = toggle(edit_screen_show_button, w, false)
     edit_screen_area = map(edit_rectangle,
-        show_edit_screen, w.area, tarea, Signal(button_pos)
+        show_edit_screen, w.area, tarea
     )
 
 
     global const viewing_screen = Screen(w,
+        name=Symbol("Viewing Screen"),
         area=map(viewing_area, tarea, edit_screen_area),
         color=RGBA{Float32}(1,1,1,1)
     )
@@ -176,7 +233,7 @@ function init()
         w, area=edit_screen_area,
         color=RGBA{Float32}(0.9,0.9,0.9,1)
     )
-
+    _view(edit_screen_show_button, edit_screen, camera=:fixed_pixel)
     play_record, record_sig = toggle_button(imload("record.png"), imload("break.png"), w)
     compute_record, compute_sig = toggle_button(imload("play.png"), imload("break.png"), w)
     persp_ortho, persp_ortho_toggle_sig = toggle_button(imload("perspective.png"), imload("ortho.png"), w)
@@ -220,7 +277,8 @@ function init()
         translationmatrix(Vec3f0(half,i*ip + i*2 + half,0))*r*scalematrix(Vec3f0(half))
     end
     _view(cube, toolbar_screen, camera=:fixed_pixel)
-    _view(edit_screen_show_button, viewing_screen, camera=:fixed_pixel)
+
+    GLVisualize.add_screen(viewing_screen)
     @materialize scroll, mouseposition = edit_screen.inputs
     should_scroll = map(mouseposition) do mb
         isinside(value(w.area), mb...)
@@ -234,6 +292,6 @@ function init()
 end
 
 
-include("glp_userimg.jl")
+#include("glp_userimg.jl")
 
 end

@@ -29,7 +29,7 @@ end
 makesignal2(s::Signal)   = s
 makesignal2(v)           = Signal(v)
 makesignal2(v::GPUArray) = v
-    
+
 function mytransform!(vis::RenderObject, mat)
     vis[:model] = const_lift(*, mat, vis[:model])
 end
@@ -39,20 +39,27 @@ function mytransform!(vis::Context, mat)
     end
 end
 function extract_edit_menu(robj, edit_screen, isvisible)
-    pos = 1f00
+    dpi = GLPlot.dpi
     lines = Point2f0[]
     screen_w = edit_screen.area.value.w
     labels = String[]
-    scale = Vec2f0(1)
+    glyph_scale = GLVisualize.glyph_scale!('X')
+    pos = 5dpi
+    scale = 15dpi ./ glyph_scale
+    widget_text = scale .* 1.2f0
+    glyph_height = round(Int, glyph_scale[2]*scale[2])
     atlas = GLVisualize.get_texture_atlas()
     font = GLVisualize.DEFAULT_FONT_FACE
     textpositions = Point2f0[]
     for (k,v) in robj.uniforms
-        is_editable(k, v) || continue
-        s = makesignal2(v)
+        GLPlot.is_editable(k, v) || continue
+        s = GLPlot.makesignal2(v)
         if applicable(widget, s, edit_screen)
-
-            sig, vis = widget(s, edit_screen, visible=isvisible)
+            sig, vis = widget(s, edit_screen,
+                visible=isvisible, text_scale=widget_text,
+                area=(300dpi, screen_w),
+                knob_scale = 10dpi
+            )
             robj[k] = sig
             bb = value(boundingbox(vis))
             height = widths(bb)[2]
@@ -60,21 +67,22 @@ function extract_edit_menu(robj, edit_screen, isvisible)
             to_origin = -Vec3f0(mini[1], mini[2], 0)
             GLAbstraction.transform!(vis, translationmatrix(Vec3f0(20,pos,0)+to_origin))
             _view(vis, edit_screen, camera=:fixed_pixel)
-            pos += round(Int, height) + 10
+            pos += round(Int, height) + 10dpi
 
-            label = string(k)*":"
+            label = replace(string(k), "_", " ")*":"
             push!(labels, label)
             append!(textpositions,
                 GLVisualize.calc_position(label, Point2f0(10, pos), scale, font, atlas)
             )
-            pos += 40
-            push!(lines, Point2f0(0, pos-10), Point2f0(screen_w, pos-10))
+            pos += glyph_height + 20dpi
+            push!(lines, Point2f0(0, pos-10dpi), Point2f0(screen_w, pos-10dpi))
 
         end
     end
     _view(visualize(
             join(labels), position=textpositions,
-            color=RGBA{Float32}(0.8, 0.8, 0.8, 1.0)
+            color=RGBA{Float32}(0.8, 0.8, 0.8, 1.0),
+            relative_scale=scale
         ), edit_screen, camera=:fixed_pixel
     )
     _view(visualize(
