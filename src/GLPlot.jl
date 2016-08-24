@@ -19,7 +19,7 @@ end
 
 const w_dividor = 32
 
-toolbar_area(pa) = SimpleRectangle(0, 0, round(Int, pa.w/w_dividor), pa.h)
+toolbar_area(pa, toolbar_width) = SimpleRectangle(0, 0, toolbar_width, pa.h)
 function viewing_area(area_l, area_r)
     SimpleRectangle(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
 end
@@ -88,7 +88,7 @@ function register_plot!(robj::Context, screen=viewing_screen)
     register_plot!(robj.children, screen)
 end
 function register_plot!(robj::RenderObject, screen=viewing_screen)
-    left_gap = 3
+    left_gap = round(Int, 7dpi)
     visible_button, visible_toggle = toggle_button(
         imload("showing.png"), imload("notshowing.png"), edit_screen
     )
@@ -113,7 +113,7 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
     if isempty(edit_screen.children)
         last_area = map(edit_screen.area, not_del_signal, icon_size, scroll) do a, deleted, ih, s
             deleted && return SimpleRectangle(left_gap, a.h+s, a.w-2left_gap, 0)
-            return SimpleRectangle(left_gap, a.h-ih+s, a.w-2left_gap, ih)
+            return SimpleRectangle{Int}(left_gap, a.h-ih+s, a.w-2left_gap, ih)
         end
     else
         last_area = last(edit_screen.children).area
@@ -167,13 +167,14 @@ function glplot_renderloop(window, compute_s, record_s)
     was_recording = false
     frames = []
     i = 1
-    #Reactive.stop()
+    Reactive.stop()
     while isopen(window)
         if !value(compute_s) && !isempty(_compute_callbacks)
             _compute_callbacks[end](i)
             i += 1
         end
         render_frame(window)
+        yield()
         GLWindow.swapbuffers(window)
         record = !value(record_s)
         if record
@@ -184,9 +185,9 @@ function glplot_renderloop(window, compute_s, record_s)
             gc()
         end
         GLFW.PollEvents()
-        #poll_reactive()
+        poll_reactive()
+        poll_reactive()
         was_recording = record
-        yield()
     end
     destroy!(window)
 end
@@ -200,7 +201,7 @@ end
 function init()
 
     w = glscreen("GLPlot")
-    global const dpi = 1/(150/get_dpi(w)[1])
+    global const dpi = 1/(170/get_dpi(w)[1])
 
 
     global const icon_percent = Signal(round(Int, 50dpi))
@@ -212,10 +213,11 @@ function init()
         Point2f0[(0,a.h/2)]
     end
     edit_screen_show_button = visualize(
-        (SimpleRectangle(0,-15, 15, 30), button_pos),
+        (SimpleRectangle{Float32}(0, 0, 7dpi, 2dpi*7), button_pos),
+        offset=Vec2f0(0, -7dpi), 
         color=RGBA{Float32}(0.6,0.6,0.6,1)
     )
-    tarea = map(toolbar_area, w.area)
+    tarea = map(toolbar_area, w.area, icon_percent)
 
     show_edit_screen = toggle(edit_screen_show_button, w, false)
     edit_screen_area = map(edit_rectangle,
@@ -287,7 +289,7 @@ function init()
     edit_screen.inputs[:menu_scroll] = foldp(0, scroll) do v0, s
         v0+(ceil(Int, s[2])*15)
     end
-    @async glplot_renderloop(w, compute_sig, record_sig)
+    @async renderloop(w)
     viewing_screen
 end
 
