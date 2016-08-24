@@ -210,11 +210,11 @@ function init()
         GLFW.MOUSE_BUTTON_LEFT
     )
     button_pos = map(w.area) do a
-        Point2f0[(0,a.h/2)]
+        Point2f0[(0, a.h/2)]
     end
     edit_screen_show_button = visualize(
-        (SimpleRectangle{Float32}(0, 0, 7dpi, 2dpi*7), button_pos),
-        offset=Vec2f0(0, -7dpi), 
+        (SimpleRectangle{Float32}(0, 0, 16dpi, 16dpi*2), button_pos),
+        offset=Vec2f0(0, -16dpi),
         color=RGBA{Float32}(0.6,0.6,0.6,1)
     )
     tarea = map(toolbar_area, w.area, icon_percent)
