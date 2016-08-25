@@ -180,18 +180,18 @@ end
 
 function save_record(frames)
     path = joinpath(homedir(), "Desktop")
-    GLVisualize.create_video(frames, "test.webm", path, 1)
+    GLVisualize.create_video(frames, "test.webm", path, 0)
 end
 
 const _compute_callbacks = []
 register_compute(f) = push!(_compute_callbacks, f)
 export register_compute
-poll_reactive() = (Base.n_avail(Reactive._messages) > 0) && Reactive.run_till_now()
+poll_reactive() = (Base.n_avail(Reactive._messages) > 1) && Reactive.run_till_now()
 function glplot_renderloop(window, compute_s, record_s)
     was_recording = false
     frames = []
     i = 1
-    Reactive.stop()
+    #Reactive.stop()
     while isopen(window)
         if !value(compute_s) && !isempty(_compute_callbacks)
             _compute_callbacks[end](i)
@@ -209,8 +209,8 @@ function glplot_renderloop(window, compute_s, record_s)
             gc()
         end
         GLFW.PollEvents()
-        poll_reactive()
-        poll_reactive()
+        #poll_reactive()
+        #poll_reactive()
         was_recording = record
     end
     destroy!(window)
@@ -318,7 +318,7 @@ function init()
     edit_screen.inputs[:menu_scroll] = foldp(0, scroll) do v0, s
         v0+(ceil(Int, s[2])*15)
     end
-    @async renderloop(w)
+    @async glplot_renderloop(w, compute_sig, record_sig)
     viewing_screen
 end
 
