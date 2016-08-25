@@ -7,17 +7,39 @@ using GLVisualize, GLWindow, ModernGL, Reactive, GLAbstraction, Colors
 using FixedPointNumbers, FreeType, SignedDistanceFields, Images, Packing
 using GeometryTypes, GLFW, FileIO, FixedSizeArrays, Quaternions
 import GLVisualize: toggle_button, toggle, button
-
+import Plots
+import NIfTI
 export imload
 
+
+FileIO.load(file::File{format"Julia"}) = include(filename(file))
+FileIO.load(file::File{format"NIfTI"}) = NIfTI.niread(filename(file))
+function GLVisualize.visualize(v::NIfTI.NIfTI.NIVolume, style::Symbol=:default; kw_args...)
+    visualize(v.raw, style; kw_args...)
+end
+function glplot(p::Plots.Plot, style::Symbol=:default;kw_args...)
+    show(p)
+end
+function __init__()
+    add_format(format"Julia", (), ".jl")
+    add_format(format"NIfTI", (), ".nii")
+end
+
+function handle_drop(files::Vector{String})
+    for f in files
+        try
+            glplot(load(f))
+        catch e
+            warn(e)
+        end
+    end
+end
 
 include("editing.jl")
 
 function imload(name)
     rotl90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
 end
-
-const w_dividor = 32
 
 toolbar_area(pa, toolbar_width) = SimpleRectangle(0, 0, toolbar_width, pa.h)
 function viewing_area(area_l, area_r)
@@ -147,9 +169,11 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
     [del_signal]
 end
 
+
 function glplot(arg1, style=:default; kw_args...)
     robj = visualize(arg1, style; kw_args...)
-    _view(robj, viewing_screen)
+    _view(robj, viewing_screen, camera=:perspective)
+    center!(viewing_screen)
     register_plot!(robj)
     robj
 end
@@ -198,9 +222,14 @@ function get_dpi(window)
     props = GLWindow.MonitorProperties(monitor)
     props.dpi
 end
+
 function init()
 
     w = glscreen("GLPlot")
+
+    preserve(map(handle_drop, w.inputs[:dropped_files]))
+
+
     global const dpi = 1/(170/get_dpi(w)[1])
 
 
