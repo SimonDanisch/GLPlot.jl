@@ -36,6 +36,7 @@ function handle_drop(files::Vector{String})
 end
 
 include("editing.jl")
+include("gui.jl")
 
 function imload(name)
     rotl90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
@@ -46,7 +47,7 @@ function viewing_area(area_l, area_r)
     SimpleRectangle(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
 end
 function edit_rectangle(visible, area, tarea)
-    w = visible ? div(area.w,4) : 15
+    w = visible ? round(Int, min(div(area.w,4), 400dpi)) : 15
     x = area.w-w
     #push!(arrow_pos_s, [Point2f0(x-tarea.w, area.h/2)])
     SimpleRectangle(x, 0, w, area.h)
@@ -132,13 +133,13 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
     end)
     scroll = edit_screen.inputs[:menu_scroll]
     icon_size = map(Int, icon_percent)
-    if isempty(edit_screen.children)
-        last_area = map(edit_screen.area, not_del_signal, icon_size, scroll) do a, deleted, ih, s
+    last_area = if isempty(edit_screen.children)
+        map(edit_screen.area, not_del_signal, icon_size, scroll) do a, deleted, ih, s
             deleted && return SimpleRectangle(left_gap, a.h+s, a.w-2left_gap, 0)
             return SimpleRectangle{Int}(left_gap, a.h-ih+s, a.w-2left_gap, ih)
         end
     else
-        last_area = last(edit_screen.children).area
+        last(edit_screen.children).area
     end
     edit_signal = map(!, no_edit_signal)
     itemarea = map(item_area, last_area, not_del_signal, icon_size)
