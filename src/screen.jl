@@ -50,17 +50,18 @@ poll_reactive() = (Base.n_avail(Reactive._messages) > 1) && Reactive.run_till_no
 function glplot_renderloop(window, compute_s, record_s)
     was_recording = false
     frames = []
-    i = 1
-    #Reactive.stop()
+    i = 0
+    Reactive.stop()
+    yield()
     while isopen(window)
-        if !value(compute_s) && !isempty(_compute_callbacks)
-            _compute_callbacks[end](i)
-            i += 1
-        end
-        render_frame(window)
-        yield()
-        GLWindow.swapbuffers(window)
+        tic()
+        GLWindow.pollevents()
         record = !value(record_s)
+        if isready(Reactive._messages)
+            Reactive.run_till_now()
+            GLWindow.render_frame(window)
+            GLWindow.swapbuffers(window)
+        end
         if record
             push!(frames, screenbuffer(window))
         elseif was_recording && !record
@@ -68,12 +69,17 @@ function glplot_renderloop(window, compute_s, record_s)
             frames = []
             gc()
         end
-        GLFW.PollEvents()
-        #poll_reactive()
-        #poll_reactive()
+        yield()
+        diff = (1/60) - toq()
+        while diff >= 0.001
+            tic()
+            sleep(0.001) # sleep for the minimal amount of time
+            diff -= toq()
+        end
         was_recording = record
     end
-    destroy!(window)
+    GLWindow.destroy!(window)
+    GLVisualize.cleanup_old_screens()
 end
 
 
