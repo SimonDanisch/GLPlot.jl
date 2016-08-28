@@ -27,7 +27,7 @@ function get_drag(w, range, point_id, slider_length, playing, startpos=Point2f0(
     end
     map(last, sig)
 end
-export play_control
+
 
 function play_control(
         range;
