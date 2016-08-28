@@ -21,6 +21,10 @@ end
 function register_plot!(robj::Context, screen=viewing_screen)
     register_plot!(robj.children, screen)
 end
+
+function left_clicked(button::Set{Int})
+    return GLAbstraction.singlepressed(button, GLFW.MOUSE_BUTTON_LEFT)
+end
 function register_plot!(robj::RenderObject, screen=viewing_screen)
     left_gap = round(Int, 7dpi)
     visible_button, visible_toggle = toggle_button(
@@ -42,6 +46,7 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
         end
         return to_delete
     end)
+
     scroll = edit_screen.inputs[:menu_scroll]
     icon_size = map(Int, icon_percent)
     last_area = if isempty(edit_screen.children)
@@ -66,7 +71,7 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
     preserve(foldp((false, value(item_height)), edit_signal) do v0, edit
         if edit
             if !v0[1] # only do this at the first time
-                new_heights = extract_edit_menu(robj::Any, edit_item_screen, edit_signal)
+                new_heights = extract_edit_menu(robj, edit_item_screen, edit_signal)
                 nh = ceil(Int, new_heights)
                 push!(item_height, nh)
                 return true, nh
@@ -78,5 +83,18 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
         end
         return v0
     end)
+    @materialize buttons_pressed, mouse_buttons_pressed, mouseinside = screen.inputs
+    selected = foldp(false, mouse2id(screen), mouse_buttons_pressed, mouseinside) do v0, id, mc, mi
+        if left_clicked(mc) && mi
+            new_item_screen.color = if id.id == robj.id
+                RGBA{Float32}(0.9, 0.99, 1, 1)
+            else
+                RGBA{Float32}(1, 1, 1, 1)
+            end
+            return id.id == robj.id
+        end
+        return v0
+    end
+    preserve(selected)
     [del_signal]
 end
