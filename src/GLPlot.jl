@@ -36,8 +36,6 @@ include("screen.jl")
 export register_compute
 
 
-
-
 #include("glp_userimg.jl")
 
 end

@@ -13,17 +13,16 @@ function viewing_area(area_l, area_r)
     SimpleRectangle(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
 end
 function edit_rectangle(visible, area, tarea)
-    w = visible ? round(Int, min(div(area.w,4), 400dpi)) : 15
+    w = visible ? round(Int, min(div(area.w,4), 80mm)) : 3.2mm
     x = area.w-w
-    #push!(arrow_pos_s, [Point2f0(x-tarea.w, area.h/2)])
     SimpleRectangle(x, 0, w, area.h)
 end
 
 
-layout_pos_ho(i) = map(icon_percent) do ip
+layout_pos_ho(i) = map(icon_size) do ip
     SimpleRectangle{Float32}(0, i*ip + i*2, ip, ip)
 end
-layout_pos_ver(i, border) = map(icon_percent) do ip
+layout_pos_ver(i, border) = map(icon_size) do ip
     SimpleRectangle{Float32}(i*ip + i*border, 0, ip, ip)
 end
 
@@ -86,8 +85,20 @@ end
 function get_dpi(window)
     monitor = GLFW.GetPrimaryMonitor()
     props = GLWindow.MonitorProperties(monitor)
-    props.dpi
+    props.dpi[1]# we do not start fiddling with differently scaled xy dpi's
 end
+
+
+immutable Millimeter
+end
+const mm = Millimeter()
+function Base.:(*)(x::Millimeter, y::Number)
+    round(Int, y * pixel_per_mm)
+end
+function Base.:(*)(x::Number, y::Millimeter)
+    round(Int, x * pixel_per_mm)
+end
+
 
 function init()
 
@@ -96,10 +107,10 @@ function init()
     preserve(map(handle_drop, w.inputs[:dropped_files]))
 
 
-    global const dpi = 1/(170/get_dpi(w)[1])
+    global const pixel_per_mm = get_dpi(w)/25.4
 
 
-    global const icon_percent = Signal(round(Int, 50dpi))
+    global const icon_size = Signal(10mm)
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
         GLFW.MOUSE_BUTTON_LEFT
@@ -107,12 +118,13 @@ function init()
     button_pos = map(w.area) do a
         Point2f0[(0, a.h/2)]
     end
+    button_width = 3.2mm
     edit_screen_show_button = visualize(
-        (SimpleRectangle{Float32}(0, 0, 16dpi, 16dpi*2), button_pos),
-        offset=Vec2f0(0, -16dpi),
+        (SimpleRectangle{Float32}(0, 0, button_width, button_width*2), button_pos),
+        offset=Vec2f0(0, -button_width),
         color=RGBA{Float32}(0.6,0.6,0.6,1)
     )
-    tarea = map(toolbar_area, w.area, icon_percent)
+    tarea = map(toolbar_area, w.area, icon_size)
 
     show_edit_screen = toggle(edit_screen_show_button, w, false)
     edit_screen_area = map(edit_rectangle,
@@ -169,7 +181,7 @@ function init()
     end)
     rot = cube.children[][:model]
 
-    cube.children[][:model] = map(rot, icon_percent) do r, ip
+    cube.children[][:model] = map(rot, icon_size) do r, ip
         half = ip/2
         translationmatrix(Vec3f0(half,i*ip + i*2 + half,0))*r*scalematrix(Vec3f0(half))
     end
