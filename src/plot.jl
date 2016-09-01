@@ -135,7 +135,7 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
     end
     select_icon = visualize(SimpleRectangle(0,0,1.5mm, 10mm), color=color)
     add_widget!(select_icon, visible_button, delete_button, edit_button, window=item_screen)
-    model = gizmo(screen, selected)
+    #model = gizmo(screen, selected)
     #set_arg!(robj, :model, model)
     [del_signal]
 end
