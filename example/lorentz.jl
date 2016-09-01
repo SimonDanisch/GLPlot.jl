@@ -26,10 +26,10 @@ function async_map2(f, init, inputs...; typ=typeof(init))
     end, node
 end
 
-slidera = GLPlot.play_widget(linspace(-4f0, 4f0, 30))
-sliderb = GLPlot.play_widget(linspace(-4f0, 4f0, 30))
-sliderc = GLPlot.play_widget(linspace(-4f0, 4f0, 30))
-sliderd = GLPlot.play_widget(linspace(-4f0, 4f0, 30))
+slidera = GLPlot.play_widget(linspace(0.1f0, 40f0, 30))
+sliderb = GLPlot.play_widget(linspace(0.1f0, 40f0, 30))
+sliderc = GLPlot.play_widget(linspace(0.1f0, 40f0, 30))
+sliderd = GLPlot.play_widget(linspace(0.1f0, 40f0, 30))
 
 function lorentz(v0, a, b, c, d)
     Point2f0(
