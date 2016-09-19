@@ -16,9 +16,7 @@ function async_map2(f, init, inputs...; typ=typeof(init))
                         x = f(args...)
                         push!(node, x)
                     end
-                    while !istaskdone(inner_worker)
-                        yield()
-                    end
+                    wait(inner_worker)
                 catch err
                     Base.throwto(outer_task, CapturedException(err, catch_backtrace()))
                 end

@@ -9,7 +9,7 @@
 # - Add a force that attracts to mouse pointer.
 #----------------------------------------------------------------------
 using Reactive, GeometryTypes, GLAbstraction, GLPlot, GLVisualize, Colors, ColorTypes
-
+GLPlot.init()
 #----------------------------------------------------------------------
 typealias Position Point{2,Float32}
 typealias Velocity Vec{2,Float32}
@@ -72,16 +72,15 @@ to_color(velocities, mul) = RGBA{U8}[RGBA{U8}(clamp(velocity[1]*mul), clamp(velo
 function main()
     # Create population of boids
     boids = Boids()
-    pv = lift(simulate!, bounce(0:1000), Input(boids))
-    positions = lift(first, pv)
-    colors = lift(last, pv)
-    mul = Input(200f0)
+    pv = map(simulate!, bounce(0:1000), Signal(boids))
+    positions = map(first, pv)
+    velocity = map(last, pv)
+    glplot(
+       (Circle, positions), scale=Vec2f0(0.05),
+       intensity=map(norm, velocity), color_map=GLVisualize.default(Vector{RGBA}),
+       color_norm=Vec2f0(0, 2)
+    )
 
-    colors = lift(to_color, colors, mul)
-    colort = Texture(colors.value)
-    lift(update!, Input(colort), colors)
-    glplot(positions, scale=Vec2f0(0.05), color=colort)
-    mul
 end
 
 

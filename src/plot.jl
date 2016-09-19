@@ -1,12 +1,11 @@
-function glplot(p::Plots.Plot, style::Symbol=:default;kw_args...)
+function glplot(p::Plots.Plot, style::Symbol=:default; kw_args...)
     show(p)
 end
 
-function glplot(arg1, style=:default; kw_args...)
+function glplot(arg1, style=:default; screen=viewing_screen, kw_args...)
     robj = visualize(arg1, style; kw_args...)
-    _view(robj, viewing_screen, camera=:perspective)
-    #center!(viewing_screen)
-    register_plot!(robj)
+    _view(robj, screen, camera=:perspective)
+    register_plot!(robj, screen)
     robj
 end
 
@@ -89,7 +88,7 @@ end
 
 
 function register_plot!(robj::RenderObject, screen=viewing_screen)
-    left_gap = 0.7mm
+    left_gap = 3.0mm
     visible_button, visible_s = visible_toggle()
     set_arg!(robj, :visible, visible_s)
     delete_button, del_signal = button(imload("delete.png"), edit_screen)

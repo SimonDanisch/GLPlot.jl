@@ -13,7 +13,7 @@ function viewing_area(area_l, area_r)
     SimpleRectangle(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
 end
 function edit_rectangle(visible, area, tarea)
-    w = visible ? round(Int, min(div(area.w,4), 80mm)) : 3.2mm
+    w = visible ? 80mm : 3.0mm
     x = area.w-w
     SimpleRectangle(x, 0, w, area.h)
 end
@@ -26,12 +26,6 @@ layout_pos_ver(i, border) = map(icon_size) do ip
     SimpleRectangle{Float32}(i*ip + i*border, 0, ip, ip)
 end
 
-
-function item_area(la, deleted, item_height)
-    y = la.y-item_height-2
-    deleted && return SimpleRectangle(la.x, la.y, la.w, 0)
-    return SimpleRectangle(la.x, y, la.w, item_height)
-end
 
 function edit_item_area(la, item_height, left_gap)
     y = la.y-item_height-2
@@ -118,7 +112,7 @@ function init()
     button_pos = map(w.area) do a
         Point2f0[(0, a.h/2)]
     end
-    button_width = 3.2mm
+    button_width = 3.0mm
     edit_screen_show_button = visualize(
         (SimpleRectangle{Float32}(0, 0, button_width, button_width*2), button_pos),
         offset=Vec2f0(0, -button_width),
@@ -196,6 +190,11 @@ function init()
     edit_screen.inputs[:menu_scroll] = foldp(0, scroll) do v0, s
         v0+(ceil(Int, s[2])*15)
     end
-    @async glplot_renderloop(w, compute_sig, record_sig)
+    global _renderloop_task = @async glplot_renderloop(w, compute_sig, record_sig)
     viewing_screen
+end
+
+function block()
+    global _renderloop_task
+    wait(_renderloop_task)
 end
