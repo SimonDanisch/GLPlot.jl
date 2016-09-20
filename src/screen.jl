@@ -13,7 +13,7 @@ function viewing_area(area_l, area_r)
     SimpleRectangle(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
 end
 function edit_rectangle(visible, area, tarea)
-    w = visible ? 80mm : 3.0mm
+    w = visible ? 70mm : 1.5mm
     x = area.w-w
     SimpleRectangle(x, 0, w, area.h)
 end
@@ -104,7 +104,7 @@ function init()
     global const pixel_per_mm = get_dpi(w)/25.4
 
 
-    global const icon_size = Signal(10mm)
+    global const icon_size = Signal(6mm)
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
         GLFW.MOUSE_BUTTON_LEFT
@@ -112,7 +112,7 @@ function init()
     button_pos = map(w.area) do a
         Point2f0[(0, a.h/2)]
     end
-    button_width = 3.0mm
+    button_width = 1.5mm
     edit_screen_show_button = visualize(
         (SimpleRectangle{Float32}(0, 0, button_width, button_width*2), button_pos),
         offset=Vec2f0(0, -button_width),

@@ -41,7 +41,7 @@ function extract_edit_menu(edit_dict::Dict, edit_screen, isvisible)
     labels = String[]
     glyph_scale = GLVisualize.glyph_scale!('X')
     pos = 1mm
-    scale = 3mm ./ glyph_scale
+    scale = 2mm ./ glyph_scale
     widget_text = scale .* 1.2f0
     glyph_height = round(Int, glyph_scale[2]*scale[2])
     atlas = GLVisualize.get_texture_atlas()
@@ -54,21 +54,21 @@ function extract_edit_menu(edit_dict::Dict, edit_screen, isvisible)
             sig, vis = widget(s, edit_screen,
                 visible=isvisible, text_scale=widget_text,
                 area=(screen_w, value(icon_size)),
-                knob_scale = 2mm
+                knob_scale = 1.6mm
             )
             edit_dict[k] = sig
             bb = value(boundingbox(vis))
             height = widths(bb)[2]
             mini = minimum(bb)
             to_origin = -Vec3f0(mini[1], mini[2], 0)
-            GLAbstraction.transform!(vis, translationmatrix(Vec3f0(20,pos,0)+to_origin))
+            GLAbstraction.transform!(vis, translationmatrix(Vec3f0(2mm,pos,0)+to_origin))
             _view(vis, edit_screen, camera=:fixed_pixel)
             pos += round(Int, height) + 1mm
 
             label = replace(string(k), "_", " ")*":"
             push!(labels, label)
             append!(textpositions,
-                GLVisualize.calc_position(label, Point2f0(10, pos), scale, font, atlas)
+                GLVisualize.calc_position(label, Point2f0(1mm, pos), scale, font, atlas)
             )
             pos += glyph_height + 4mm
             push!(lines, Point2f0(0, pos-2mm), Point2f0(screen_w, pos-2mm))
