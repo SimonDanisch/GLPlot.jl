@@ -53,7 +53,7 @@ function extract_edit_menu(edit_dict::Dict, edit_screen, isvisible)
         if applicable(widget, s, edit_screen)
             sig, vis = widget(s, edit_screen,
                 visible=isvisible, text_scale=widget_text,
-                area=(screen_w, 60mm),
+                area=(screen_w, value(icon_size)),
                 knob_scale = 2mm
             )
             edit_dict[k] = sig
