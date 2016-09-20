@@ -52,7 +52,7 @@ function slider(
     end
     point_robj = visualize(
         (Circle, position),
-        offset=Vec2f0(2.1GLPlot.mm, 3GLPlot.mm), scale=Vec2f0(4GLPlot.mm),
+        offset=Vec2f0(2.1mm, 3mm), scale=Vec2f0(4GLPlot.mm),
         boundingbox=bb
     ).children[]
     push!(point_id, (point_robj.id, line.id))
@@ -73,9 +73,9 @@ function play_widget(
         startidx::Int=1
     )
     glyph_scale = GLVisualize.glyph_scale!('X')
-    scale = (3GLPlot.mm ./ glyph_scale)
+    scale = (3mm ./ glyph_scale)
     digits = maxdigits(range)
-    sliderlen = 80mm-value(GLPlot.icon_size)-(digits*4mm)-4.2mm
+    sliderlen = 70mm-value(GLPlot.icon_size)-(digits*4mm)-4.2mm
     play_button, play_stop_signal = GLVisualize.toggle_button(
         rot180(GLPlot.imload("play.png")), GLPlot.imload("break.png"), window
     )
@@ -129,7 +129,7 @@ function item_area(la, deleted, item_height)
     return SimpleRectangle(la.x, y, la.w, item_height)
 end
 
-function widget_screen!(parentscreen=edit_screen; left_gap=3.0mm, delete=Signal(false))
+function widget_screen!(parentscreen=edit_screen; left_gap=1.5mm, delete=Signal(false))
     scroll = parentscreen.inputs[:menu_scroll]
     if isempty(parentscreen.children)
         last_area = map(parentscreen.area, icon_size, scroll) do a, ih, s

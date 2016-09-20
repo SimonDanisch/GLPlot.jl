@@ -88,7 +88,7 @@ end
 
 
 function register_plot!(robj::RenderObject, screen=viewing_screen)
-    left_gap = 3.0mm
+    left_gap = 1.5mm
     visible_button, visible_s = visible_toggle()
     set_arg!(robj, :visible, visible_s)
     delete_button, del_signal = button(imload("delete.png"), edit_screen)
