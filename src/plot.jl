@@ -87,7 +87,7 @@ function gizmo(w, is_selected)
 end
 
 
-function register_plot!(robj::RenderObject, screen=viewing_screen)
+function register_plot!(robj::RenderObject, screen=viewing_screen; create_gizmo=true)
     left_gap = 1.5mm
     visible_button, visible_s = visible_toggle()
     set_arg!(robj, :visible, visible_s)
@@ -134,7 +134,9 @@ function register_plot!(robj::RenderObject, screen=viewing_screen)
     end
     select_icon = visualize(SimpleRectangle(0,0,1.5mm, 10mm), color=color)
     add_widget!(select_icon, visible_button, delete_button, edit_button, window=item_screen)
-    #model = gizmo(screen, selected)
-    #set_arg!(robj, :model, model)
+    if create_gizmo
+        model = gizmo(screen, selected)
+        set_arg!(robj, :model, model)
+    end
     [del_signal]
 end
