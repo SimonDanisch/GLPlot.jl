@@ -37,7 +37,7 @@ function extract_edit_menu(robj::RenderObject, edit_screen, isvisible)
 end
 function extract_edit_menu(edit_dict::Dict, edit_screen, isvisible)
     lines = Point2f0[]
-    screen_w = edit_screen.area.value.w
+    screen_w = edit_screen.area.value.w-10mm
     labels = String[]
     glyph_scale = GLVisualize.glyph_scale!('X')
     pos = 1mm

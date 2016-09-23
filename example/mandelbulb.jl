@@ -22,31 +22,35 @@ function mandelbulb{T}(x0::T,y0::T,z0::T, n, iter)
     end
     T(iter)
 end
-
-dims = (300,300,300)
+@target ptx function mandelmap(A, x,y,z, n, iter)
+    i = Int((blockIdx().x-1) * blockDim().x + threadIdx().x)
+    @inbounds if i <= length(A)
+        sz = size(A)
+        xi,yi,zi = ind2sub(sz, Int(i))
+        A[xi,yi,zi] = mandelbulb(x[xi], y[yi], z[zi], n, iter)
+    end
+    nothing
+end
+dims = (200,200,200)
 vol_gl = GPUArray(Float32, dims, context=glctx);
 xrange, yrange, zrange = ntuple(3) do i
     r = linspace(-1f0, 1f0, dims[i]) # linearly spaced array (not dense) from -1 to 1
-    rs = reshape(r, ntuple(j-> j!=i ? 1 : dims[i], 3)) # still not dense
-    # convert it to a dense GPU Array (optional, but due to a bug in CUDA codegen, the view doesn't always work)
-    GPUArray(rs, context=cuctx)
 end
 # create two sliders to interact with the 2 parameters of the mandelbulb function
-itslider = GLPlot.play_widget(1:50);
-nslider = GLPlot.play_widget(1f0:20f0);
+itslider = GLPlot.play_widget(1:15);
+nslider = GLPlot.play_widget(linspace(1f0,30f0, 100));
 using GLAbstraction
 tex = GPUArray(Texture(Float32, dims), dims, context=glctx);
 # register a callback to the sliders with map ("map over updates")
 volume = preserve(map(nslider, itslider) do n, it
     # map to cuda memory space
     cu_map(vol_gl) do vol_cu
-        vol_cu .= mandelbulb.(xrange, yrange, zrange, n, it)
+        CUBackend.call_cuda(mandelmap, vol_cu, xrange, yrange, zrange, n, it)
     end
     unsafe_copy!(tex, vol_gl)
-    nothing
 end);
 
-glplot(tex, color_norm = Vec2f0(0, 50))
+glplot(buffer(tex), color_norm = Vec2f0(0, 50))
 
 function iso_particle(v, isoval)
     particles = Point3f0[]

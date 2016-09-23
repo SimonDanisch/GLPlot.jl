@@ -31,6 +31,8 @@ function slider(
         startidx::Int=1,
         play_signal=Signal(false), slider_length=50mm
     )
+    startpos = 2.1mm
+    height = value(icon_size)
     point_id = Signal((0,0))
     slideridx_s = Signal(startidx)
     slider_s = map(slideridx_s) do idx
@@ -38,21 +40,32 @@ function slider(
     end
     add_drag(window, range, point_id, slider_length, slideridx_s)
     add_play(slideridx_s, play_signal, range)
-    bb = Signal(AABB{Float32}(Vec3f0(0), Vec3f0(slider_length, 10mm, 1)))
+    bb = map(icon_size) do is
+        AABB(Vec3f0(0), Vec3f0(slider_length, is, 1))
+    end
+    line_pos = map(icon_size) do is
+        Point2f0[(startpos, is/2), (slider_length, is/2)]
+    end
     line = visualize(
-        Point2f0[(2.1mm, 5mm), (slider_length, 5mm)], :linesegment,
-        boundingbox=bb, thickness=0.5mm
+        line_pos, :linesegment,
+        boundingbox=bb, thickness=1.5mm
     ).children[]
     i = Signal(0)
-    pos = Point2f0[(0, 5mm)]
+    pos = Point2f0[(0, 0)]
     position = map(slideridx_s) do idx
         x = ((idx-1)/length(range-1))*slider_length
         pos[1] = (x, 0)
         pos
     end
+    knob_scale = map(is->Vec2f0(is/3), icon_size)
+    offset = map(line_pos, icon_size) do lp, is
+        p = first(lp)
+        Vec2f0(p - (is/6)) # - minus half knob scale
+    end
     point_robj = visualize(
         (Circle, position),
-        offset=Vec2f0(2.1mm, 3mm), scale=Vec2f0(4GLPlot.mm),
+        scale_primitive=true,
+        offset=offset, scale=knob_scale,
         boundingbox=bb
     ).children[]
     push!(point_id, (point_robj.id, line.id))
@@ -73,9 +86,12 @@ function play_widget(
         startidx::Int=1
     )
     glyph_scale = GLVisualize.glyph_scale!('X')
-    scale = (3mm ./ glyph_scale)
-    digits = maxdigits(range)
-    sliderlen = 70mm-value(GLPlot.icon_size)-(digits*4mm)-4.2mm
+    numberbox = map(icon_size) do is
+        AABB(Vec3f0(0,-1mm, 0), Vec3f0(2is, is, 1))
+    end
+    target_s = value(icon_size) * 0.4
+    scale = (target_s ./ glyph_scale)
+    sliderlen = 70mm-(3*value(icon_size))-2mm
     play_button, play_stop_signal = GLVisualize.toggle_button(
         rot180(GLPlot.imload("play.png")), GLPlot.imload("break.png"), window
     )
@@ -87,9 +103,9 @@ function play_widget(
     number = visualize(
         map(GLVisualize.printforslider, slider_s),
         color=RGBA{Float32}(0.6, 0.6, 0.6,1),
+        boundingbox=numberbox,
         relative_scale=scale
     )
-    number.children[][:boundinbox] = Signal(value(boundingbox(number))) # make bb static
     GLPlot.add_widget!(play_button, number, slider_w, window=window)
     slider_s
 end

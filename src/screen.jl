@@ -104,7 +104,7 @@ function init()
     global const pixel_per_mm = get_dpi(w)/25.4
 
 
-    global const icon_size = Signal(6mm)
+    global const icon_size = Signal(10mm)
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
         GLFW.MOUSE_BUTTON_LEFT
