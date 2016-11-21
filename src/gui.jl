@@ -107,6 +107,7 @@ function play_widget(
         relative_scale=scale
     )
     GLPlot.add_widget!(play_button, number, slider_w, window=window)
+
     slider_s
 end
 export play_widget
@@ -182,4 +183,29 @@ function delete_toggle()
     delete_button, del_signal = button(
         imload("delete.png"), edit_screen
     )
+end
+
+
+
+function async_map2(f, init, inputs...; typ=typeof(init))
+    node = Signal(typ, init, inputs)
+    worker_task = @async init
+        map(inputs...) do args...
+            outer_task = current_task()
+            hasworked = istaskdone(worker_task) #
+            if istaskdone(worker_task) #
+                worker_task = @async begin
+                try
+                    inner_worker = @async begin
+                        x = f(args...)
+                        push!(node, x)
+                    end
+                    wait(inner_worker)
+                catch err
+                    Base.throwto(outer_task, CapturedException(err, catch_backtrace()))
+                end
+            end
+        end
+         worker_task
+    end, node
 end

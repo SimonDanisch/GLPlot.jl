@@ -1,33 +1,33 @@
-using GLAbstraction, GLPlot, Reactive
+using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes, Plots, FileIO
+using Reactive, GLWindow
+GLPlot.init(); glvisualize()
+glvisualize()
+# load a volume
+vol = load(joinpath(homedir(), "Desktop", "brain.nii")).raw;
+vol = vol ./ maximum(vol);
 
-window = createdisplay(eyeposition=Vec3(2), lookat=Vec3(0.5))
+# plot it with blue colormap
+p1 = plot(vol, fill=colormap("Blues", 7))
 
-##########################################################
-# Volume
+# prepare the slices
+axes = ntuple(i-> linspace(0, 1, size(vol, i)), 3);
+p2 = heatmap(vol[100, : , :], title="X Slice");
+p3 = heatmap(vol[:, 100 , :], title="Y Slice", show=true);
+p4 = heatmap(vol[:, : , 100], title="Z Slice");
 
-#So far just 1 dimensional color values are supported
-N 		= 128
-function func(x,y,z)
-    R = sqrt(x^2 + y^2+z^2)
-    sin(R)/R
+plt = plot(p1, p2, p3, p4);
+
+for i=1:3
+    # since plots updating mechanism still doesn't work perfectly with GLVisualize
+    # we need to get the raw visualization objects and gpu objects from the plots.
+    # This will be exposed by a more straightforward API in the future!
+    robj = plt[i+1].o.renderlist[1][end]
+    tex = robj[:intensity] # image slice residing on the GPU
+    range_s = play_widget(1:size(vol, i))
+    preserve(map(range_s) do slice_idx
+        idx = ntuple(d-> d==i ? slice_idx : (:), 3)
+        # This conversion is necessary but will be automatic soon!
+        slice = permutedims(map(Intensity{1, Float32}, vol[idx...]), (2,1))
+        GLAbstraction.update!(tex, slice) # upload to memory
+    end)
 end
-volume 	= Float32[sin(x/15f0)+sin(y/15f0)+sin(z/15f0) for x=1:N, y=1:N, z=1:N]
-max 	= maximum(volume)
-min 	= minimum(volume)
-volume 	= (volume .- min) ./ (max .- min)
-
-#Filter keydown events
-keypressed = window.inputs[:buttonspressed]
-
-#Make some attributes intseractive
-algorithm 	= foldl( (v0, v1) -> in('I', v1) ? 2f0 : in('M', v1) ? 1f0 : v0, 2f0, keypressed) # i for isosurface, m for MIP#
-isovalue 	= foldl( (v0, v1) -> in(GLFW.KEY_UP, v1) ? (v0 + 0.01f0) : (in(GLFW.KEY_DOWN, v1) ? (v0 - 0.01f0) : v0), 0.5f0, keypressed)
-stepsize 	= foldl( (v0, v1) -> in(GLFW.KEY_LEFT, v1) ? (v0 + 0.0001f0) : (in(GLFW.KEY_RIGHT, v1)  ? (v0 - 0.0001f0) : v0), 0.005f0, keypressed)
-lift(println, isovalue)
-glplot(volume, algorithm=algorithm, isovalue=isovalue, stepsize=stepsize, color=Vec3(1,0,0))
-
-#glplot(imread("someexample.nrrd"), algorithm=algorithm, isovalue=isovalue, stepsize=stepsize, color=Vec3(1,0,0))
-
-renderloop(window)
-
-

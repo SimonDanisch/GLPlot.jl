@@ -45,7 +45,7 @@ function extract_edit_menu(edit_dict::Dict, edit_screen, isvisible)
     widget_text = scale .* 1.2f0
     glyph_height = round(Int, glyph_scale[2]*scale[2])
     atlas = GLVisualize.get_texture_atlas()
-    font = GLVisualize.DEFAULT_FONT_FACE
+    font = GLVisualize.defaultfont()
     textpositions = Point2f0[]
     for (k,v) in edit_dict
         is_editable(k, v) || continue

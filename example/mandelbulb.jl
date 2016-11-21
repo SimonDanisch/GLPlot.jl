@@ -42,13 +42,14 @@ nslider = GLPlot.play_widget(linspace(1f0,30f0, 100));
 using GLAbstraction
 tex = GPUArray(Texture(Float32, dims), dims, context=glctx);
 # register a callback to the sliders with map ("map over updates")
-volume = preserve(map(nslider, itslider) do n, it
+volume = preserve((GLPlot.async_map2(nothing, nslider, itslider) do n, it
     # map to cuda memory space
     cu_map(vol_gl) do vol_cu
         CUBackend.call_cuda(mandelmap, vol_cu, xrange, yrange, zrange, n, it)
     end
     unsafe_copy!(tex, vol_gl)
-end);
+    nothing
+end)[2])
 
 glplot(buffer(tex), color_norm = Vec2f0(0, 50))
 

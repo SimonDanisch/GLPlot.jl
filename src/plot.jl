@@ -10,13 +10,13 @@ function glplot(arg1, style=:default; screen=viewing_screen, kw_args...)
 end
 
 
-function register_plot!(robj::Vector, screen=viewing_screen)
+function register_plot!(robj::Vector, screen=viewing_screen; create_gizmo=true)
     vcat(map(robj) do elem
-        register_plot!(elem, screen)
+        register_plot!(elem, screen, create_gizmo=create_gizmo)
     end...)
 end
-function register_plot!(robj::Context, screen=viewing_screen)
-    register_plot!(robj.children, screen)
+function register_plot!(robj::Context, screen=viewing_screen; create_gizmo=true)
+    register_plot!(robj.children, screen, create_gizmo=create_gizmo)
 end
 
 function left_clicked(button::Set{Int})
