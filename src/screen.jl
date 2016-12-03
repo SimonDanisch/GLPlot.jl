@@ -8,16 +8,20 @@ function handle_drop(files::Vector{String})
     end
 end
 
-toolbar_area(pa, toolbar_width) = SimpleRectangle(0, 0, toolbar_width, pa.h)
+toolbar_area(pa, toolbar_width) = SimpleRectangle{Int}(0, 0, toolbar_width, pa.h)
+
 function viewing_area(area_l, area_r)
-    SimpleRectangle(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
+    SimpleRectangle{Int}(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
 end
 function edit_rectangle(visible, area, tarea)
     w = visible ? 70mm : 1.5mm
     x = area.w-w
-    SimpleRectangle(x, 0, w, area.h)
+    SimpleRectangle{Int}(x, 0, w, area.h)
 end
-
+function edit_item_area(la, item_height, left_gap)
+    y = la.y-item_height-2
+    return SimpleRectangle{Int}(left_gap, y, la.w, item_height)
+end
 
 layout_pos_ho(i) = map(icon_size) do ip
     SimpleRectangle{Float32}(0, i*ip + i*2, ip, ip)
@@ -27,10 +31,7 @@ layout_pos_ver(i, border) = map(icon_size) do ip
 end
 
 
-function edit_item_area(la, item_height, left_gap)
-    y = la.y-item_height-2
-    return SimpleRectangle(left_gap, y, la.w, item_height)
-end
+
 
 function save_record(frames)
     path = joinpath(homedir(), "Desktop")
@@ -40,6 +41,12 @@ end
 const _compute_callbacks = []
 register_compute(f) = push!(_compute_callbacks, f)
 poll_reactive() = (Base.n_avail(Reactive._messages) > 1) && Reactive.run_till_now()
+
+const plotting_screens = Screen[]
+viewing_screen() = plotting_screens[1]
+edit_screen() = plotting_screens[2]
+tool_screen() = plotting_screens[3]
+
 function glplot_renderloop(window, compute_s, record_s)
     was_recording = false
     frames = []
@@ -74,36 +81,16 @@ function glplot_renderloop(window, compute_s, record_s)
         was_recording = record
     end
     GLWindow.destroy!(window)
+
 end
 
-
-function get_dpi(window)
-    monitor = GLFW.GetPrimaryMonitor()
-    props = GLWindow.MonitorProperties(monitor)
-    props.dpi[1]# we do not start fiddling with differently scaled xy dpi's
-end
-
-
-immutable Millimeter
-end
-const mm = Millimeter()
-function Base.:(*)(x::Millimeter, y::Number)
-    round(Int, y * pixel_per_mm)
-end
-function Base.:(*)(x::Number, y::Millimeter)
-    round(Int, x * pixel_per_mm)
-end
 
 
 function init()
-
+    empty!(plotting_screens)
     w = glscreen("GLPlot")
 
     preserve(map(handle_drop, w.inputs[:dropped_files]))
-
-
-    global const pixel_per_mm = get_dpi(w)/25.4
-
 
     global const icon_size = Signal(10mm)
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
@@ -127,16 +114,20 @@ function init()
     )
 
 
-    global const viewing_screen = Screen(w,
-        name=Symbol("Viewing Screen"),
-        area=map(viewing_area, tarea, edit_screen_area),
-        color=RGBA{Float32}(1,1,1,1)
+    viewing_screen = Screen(w,
+        name = Symbol("Viewing Screen"),
+        area = map(viewing_area, tarea, edit_screen_area),
+        color = RGBA{Float32}(1,1,1,1)
     )
-    global const toolbar_screen = Screen(w, area=tarea)
-    global const edit_screen = Screen(
-        w, area=edit_screen_area,
-        color=RGBA{Float32}(0.9,0.9,0.9,1)
+    toolbar_screen = Screen(w, area=tarea)
+    edit_screen = Screen(
+        w, area = edit_screen_area,
+        color = RGBA{Float32}(0.9,0.9,0.9,1)
     )
+    push!(plotting_screens, viewing_screen)
+    push!(plotting_screens, edit_screen)
+    push!(plotting_screens, toolbar_screen)
+
     _view(edit_screen_show_button, edit_screen, camera=:fixed_pixel)
     play_record, record_sig = toggle_button(imload("record.png"), imload("break.png"), w)
     compute_record, compute_sig = toggle_button(imload("play.png"), imload("break.png"), w)

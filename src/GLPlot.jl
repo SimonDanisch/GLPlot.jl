@@ -8,6 +8,7 @@ using GeometryTypes, GLFW, FileIO, FixedSizeArrays, Quaternions
 import GLVisualize: toggle_button, toggle, button
 import Plots
 import NIfTI
+import GLVisualize: mm, extract_edit_menu
 
 # Some not officially supported file formats from FileIO
 FileIO.load(file::File{format"Julia"}) = include(filename(file))

@@ -2,7 +2,7 @@ function glplot(p::Plots.Plot, style::Symbol=:default; kw_args...)
     show(p)
 end
 
-function glplot(arg1, style=:default; screen=viewing_screen, kw_args...)
+function glplot(arg1, style = :default; screen = viewing_screen(), kw_args...)
     robj = visualize(arg1, style; kw_args...)
     _view(robj, screen, camera=:perspective)
     register_plot!(robj, screen)
@@ -10,13 +10,13 @@ function glplot(arg1, style=:default; screen=viewing_screen, kw_args...)
 end
 
 
-function register_plot!(robj::Vector, screen=viewing_screen; create_gizmo=true)
+function register_plot!(robj::Vector, screen = viewing_screen(); create_gizmo = false)
     vcat(map(robj) do elem
-        register_plot!(elem, screen, create_gizmo=create_gizmo)
+        register_plot!(elem, screen, create_gizmo = create_gizmo)
     end...)
 end
-function register_plot!(robj::Context, screen=viewing_screen; create_gizmo=true)
-    register_plot!(robj.children, screen, create_gizmo=create_gizmo)
+function register_plot!(robj::Context, screen = viewing_screen(); create_gizmo = false)
+    register_plot!(robj.children, screen, create_gizmo = create_gizmo)
 end
 
 function left_clicked(button::Set{Int})
@@ -86,12 +86,56 @@ function gizmo(w, is_selected)
     model
 end
 
-
-function register_plot!(robj::RenderObject, screen=viewing_screen; create_gizmo=true)
+"""
+There's a lot of noise if we just go through all parameters of a `RenderObject`.
+This function filters out the internal values
+"""
+function is_editable(k, v_v)
+    v = value(v_v)
+    !(
+        k == :objectid ||
+        k == :is_fully_opaque ||
+        k == :instances ||
+        k == Symbol("position.multiplicator") ||
+        k == Symbol("position.dims") ||
+        k == Symbol("resolution") ||
+        k == Symbol("fxaa") ||
+        k == Symbol("light") ||
+        k == Symbol("light") ||
+        k == Symbol("doc_string") ||
+        k == Symbol("faces") ||
+        k == Symbol("vertices") ||
+        k == Symbol("texturecoordinates") ||
+        k == Symbol("ranges") ||
+        k == Symbol("model") ||
+        k == :visible ||
+        startswith(string(k), "boundingbox") ||
+        (k == Symbol("color") && isa(v, AbstractArray)) ||
+        k in fieldnames(PerspectiveCamera) ||
+        k == :instances ||
+        isa(v, Symbol) ||
+        isa(v, Void) ||
+        isa(v, NativeMesh) ||
+        isa(v, Int) ||
+        isa(v, Int32) ||
+        isa(v, UInt32) ||
+        isa(v, UInt) ||
+        (isa(v, FixedVector) && eltype(v) <: Integer)
+    )
+end
+function to_edit_dict(robj)
+    filter(collect(robj.uniforms)) do kv
+        is_editable(kv...)
+    end
+end
+function register_plot!(
+        robj::RenderObject, screen = viewing_screen();
+        create_gizmo = false
+    )
     left_gap = 1.5mm
     visible_button, visible_s = visible_toggle()
     set_arg!(robj, :visible, visible_s)
-    delete_button, del_signal = button(imload("delete.png"), edit_screen)
+    delete_button, del_signal = button(imload("delete.png"), edit_screen())
     edit_button, no_edit_signal = edit_toggle()
 
     item_height = Signal(0)
@@ -107,11 +151,20 @@ function register_plot!(robj::RenderObject, screen=viewing_screen; create_gizmo=
     edit_signal = map(!, no_edit_signal)
     item_screen = widget_screen!(delete=not_del_signal)
     edititemarea = map(edit_item_area, item_screen.area, item_height, Signal(left_gap))
-    edit_item_screen = Screen(edit_screen, area=edititemarea)
+    edit_item_screen = Screen(edit_screen(), area = edititemarea)
     preserve(foldp((false, value(item_height)), edit_signal) do v0, edit
         if edit
             if !v0[1] # only do this at the first time
-                new_heights = extract_edit_menu(robj, edit_item_screen, edit_signal)
+                vis, signal_dict = extract_edit_menu(
+                    to_edit_dict(robj),
+                    edit_item_screen,
+                    edit_signal,
+                )
+                for (k, v) in signal_dict
+                    robj.uniforms[k] = v
+                end
+                _view(vis, edit_item_screen, camera = :fixed_pixel)
+                new_heights = widths(value(boundingbox(vis)))[2]
                 nh = ceil(Int, new_heights)
                 push!(item_height, nh)
                 return true, nh

@@ -26,53 +26,6 @@ function add_play(slideridx_s, play_signal, range, rate=30.0)
         nothing
     end)
 end
-function slider(
-        range, window;
-        startidx::Int=1,
-        play_signal=Signal(false), slider_length=50mm
-    )
-    startpos = 2.1mm
-    height = value(icon_size)
-    point_id = Signal((0,0))
-    slideridx_s = Signal(startidx)
-    slider_s = map(slideridx_s) do idx
-        range[clamp(idx, 1, length(range))]
-    end
-    add_drag(window, range, point_id, slider_length, slideridx_s)
-    add_play(slideridx_s, play_signal, range)
-    bb = map(icon_size) do is
-        AABB(Vec3f0(0), Vec3f0(slider_length, is, 1))
-    end
-    line_pos = map(icon_size) do is
-        Point2f0[(startpos, is/2), (slider_length, is/2)]
-    end
-    line = visualize(
-        line_pos, :linesegment,
-        boundingbox=bb, thickness=1.5mm
-    ).children[]
-    i = Signal(0)
-    pos = Point2f0[(0, 0)]
-    position = map(slideridx_s) do idx
-        x = ((idx-1)/length(range-1))*slider_length
-        pos[1] = (x, 0)
-        pos
-    end
-    knob_scale = map(is->Vec2f0(is/3), icon_size)
-    offset = map(line_pos, icon_size) do lp, is
-        p = first(lp)
-        Vec2f0(p - (is/6)) # - minus half knob scale
-    end
-    point_robj = visualize(
-        (Circle, position),
-        scale_primitive=true,
-        offset=offset, scale=knob_scale,
-        boundingbox=bb
-    ).children[]
-    push!(point_id, (point_robj.id, line.id))
-
-    slider_s, Context(point_robj, line)
-end
-
 
 function maxdigits(range)
     if eltype(range) <: AbstractFloat
@@ -82,29 +35,28 @@ function maxdigits(range)
     end
 end
 function play_widget(
-        range, window=GLPlot.widget_screen!();
+        range, window = GLPlot.widget_screen!();
         startidx::Int=1
     )
-    glyph_scale = GLVisualize.glyph_scale!('X')
     numberbox = map(icon_size) do is
-        AABB(Vec3f0(0,-1mm, 0), Vec3f0(2is, is, 1))
+        AABB(Vec3f0(0, -1mm, 0), Vec3f0(2is, is, 1))
     end
     target_s = value(icon_size) * 0.4
-    scale = (target_s ./ glyph_scale)
-    sliderlen = 70mm-(3*value(icon_size))-2mm
+    scale = target_s
+    sliderlen = 70mm-(3 * value(icon_size)) - 2mm
     play_button, play_stop_signal = GLVisualize.toggle_button(
         rot180(GLPlot.imload("play.png")), GLPlot.imload("break.png"), window
     )
     play_s = map(!, play_stop_signal)
-    slider_s, slider_w = slider(range, window,
-        startidx=startidx, play_signal=play_s,
-        slider_length=sliderlen
+    slider_w, slider_s = GLVisualize.slider(range, window,
+        startidx = startidx, play_signal = play_s,
+        slider_length = sliderlen
     )
     number = visualize(
         map(GLVisualize.printforslider, slider_s),
-        color=RGBA{Float32}(0.6, 0.6, 0.6,1),
-        boundingbox=numberbox,
-        relative_scale=scale
+        color = RGBA{Float32}(0.6, 0.6, 0.6,1),
+        boundingbox = numberbox,
+        relative_scale = scale
     )
     GLPlot.add_widget!(play_button, number, slider_w, window=window)
 
@@ -146,7 +98,7 @@ function item_area(la, deleted, item_height)
     return SimpleRectangle(la.x, y, la.w, item_height)
 end
 
-function widget_screen!(parentscreen=edit_screen; left_gap=1.5mm, delete=Signal(false))
+function widget_screen!(parentscreen = edit_screen(); left_gap=1.5mm, delete=Signal(false))
     scroll = parentscreen.inputs[:menu_scroll]
     if isempty(parentscreen.children)
         last_area = map(parentscreen.area, icon_size, scroll) do a, ih, s
@@ -161,7 +113,7 @@ end
 
 
 function choices(x::Vector)
-    signal, vis = GLVisualize.choice_widget(x, edit_screen, area=(48mm, 8mm))
+    signal, vis = GLVisualize.choice_widget(x, edit_screen(), area=(48mm, 8mm))
     w = widget_screen!()
     _view(vis, w, camera=:fixed_pixel)
     signal
@@ -170,18 +122,18 @@ end
 
 function edit_toggle()
     edit_button, no_edit_signal = toggle_button(
-        imload("play.png"), rotr90(imload("play.png")), edit_screen
+        imload("play.png"), rotr90(imload("play.png")), edit_screen()
     )
 end
 
 function visible_toggle()
     toggle_button(
-        imload("showing.png"), imload("notshowing.png"), edit_screen
+        imload("showing.png"), imload("notshowing.png"), edit_screen()
     )
 end
 function delete_toggle()
     delete_button, del_signal = button(
-        imload("delete.png"), edit_screen
+        imload("delete.png"), edit_screen()
     )
 end
 

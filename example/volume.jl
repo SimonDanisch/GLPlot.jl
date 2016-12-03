@@ -1,6 +1,6 @@
 using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes, Plots, FileIO
 using Reactive, GLWindow
-GLPlot.init(); glvisualize()
+GLPlot.init()
 glvisualize()
 # load a volume
 vol = load(joinpath(homedir(), "Desktop", "brain.nii")).raw;
