@@ -38,8 +38,17 @@ plots = map(1:3) do i
         model = model,
         ranges = rs,
         preferred_camera = :perspective,
-        stroke_width = 0.001f0,
+        stroke_width = 0.0f0,
         stroke_color = RGBA{Float32}(0,0,0,0.4),
         color_norm = Vec2f0(0, 1)
     )
+end
+
+# low level hack to share attributes... Gotta figure out a nice API for this
+attributes = GLPlot.to_edit_dict(plots[1].children[])
+for p in plots[2:end]
+    for (k, v) in attributes
+        k == :intensity && continue # don't share the intensity values
+        p.children[].uniforms[k] = v
+    end
 end
