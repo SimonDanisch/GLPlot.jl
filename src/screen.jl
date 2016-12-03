@@ -48,10 +48,12 @@ function glplot_renderloop(window, compute_s, record_s)
     yield()
     while isopen(window)
         tic()
-        GLWindow.pollevents()
-        record = !value(record_s)
-        if isready(Reactive._messages)
-            Reactive.run_till_now()
+        GLWindow.poll_glfw() # GLFW poll
+
+        if Base.n_avail(Reactive._messages) > 0
+            GLWindow.poll_reactive() # reactive poll
+            GLWindow.poll_reactive() # two times for secondary signals
+            record = !value(record_s)
             GLWindow.render_frame(window)
             GLWindow.swapbuffers(window)
         end
@@ -72,7 +74,6 @@ function glplot_renderloop(window, compute_s, record_s)
         was_recording = record
     end
     GLWindow.destroy!(window)
-    GLVisualize.cleanup_old_screens()
 end
 
 
