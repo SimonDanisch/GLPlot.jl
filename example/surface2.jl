@@ -25,4 +25,4 @@ texdata   = [zdata(i/N, j/N, 15) for i=1:N, j=1:N]
 color     = [zcolor(i/N, j/N, 15) for i=1:N, j=1:N] # Example on how to use react to change the color over time
 
 
-obj = glplot(texdata, color = color)
+obj = glplot(texdata, :surface, color = color)
