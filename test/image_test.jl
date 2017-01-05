@@ -1,19 +1,20 @@
 using Base.Test
 using GLPlot
-using GLAbstraction 
+using GLAbstraction
 
-using ModernGL 
+using ModernGL
 
 using GLFW
 using Color
-using Images 
-using Reactive 
-using ImmutableArrays 
+using Images
+using Reactive
+using ImmutableArrays
 using FixedPointNumbers
 
 N = 54
 
-window = createdisplay(w=iround(N*11.1), h=N)
+GLPlot.init()
+# window = createdisplay(w=iround(N*11.1), h=N)
 camera = OrthographicPixelCamera(window.inputs)
 
 immutable GLGlyph{T <: Real} <: AbstractVector{T}
@@ -28,10 +29,10 @@ Base.convert{T}(::Type{GLGlyph{T}}, x::Char) = (int(x) >= 0 && int(x) <= 256) ? 
 
 
 test_images = {
-	[float32(33) for i=1:N, j=1:N], 
-	[GLGlyph{UInt8}(33) for i=1:N, j=1:N], 
-	[Vector3{Ufixed8}(0, 1, 0) for i=1:N, j=1:N], 
-	[Vec4(0,1,0,1) for i=1:N, j=1:N], 
+	[float32(33) for i=1:N, j=1:N],
+	[GLGlyph{UInt8}(33) for i=1:N, j=1:N],
+	[Vector3{Ufixed8}(0, 1, 0) for i=1:N, j=1:N],
+	[Vec4(0,1,0,1) for i=1:N, j=1:N],
 	[Vec3(0,1,0)   for i=1:N, j=1:N],
 	[AlphaColorValue(RGB(0f0,1f0,0f0), 1f0) for i=1:N, j=1:N],
 	Images.ColorTypes.AlphaColor{RGB{Float32}, Float32}[Images.ColorTypes.AlphaColor(RGB(0f0,1f0,0f0), 1f0) for i=1:N, j=1:N],
@@ -54,5 +55,3 @@ end
 map(glplot, test_renderobjects)
 
 renderloop(window)
-
-

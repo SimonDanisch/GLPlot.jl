@@ -24,7 +24,7 @@ typealias Vertex Vector3{Float32}
 #
 #        Z
 #        |
-#  
+#
 #        5------5------6              Extra edges not drawn
 #       /|            /|              -----------
 #      8 |           6 |              - face diagonals
@@ -72,7 +72,7 @@ const voxEdgeCrnrs = convert(Array{(IType, IType), 1}, [(1, 2),
 
 
 # direction codes:
-# 0 => +x, 1 => +y, 2 => +z, 
+# 0 => +x, 1 => +y, 2 => +z,
 # 3 => +xy, 4 => +xz, 5 => +yz, 6 => +xyz
 const voxEdgeDir = IType[1,0,1,0,1,0,1,0,2,2,2,2,3,4,5,3,4,5,6]
 
@@ -135,7 +135,7 @@ function hasFaces{T<:Real}(vals::Vector{T}, iso::T)
                 return true
             end
         end
-    end 
+    end
     false
 end
 
@@ -228,7 +228,7 @@ function procVox{T<:Real}(vals::Vector{T}, iso::T,
     end
 end
 
-# Given a 3D array and an isovalue, extracts a mesh represention of the 
+# Given a 3D array and an isovalue, extracts a mesh represention of the
 # an approximate isosurface by the method of marching tetrahedra.
 function marchingTetrahedra{T<:Real}(lsf::AbstractArray{T,3},iso::T,eps::T)
     vts = Dict{IType,Vertex}()
@@ -277,7 +277,8 @@ volume  = Float32[sin(x/15f0)+sin(y/15f0)+sin(z/15f0) for x=1:N, y=1:N, z=1:N]
 @time isosurface(volume, 0.5f0, 0.001f0)
 test = isosurface(volume, 0.5f0, 0.001f0)
 
-window = createdisplay(eyeposition=Vec3(2), lookat=Vec3(0.5))
+# window = createdisplay(eyeposition=Vec3(2), lookat=Vec3(0.5))
+GLPlot.init()
 shaderdir = Pkg.dir("GLPlot", "src", "shader")
 program = TemplateProgram(joinpath(shaderdir,"standard.vert"), joinpath(shaderdir,"phongblinn.frag"))
 

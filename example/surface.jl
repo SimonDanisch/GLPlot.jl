@@ -1,7 +1,7 @@
 using GLPlot, GLAbstraction, ModernGL
 
-
-window = createdisplay(w=1000,h=1000,eyeposition=Vec3(1.,1.,1.), lookat=Vec3(0.,0.,0.));
+GLPlot.init()
+# window = createdisplay(w=1000,h=1000,eyeposition=Vec3(1.,1.,1.), lookat=Vec3(0.,0.,0.));
 color  = Vec4(1,0,0,1)
 n=100
 h=1./n
@@ -16,4 +16,3 @@ obj     = glplot(z, xrange=x, yrange=y, color="xyz.z>0 ? vec4(.1,.1,0.5+3*xyz.z,
 
 
 renderloop(window)
-
