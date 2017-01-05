@@ -42,4 +42,4 @@ glplot((Circle(Point2f0(0), 0.01f0), points), boundingbox=nothing, preferred_cam
 # the above renders an antia aliased nice looking circle which could have outlines and glows.
 # this makes it relatively slow. For optimal performance, one might need the command below
 # which draws one (or n) pixel per point
-glplot(points, :speed, boundingbox=nothing, preferred_camera=:perspective)
+#glplot(points, :speed, boundingbox=nothing, preferred_camera=:perspective)

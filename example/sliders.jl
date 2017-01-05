@@ -27,7 +27,7 @@ function init(n, a, b, c)
     # Now we draw the controle lines. This should be available as a widget in the Future!
     # allocate an array for point position (performance optimization as well)
     pos_tmp = Point3f0[0]
-    w = GLPlot.viewing_screen
+    w = GLPlot.viewing_screen()
     m2id = mouse2id(w)
     pin_plot = doubleclick(w.inputs[:mouse_buttons_pressed], 0.1)
     index = droprepeats(foldp(((0,0), false), m2id, pin_plot) do v0, m2id, pin
@@ -55,15 +55,15 @@ function init(n, a, b, c)
         linepos, :lines,
         prerender=()->glDisable(GL_DEPTH_TEST), # draw over other items
         postrender=()->glEnable(GL_DEPTH_TEST)
-    ), GLPlot.viewing_screen, camera=:perspective)
+    ), GLPlot.viewing_screen(), camera=:perspective)
     point = map(last, p_l_position)
     _view(visualize(
         (Circle(Point2f0(0), 0.05f0), point),
-        color=RGBA{Float32}(0.99, 0, 0.1),
-        billboard=true,
+        color = RGBA{Float32}(0.99, 0, 0.1),
+        billboard = true,
         prerender=()->glDisable(GL_DEPTH_TEST), # draw over other items
         postrender=()->glEnable(GL_DEPTH_TEST)
-    ), GLPlot.viewing_screen, camera=:perspective)
+    ), GLPlot.viewing_screen(), camera=:perspective)
     text = map(point) do pa
         p = pa[] # is an array
         _x = @sprintf("% 0.3f", p[1])
@@ -71,7 +71,7 @@ function init(n, a, b, c)
         _z = @sprintf("% 0.3f", p[3])
         "x:$_x,y:$_y,z: $_z"
     end
-    vis = visualize(text, color=RGBA{Float32}(0.7,0.7,0.7), relative_scale=Vec2f0(0.42f0))
+    vis = visualize(text, color=RGBA{Float32}(0.7,0.7,0.7))
     add_widget!(vis)
 end
 

@@ -1,57 +1,40 @@
 using Plots, GLPlot; GLPlot.init()
-using GLPlot, Reactive, GeometryTypes, Colors
-using CUDAnative, GPUArrays
-import GPUArrays: GPUArray, GLBackend, CUBackend, cu_map
-glctx = GLBackend.init(GLVisualize.current_screen())
-cuctx = CUBackend.init()
-
-const cu = CUDAnative
+using Reactive, GeometryTypes, Colors, GLAbstraction
 
 function mandelbulb{T}(x0::T,y0::T,z0::T, n, iter)
     x,y,z = x0,y0,z0
     for i=1:iter
-        r = cu.sqrt(x*x + y*y + z*z)
-        theta = cu.atan2(cu.sqrt(x*x + y*y) , z)
-        phi = cu.atan2(y,x)
-        rn = cu.pow(r, n)
-        x1 = rn * cu.sin(theta*n) * cu.cos(phi*n) + x0
-        y1 = rn * cu.sin(theta*n) * cu.sin(phi*n) + y0
-        z1 = rn * cu.cos(theta*n) + z0
+        r = sqrt(x*x + y*y + z*z)
+        theta = atan2(sqrt(x*x + y*y) , z)
+        phi = atan2(y,x)
+        rn = r^n
+        x1 = rn * sin(theta*n) * cos(phi*n) + x0
+        y1 = rn * sin(theta*n) * sin(phi*n) + y0
+        z1 = rn * cos(theta*n) + z0
         (x1*x1 + y1*y1 + z1*z1) > n && return T(i)
         x,y,z = x1,y1,z1
     end
     T(iter)
 end
-@target ptx function mandelmap(A, x,y,z, n, iter)
-    i = Int((blockIdx().x-1) * blockDim().x + threadIdx().x)
-    @inbounds if i <= length(A)
-        sz = size(A)
-        xi,yi,zi = ind2sub(sz, Int(i))
-        A[xi,yi,zi] = mandelbulb(x[xi], y[yi], z[zi], n, iter)
-    end
-    nothing
+
+dims = (100, 100, 100)
+x, y, z = ntuple(3) do i
+    # linearly spaced array (not dense) from -1 to 1
+    reshape(linspace(-1f0, 1f0, dims[i]), ntuple(j-> j == i ? dims[i] : 1, 3))
 end
-dims = (200,200,200)
-vol_gl = GPUArray(Float32, dims, context=glctx);
-xrange, yrange, zrange = ntuple(3) do i
-    r = linspace(-1f0, 1f0, dims[i]) # linearly spaced array (not dense) from -1 to 1
-end
+volume = zeros(Float32, dims)
 # create two sliders to interact with the 2 parameters of the mandelbulb function
 itslider = GLPlot.play_widget(1:15);
 nslider = GLPlot.play_widget(linspace(1f0,30f0, 100));
-using GLAbstraction
-tex = GPUArray(Texture(Float32, dims), dims, context=glctx);
-# register a callback to the sliders with map ("map over updates")
-volume = preserve((GLPlot.async_map2(nothing, nslider, itslider) do n, it
-    # map to cuda memory space
-    cu_map(vol_gl) do vol_cu
-        CUBackend.call_cuda(mandelmap, vol_cu, xrange, yrange, zrange, n, it)
-    end
-    unsafe_copy!(tex, vol_gl)
-    nothing
-end)[2])
 
-glplot(buffer(tex), color_norm = Vec2f0(0, 50))
+
+# register a callback to the sliders with map ("map over updates")
+mandelvol_s = map(nslider, itslider) do n, it
+    volume .= mandelbulb.(x, y, z, n, it)
+end
+
+
+glplot(mandelvol_s, color_norm = Vec2f0(0, 50))
 
 function iso_particle(v, isoval)
     particles = Point3f0[]
@@ -75,4 +58,3 @@ end
 glplot(mesh)
 
 using GLAbstraction
-compute_context =

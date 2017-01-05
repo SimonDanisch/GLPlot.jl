@@ -2,22 +2,25 @@ using GLPlot;GLPlot.init()
 using Plots;glvisualize()
 using GLVisualize, FileIO, Colors, Images
 
-imfolder = joinpath(homedir(), "Desktop", "animal_imgs")
-images = map(readdir(imfolder)) do impath
-    map(RGBA{U8}, restrict(load(joinpath(imfolder, impath)))).data
+imfolder = filter(readdir(GLVisualize.assetpath())) do path
+    endswith(path, "jpg") || endswith(path, "png")
+end
+images = map(imfolder) do impath
+    map(RGBA{U8}, restrict(loadasset(impath))).data
 end;
-filter!(x->size(x)==size(first(images)), images)
+
 mean_colors = map(images) do img
     mean(img)
 end
-x = map(comp1, mean_colors); y=map(comp2, mean_colors); z=map(comp3, mean_colors);
-p1=scatter(
+x = map(comp1, mean_colors); y=map(comp2, mean_colors); z = map(comp3, mean_colors);
+p1 = scatter(
     x,y,z, markercolor=mean_colors,
-    shape=:circle, markerstrokewidth=1, markerstrokecolor="white",
-    hover=images, ms=12
+    shape = :circle, markerstrokewidth = 1, markerstrokecolor = "white",
+    hover = images, ms = 12
 )
-p2=scatter(x,y,z, markerstrokecolor=mean_colors, shape=images, ms=15)
+p2 = scatter(x,y,z, markerstrokecolor = mean_colors, shape = images, ms = 15)
 plot(p1, p2)
+gui()
 
 
 using Plots;glvisualize()

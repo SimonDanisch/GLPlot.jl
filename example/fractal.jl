@@ -2,7 +2,7 @@ using GeometryTypes, Colors
 
 function loop{T}(point::T, radius, imax, i=1, points=Point3f0[], scales=Vec3f0[])
     i == imax && return points, scales
-    push!(points, point);push!(scales, radius)
+    push!(points, point); push!(scales, radius)
     for point in decompose(T, Sphere(point, radius), 4)
         loop(point, radius/2, imax, i+1, points, scales)
     end
@@ -18,14 +18,8 @@ function loop2{T}(point::T, normal, radius, imax, mesh=loadasset("cat.obj"), i=1
     points, scales, rotations, colors
 end
 using GLVisualize
-p, s, r, c = loop2(Point3f0(0), Normal{3,Float32}(0,0,1), 1f0, 3, loadasset("cat.obj"));
-
-
-@code_warntype loop2(Point3f0(0), Normal{3,Float32}(0,0,1), 1f0, 3, loadasset("cat.obj"),
-    Point3f0[], Vec3f0[], Vec3f0[], RGBA{Float32}[]
-)
+p, s, r, c = loop2(Point3f0(0), Normal{3,Float32}(0,0,1), 1f0, 2, loadasset("cat.obj"));
 
 
 using GLPlot;GLPlot.init()
 glplot((loadasset("cat.obj"), p), scale=s, rotation=r, color=c)
-c

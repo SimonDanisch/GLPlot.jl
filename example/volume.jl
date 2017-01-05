@@ -7,15 +7,16 @@ vol = load(joinpath(homedir(), "Desktop", "brain.nii")).raw;
 vol = vol ./ maximum(vol);
 
 # plot it with blue colormap
-p1 = plot(vol, fill=colormap("Blues", 7))
+p1 = plot(vol, fill = colormap("Blues", 7))
 
 # prepare the slices
 axes = ntuple(i-> linspace(0, 1, size(vol, i)), 3);
-p2 = heatmap(vol[100, : , :], title="X Slice");
-p3 = heatmap(vol[:, 100 , :], title="Y Slice", show=true);
-p4 = heatmap(vol[:, : , 100], title="Z Slice");
+p2 = heatmap(vol[100, : , :], title = "X Slice", labels = false);
+p3 = heatmap(vol[:, 100 , :], title = "Y Slice", labels = false);
+p4 = heatmap(vol[:, : , 100], title = "Z Slice", labels = false);
 
 plt = plot(p1, p2, p3, p4);
+gui()
 
 for i=1:3
     # since plots updating mechanism still doesn't work perfectly with GLVisualize

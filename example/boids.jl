@@ -11,8 +11,8 @@
 using Reactive, GeometryTypes, GLAbstraction, GLPlot, GLVisualize, Colors, ColorTypes
 GLPlot.init()
 #----------------------------------------------------------------------
-typealias Position Point{2,Float32}
-typealias Velocity Vec{2,Float32}
+typealias Position Point{2, Float32}
+typealias Velocity Vec{2, Float32}
 
 immutable Boids
     position::Vector{Position}
@@ -74,14 +74,17 @@ function main()
     boids = Boids()
     pv = map(simulate!, bounce(0:1000), Signal(boids))
     positions = map(first, pv)
-    velocity = map(last, pv)
+    velocity = map(pv) do pv
+        map(norm, pv[2])
+    end
     glplot(
-       (Circle, positions), scale=Vec2f0(0.05),
-       intensity=map(norm, velocity), color_map=GLVisualize.default(Vector{RGBA}),
-       color_norm=Vec2f0(0, 2)
+       (Circle, positions), scale = Vec2f0(0.05),
+       intensity = velocity,
+       color_map = GLVisualize.default(Vector{RGBA}),
+       color_norm = Vec2f0(0, 0.02)
     )
 
 end
 
 
-main()
+x = main()

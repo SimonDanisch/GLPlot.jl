@@ -1,15 +1,11 @@
-using GLPlot, GLAbstraction, ModernGL 
-
-
-window = createdisplay(w=1000,h=1000,eyeposition=Vec3(1.,1.,1.), lookat=Vec3(0.,0.,0.));
+using GLPlot, GLAbstraction, ModernGL, GeometryTypes
+GLPlot.init()
 
 function funcy(x,y,z)
-    Vec3(sin(x),cos(y),sin(z))
+    Vec3f0
 end
 
-N = 20
-directions  = Vec3[funcy(4x/N,4y/N,4z/N) for x=1:N,y=1:N, z=1:N]
-obj         = glplot(directions)
-
-renderloop(window)
-
+N = 10
+r = linspace(0, 6, N)
+directions = Vec3f0[(sin(x),cos(y),sin(z)) for x=r,y=r, z=r]
+obj        = glplot(directions)
