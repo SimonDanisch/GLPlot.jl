@@ -38,12 +38,12 @@ function play_widget(
         range, window = GLPlot.widget_screen!();
         startidx::Int=1
     )
-    numberbox = map(icon_size) do is
+    numberbox = map(icon_size()) do is
         AABB(Vec3f0(0, -1mm, 0), Vec3f0(2is, is, 1))
     end
-    target_s = value(icon_size) * 0.4
+    target_s = value(icon_size()) * 0.4
     scale = target_s
-    sliderlen = 70mm-(3 * value(icon_size)) - 2mm
+    sliderlen = 70mm-(3 * value(icon_size())) - 2mm
     play_button, play_stop_signal = GLVisualize.toggle_button(
         rot180(GLPlot.imload("play.png")), GLPlot.imload("break.png"), window
     )
@@ -67,7 +67,7 @@ export add_widget!
 function add_widget!(widgets...;
         delete=Signal(false),
         window=widget_screen!(delete=delete),
-        height=value(icon_size)
+        height=value(icon_size())
     )
     scalings = map(widgets) do widget
         bb = value(boundingbox(widget))
@@ -101,13 +101,13 @@ end
 function widget_screen!(parentscreen = edit_screen(); left_gap=1.5mm, delete=Signal(false))
     scroll = parentscreen.inputs[:menu_scroll]
     if isempty(parentscreen.children)
-        last_area = map(parentscreen.area, icon_size, scroll) do a, ih, s
+        last_area = map(parentscreen.area, icon_size(), scroll) do a, ih, s
             return SimpleRectangle{Int}(left_gap, a.h-ih+s, a.w-left_gap, ih)
         end
     else
         last_area = last(parentscreen.children).area
     end
-    itemarea = map(GLPlot.item_area, last_area, delete, icon_size)
+    itemarea = map(GLPlot.item_area, last_area, delete, icon_size())
     Screen(parentscreen, area=itemarea)
 end
 

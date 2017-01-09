@@ -23,10 +23,10 @@ function edit_item_area(la, item_height, left_gap)
     return SimpleRectangle{Int}(left_gap, y, la.w, item_height)
 end
 
-layout_pos_ho(i) = map(icon_size) do ip
+layout_pos_ho(i) = map(icon_size()) do ip
     SimpleRectangle{Float32}(0, i*ip + i*2, ip, ip)
 end
-layout_pos_ver(i, border) = map(icon_size) do ip
+layout_pos_ver(i, border) = map(icon_size()) do ip
     SimpleRectangle{Float32}(i*ip + i*border, 0, ip, ip)
 end
 
@@ -84,7 +84,11 @@ function glplot_renderloop(window, compute_s, record_s)
 
 end
 
+const _icon_size = Signal(10mm)
 
+function icon_size()
+    _icon_size
+end
 
 function init()
     empty!(plotting_screens)
@@ -92,7 +96,6 @@ function init()
 
     preserve(map(handle_drop, w.inputs[:dropped_files]))
 
-    global const icon_size = Signal(10mm)
     w.inputs[:key_pressed] = const_lift(GLAbstraction.singlepressed,
         w.inputs[:mouse_buttons_pressed],
         GLFW.MOUSE_BUTTON_LEFT
@@ -106,7 +109,7 @@ function init()
         offset=Vec2f0(0, -button_width),
         color=RGBA{Float32}(0.6,0.6,0.6,1)
     )
-    tarea = map(toolbar_area, w.area, icon_size)
+    tarea = map(toolbar_area, w.area, icon_size())
 
     show_edit_screen = toggle(edit_screen_show_button, w, false)
     edit_screen_area = map(edit_rectangle,
@@ -167,7 +170,7 @@ function init()
     end)
     rot = cube.children[][:model]
 
-    cube.children[][:model] = map(rot, icon_size) do r, ip
+    cube.children[][:model] = map(rot, icon_size()) do r, ip
         half = ip/2
         translationmatrix(Vec3f0(half,i*ip + i*2 + half,0))*r*scalematrix(Vec3f0(half))
     end

@@ -2,9 +2,12 @@ function glplot(p::Plots.Plot, style::Symbol=:default; kw_args...)
     show(p)
 end
 
-function glplot(arg1, style = :default; screen = viewing_screen(), kw_args...)
+function glplot(arg1, style = :default;
+        screen = viewing_screen(), camera = :perspective,
+        kw_args...
+    )
     robj = visualize(arg1, style; kw_args...)
-    _view(robj, screen, camera=:perspective)
+    _view(robj, screen, camera = camera)
     register_plot!(robj, screen)
     robj
 end
@@ -47,7 +50,7 @@ function gizmo(w, is_selected)
         postrender=()->glEnable(GL_DEPTH_TEST),
         thickness=10f0
     ).children[]
-    _view(robj, camera=:perspective)
+    _view(robj, camera = :perspective)
     @materialize mouseposition, mouse_buttons_pressed, buttons_pressed = w.inputs
     m2id = mouse2id(w)
     show_gizmo = map(buttons_pressed) do bp
