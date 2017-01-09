@@ -5,7 +5,6 @@ module GLPlot
 using GLVisualize, GLWindow, ModernGL, Reactive, GLAbstraction, Colors
 using FixedPointNumbers, FreeType, SignedDistanceFields, Images, Packing
 using GeometryTypes, GLFW, FileIO, FixedSizeArrays, Quaternions
-import Plots
 
 import GLVisualize: toggle_button, toggle, button
 import GLVisualize: mm, extract_edit_menu

@@ -1,6 +1,3 @@
-function glplot(p::Plots.Plot, style::Symbol=:default; kw_args...)
-    show(p)
-end
 
 function glplot(arg1, style = :default;
         screen = viewing_screen(), camera = :perspective,
