@@ -178,7 +178,7 @@ function init()
     end)
     preserve(map(screenshot_s) do pressed
         if pressed
-            screenshot(viewing_screen, path=joinpath(homedir(), "Desktop", "glplot.png"))
+            screenshot(viewing_screen, path = joinpath(homedir(), "Desktop", "glplot.png"))
         end
         nothing
     end)
