@@ -43,20 +43,10 @@ register_compute(f) = push!(_compute_callbacks, f)
 poll_reactive() = (Base.n_avail(Reactive._messages) > 1) && Reactive.run_till_now()
 
 const plotting_screens = Screen[]
-function viewing_screen()
-    if isempty(plotting_screens)
-        init()
-    end
-    screen = plotting_screens[1]
-    if !isopen(screen)
-        empty!(plotting_screens)
-        init()
-        screen = plotting_screens[1]
-    end
-    screen
-end
-edit_screen() = plotting_screens[2]
-tool_screen() = plotting_screens[3]
+
+viewing_screen() = (init(); plotting_screens[1])
+edit_screen() = (init(); plotting_screens[2])
+tool_screen() = (init(); plotting_screens[3])
 
 function glplot_renderloop(window, compute_s, record_s)
     was_recording = false
@@ -102,7 +92,7 @@ function icon_size()
 end
 
 function init()
-    if !isempty(plotting_screens) && isopen(viewing_screen())
+    if !isempty(plotting_screens) && isopen(first(plotting_screens))
         return # already initialized
     end
     empty!(plotting_screens)
