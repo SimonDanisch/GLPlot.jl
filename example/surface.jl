@@ -1,5 +1,4 @@
 using GLPlot, GLAbstraction, ModernGL, GeometryTypes
-GLPlot.init()
 n = 100
 h = 1./n
 r = h:h:1.

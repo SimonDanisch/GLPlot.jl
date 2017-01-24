@@ -58,16 +58,16 @@ function play_widget(
         boundingbox = numberbox,
         relative_scale = scale
     )
-    GLPlot.add_widget!(play_button, number, slider_w, window=window)
+    add_widget!(play_button, number, slider_w, window=window)
 
     slider_s
 end
 export play_widget
 export add_widget!
 function add_widget!(widgets...;
-        delete=Signal(false),
-        window=widget_screen!(delete=delete),
-        height=value(icon_size())
+        delete = Signal(false),
+        window = widget_screen!(delete = delete),
+        height = value(icon_size())
     )
     scalings = map(widgets) do widget
         bb = value(boundingbox(widget))
