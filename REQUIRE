@@ -1,7 +1,3 @@
-julia 0.4
-GLVisualize
-GLWindow
-ModernGL
-GeometryTypes
+julia 0.5
+GLVisualize 0.2.0
 Iterators
-NIfTI
