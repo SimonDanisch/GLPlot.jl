@@ -54,6 +54,7 @@ function glplot_renderloop(window, compute_s, record_s)
     i = 0
     Reactive.stop()
     yield()
+    record = false
     while isopen(window)
         tic()
         GLWindow.poll_glfw() # GLFW poll
