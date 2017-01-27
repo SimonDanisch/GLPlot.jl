@@ -70,7 +70,6 @@ function glplot_renderloop(window, compute_s, record_s)
         elseif was_recording && !record
             save_record(frames)
             frames = []
-            gc()
         end
         yield()
         diff = (1/60) - toq()
@@ -126,7 +125,7 @@ function init()
         area = map(viewing_area, tarea, edit_screen_area),
         color = RGBA{Float32}(1,1,1,1)
     )
-    toolbar_screen = Screen(w, area=tarea)
+    toolbar_screen = Screen(w, area = tarea)
     edit_screen = Screen(
         w, area = edit_screen_area,
         color = RGBA{Float32}(0.9,0.9,0.9,1)
@@ -135,7 +134,7 @@ function init()
     push!(plotting_screens, edit_screen)
     push!(plotting_screens, toolbar_screen)
 
-    _view(edit_screen_show_button, edit_screen, camera=:fixed_pixel)
+    _view(edit_screen_show_button, edit_screen, camera = :fixed_pixel)
     play_record, record_sig = toggle_button(imload("record.png"), imload("break.png"), w)
     compute_record, compute_sig = toggle_button(imload("play.png"), imload("break.png"), w)
     persp_ortho, persp_ortho_toggle_sig = toggle_button(imload("perspective.png"), imload("ortho.png"), w)
@@ -156,7 +155,7 @@ function init()
     i = 0
     for tool in tools
         robj = layout!(layout_pos_ho(i), visualize(tool))
-        _view(robj, toolbar_screen, camera=:fixed_pixel)
+        _view(robj, toolbar_screen, camera = :fixed_pixel)
         push!(tools_robjs, robj.children[])
         i += 1
     end
