@@ -1,3 +1,8 @@
 julia 0.5
-GLVisualize 0.2.0
+GLVisualize 0.2.1 0.2.1
 Iterators
+Reactive
+Colors
+FixedPointNumbers
+Images
+FileIO
