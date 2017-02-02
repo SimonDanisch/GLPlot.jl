@@ -9,8 +9,7 @@
 # - Add a force that attracts to mouse pointer.
 #----------------------------------------------------------------------
 using Reactive, GeometryTypes, GLAbstraction, GLPlot, GLVisualize, Colors, ColorTypes
-GLPlot.init()
-#----------------------------------------------------------------------
+
 typealias Position Point{2, Float32}
 typealias Velocity Vec{2, Float32}
 
@@ -20,7 +19,7 @@ immutable Boids
 end
 
 # Create new boid at random location and velocity
-Boids(n=200) = Boids([rand(Position) for i=1:n], [rand(Velocity)/1000 for i=1:n])
+Boids(n = 200) = Boids([rand(Position) for i=1:n], [rand(Velocity)/1000 for i=1:n])
 
 #----------------------------------------------------------------------
 
@@ -68,7 +67,7 @@ function simulate!(t, boids)
 end
 Base.clamp{T}(x::T) = clamp(x, zero(T), one(T))
 
-to_color(velocities, mul) = RGBA{U8}[RGBA{U8}(clamp(velocity[1]*mul), clamp(velocity[2]*mul), 1.0, 0.8) for velocity in velocities]
+to_color(velocities, mul) = RGBA{N0f8}[RGBA{N0f8}(clamp(velocity[1]*mul), clamp(velocity[2]*mul), 1.0, 0.8) for velocity in velocities]
 function main()
     # Create population of boids
     boids = Boids()

@@ -1,11 +1,9 @@
 using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes, Plots, FileIO
-using Reactive, GLWindow
+using Reactive, GLWindow, NIfTI
 import Quaternions: qrotation
-
-GLPlot.init()
 # load a volume
-vol = load(joinpath(homedir(), "Desktop", "brain.nii")).raw;
-vol = vol ./ maximum(vol);
+vol = niread(joinpath(homedir(), "Desktop", "lesson", "volume.nii")).raw;
+vol = Float32.(vol ./ maximum(vol));
 
 # prepare the slices
 ranges = ntuple(i-> linspace(-2f0, 2f0, size(vol, i)), 3)

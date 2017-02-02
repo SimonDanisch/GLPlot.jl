@@ -1,7 +1,7 @@
 using GLPlot, GLAbstraction, GeometryTypes, Colors; GLPlot.init()
 using GLWindow, Reactive, ModernGL, GLVisualize
 
-f(x,y,a,b,c) = sin(x*a)./b^cos(y/c)
+f(x,y,a,b,c) = sin(x * a) ./ b^cos(y / c)
 
 
 function init(n, a, b, c)
@@ -12,8 +12,8 @@ function init(n, a, b, c)
     # map((a,b,c)-> [f(x,y,a,b,c) for x=x, y=x], a,b,c)
     v0 = Float32[f(x,y,value(a),value(b),value(c)) for x=x, y=x]
     surface = foldp(v0, a,b,c) do v0, a,b,c
-        @inbounds for i=1:n, j=1:n
-            v0[i,j] = f(x[i],x[j],a,b,c)
+        @inbounds for i = 1:n, j = 1:n
+            v0[i,j] = f(x[i], x[j], a, b, c)
         end
         v0
     end;
@@ -53,16 +53,16 @@ function init(n, a, b, c)
     linepos = map(first, p_l_position)
     _view(visualize(
         linepos, :lines,
-        prerender=()->glDisable(GL_DEPTH_TEST), # draw over other items
-        postrender=()->glEnable(GL_DEPTH_TEST)
-    ), GLPlot.viewing_screen(), camera=:perspective)
+        prerender = ()->glDisable(GL_DEPTH_TEST), # draw over other items
+        postrender = ()->glEnable(GL_DEPTH_TEST)
+    ), GLPlot.viewing_screen(), camera = :perspective)
     point = map(last, p_l_position)
     _view(visualize(
         (Circle(Point2f0(0), 0.05f0), point),
         color = RGBA{Float32}(0.99, 0, 0.1),
         billboard = true,
-        prerender=()->glDisable(GL_DEPTH_TEST), # draw over other items
-        postrender=()->glEnable(GL_DEPTH_TEST)
+        prerender=()-> glDisable(GL_DEPTH_TEST), # draw over other items
+        postrender=()-> glEnable(GL_DEPTH_TEST)
     ), GLPlot.viewing_screen(), camera=:perspective)
     text = map(point) do pa
         p = pa[] # is an array
@@ -76,8 +76,8 @@ function init(n, a, b, c)
 end
 
 # Create sliders for the surface
-a = GLPlot.play_widget(linspace(-4f0,4f0, 50));
-b = GLPlot.play_widget(linspace(1.5f0,6f0, 50));
-c = GLPlot.play_widget(linspace(-4f0,4f0, 50));
+a = GLPlot.play_widget(linspace(-4f0, 4f0, 50));
+b = GLPlot.play_widget(linspace(1.5f0, 6f0, 50));
+c = GLPlot.play_widget(linspace(-4f0, 4f0, 50));
 # create surface and controle points/lines
 init(100, a, b, c)

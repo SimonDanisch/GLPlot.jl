@@ -1,5 +1,5 @@
 using GeometryTypes, Reactive, GLVisualize
-using GLPlot;GLPlot.init()
+using GLPlot
 
 
 """
@@ -30,15 +30,18 @@ sliderd = GLPlot.play_widget(linspace(0.001f0, 0.5f0, 30))
 
 
 # N time steps
-n = 100_000
+n = 10_000
 # foldp registers a callback (in this case lorenz), which updates the points
 # whenever the slider changes.
 points = foldp(lorenz, Array(Point3f0, n), slidera, sliderb, sliderc, sliderd)
 # we set the boundingbox to nothing, since we don't need it and don't want to
 # calculate it for every update (which is the default)
-glplot(points, :lines, boundingbox=nothing, preferred_camera=:perspective)
+glplot(points, :lines, preferred_camera = :perspective)
 # you can also visualize the points
-glplot((Circle(Point2f0(0), 0.01f0), points), boundingbox=nothing, preferred_camera=:perspective)
+glplot(
+    (Circle(Point2f0(0), 0.01f0), points),
+    preferred_camera = :perspective
+)
 # the above renders an antia aliased nice looking circle which could have outlines and glows.
 # this makes it relatively slow. For optimal performance, one might need the command below
 # which draws one (or n) pixel per point

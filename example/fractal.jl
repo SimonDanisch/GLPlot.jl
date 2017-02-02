@@ -20,6 +20,5 @@ end
 using GLVisualize
 p, s, r, c = loop2(Point3f0(0), Normal{3,Float32}(0,0,1), 1f0, 2, loadasset("cat.obj"));
 
-
-using GLPlot;GLPlot.init()
-glplot((loadasset("cat.obj"), p), scale=s, rotation=r, color=c)
+using GLPlot
+glplot((loadasset("cat.obj"), p), scale = s, rotation = r, color = c)

@@ -1,32 +1,8 @@
-using GLPlot;GLPlot.init()
-using Plots;glvisualize()
-using GLVisualize, FileIO, Colors, Images
-
-imfolder = filter(readdir(GLVisualize.assetpath())) do path
-    endswith(path, "jpg") || endswith(path, "png")
-end
-images = map(imfolder) do impath
-    map(RGBA{U8}, restrict(loadasset(impath))).data
-end;
-
-mean_colors = map(images) do img
-    mean(img)
-end
-x = map(comp1, mean_colors); y=map(comp2, mean_colors); z = map(comp3, mean_colors);
-p1 = scatter(
-    x,y,z, markercolor=mean_colors,
-    shape = :circle, markerstrokewidth = 1, markerstrokecolor = "white",
-    hover = images, ms = 12
-)
-p2 = scatter(x,y,z, markerstrokecolor = mean_colors, shape = images, ms = 15)
-plot(p1, p2)
-gui()
-
-
-using Plots;glvisualize()
+using Plots, GLPlot
 using GLVisualize, FileIO, Colors, Images
 using GeometryTypes, GLAbstraction
-
+w = GLPlot.init()
+glvisualize(size = widths(w))
 x = ["(｡◕‿◕｡)", "◔ ⌣ ◔","(づ｡◕‿‿◕｡)づ", "┬──┬ ノ( ゜-゜ノ)", "(╯°□°）╯︵ ┻━┻", "¯\\_(ツ)_/¯"]
 y = [-4, -3, -2, -1, 6, 0]
 scatter(x, y)
@@ -38,7 +14,7 @@ hover = [
     "Plotting\nsomething!",
     "Something\nscientific?",
     "For once?",
-    visualize(loadasset("cat.obj"), model=translation),
+    visualize(loadasset("cat.obj"), model = translation),
     "Noo! That\ncat again!",
     "😸$(Char(0x1F63B))",
 ]
@@ -47,3 +23,4 @@ scatter(x, y, m=(0.8, :diamond, 20), hover=hover)
 title!("ℕ ⊆ ℕ₀ ⊂ ℤ ⊂ 2H₂ + O₂ ⇌ 2H₂O")
 xaxis!(" ⠍⠊⠣ ახლავე გაიაროთ все вещи, вы можете построить")
 yaxis!("Anger")
+gui()

@@ -36,14 +36,13 @@ function maxdigits(range)
 end
 function play_widget(
         range, window = GLPlot.widget_screen!();
-        startidx::Int=1
+        startidx::Int = 1
     )
     numberbox = map(icon_size()) do is
         AABB(Vec3f0(0, -1mm, 0), Vec3f0(2is, is, 1))
     end
-    target_s = value(icon_size()) * 0.4
-    scale = target_s
-    sliderlen = 70mm-(3 * value(icon_size())) - 2mm
+    target_s = map(x-> x * 0.4, icon_size())
+    sliderlen = 70mm - (3 * value(icon_size())) - 2mm
     play_button, play_stop_signal = GLVisualize.toggle_button(
         rot180(GLPlot.imload("play.png")), GLPlot.imload("break.png"), window
     )
@@ -56,7 +55,7 @@ function play_widget(
         map(GLVisualize.printforslider, slider_s),
         color = RGBA{Float32}(0.6, 0.6, 0.6,1),
         boundingbox = numberbox,
-        relative_scale = scale
+        relative_scale = target_s
     )
     add_widget!(play_button, number, slider_w, window=window)
 
@@ -83,39 +82,43 @@ function add_widget!(widgets...;
     foreach(zip(scalings, widgets)) do scaling_widget
         scaling, widget = scaling_widget
         scale, offset = scaling
-        xwidth = scale[1]-1mm
-        place = SimpleRectangle{Float32}(last_x-offset[1]+0.5mm, -offset[2]+0.5mm, xwidth, scale[2]-1mm)
+        xwidth = scale[1] - 1mm
+        place = SimpleRectangle{Float32}(
+            last_x - offset[1] + 0.5mm, -offset[2] + 0.5mm, xwidth, scale[2] - 1mm
+        )
         layout!(place, widget)
-        _view(widget, window, camera=:fixed_pixel)
+        _view(widget, window, camera = :fixed_pixel)
         last_x += xwidth
     end
 end
 
 
 function item_area(la, deleted, item_height)
-    y = la.y-item_height-2
-    deleted && return SimpleRectangle(la.x, la.y, la.w, 0)
-    return SimpleRectangle(la.x, y, la.w, item_height)
+    y = la.y - item_height - 2
+    deleted && return IRect(la.x, la.y, la.w, 0)
+    return IRect(la.x, y, la.w, item_height)
 end
 
-function widget_screen!(parentscreen = edit_screen(); left_gap=1.5mm, delete=Signal(false))
+function widget_screen!(parentscreen = edit_screen();
+        left_gap = 1.5mm, delete = Signal(false)
+    )
     scroll = parentscreen.inputs[:menu_scroll]
     if isempty(parentscreen.children)
         last_area = map(parentscreen.area, icon_size(), scroll) do a, ih, s
-            return SimpleRectangle{Int}(left_gap, a.h-ih+s, a.w-left_gap, ih)
+            return IRect(left_gap, a.h-ih+s, a.w-left_gap, ih)
         end
     else
         last_area = last(parentscreen.children).area
     end
     itemarea = map(GLPlot.item_area, last_area, delete, icon_size())
-    Screen(parentscreen, area=itemarea)
+    Screen(parentscreen, area = itemarea)
 end
 
 
 function choices(x::Vector)
     signal, vis = GLVisualize.choice_widget(x, edit_screen(), area=(48mm, 8mm))
     w = widget_screen!()
-    _view(vis, w, camera=:fixed_pixel)
+    _view(vis, w, camera = :fixed_pixel)
     signal
 end
 
@@ -139,7 +142,7 @@ end
 
 
 
-function async_map2(f, init, inputs...; typ=typeof(init))
+function async_map2(f, init, inputs...; typ = typeof(init))
     node = Signal(typ, init, inputs)
     worker_task = @async init
         map(inputs...) do args...

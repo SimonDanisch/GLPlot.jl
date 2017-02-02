@@ -2,12 +2,15 @@ __precompile__(true)
 module GLPlot
 
 
-using GLVisualize, GLWindow, ModernGL, Reactive, GLAbstraction, Colors
-using FixedPointNumbers, FreeType, SignedDistanceFields, Images, Packing
-using GeometryTypes, GLFW, FileIO, FixedSizeArrays, Quaternions
+using GLVisualize, GLWindow, Reactive, GLAbstraction, Colors
+using FixedPointNumbers, Images
+using GeometryTypes, GLFW, FileIO, FixedSizeArrays
 
 import GLVisualize: toggle_button, toggle, button
-import GLVisualize: mm, extract_edit_menu
+import GLVisualize: mm, extract_edit_menu, IRect
+
+
+
 
 # Some not officially supported file formats from FileIO
 # FileIO.load(file::File{format"Julia"}) = include(filename(file))
@@ -16,18 +19,19 @@ import GLVisualize: mm, extract_edit_menu
 # end
 
 function imload(name)
-    rotl90(Matrix{BGRA{U8}}(load(Pkg.dir("GLPlot", "src", "icons", name))))
+    im = load(joinpath(dirname(@__FILE__), "icons", name))
+    convert(Matrix{BGRA{N0f8}}, im)
 end
-
 
 
 include("gui.jl")
 export play_control
+
 include("plot.jl")
 export glplot
 export register_plot!
+
 include("screen.jl")
 export register_compute
-
 
 end

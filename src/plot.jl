@@ -1,4 +1,3 @@
-
 function glplot(arg1, style = :default;
         screen = viewing_screen(), camera = :perspective,
         kw_args...
@@ -29,6 +28,7 @@ function to_clip(p, width, proj_view)
     nv = (clip + 1f0) * 0.5f0
     Point2f0(nv[1], nv[2]) .* Point2f0(width-1)
 end
+
 function gizmo(w, is_selected)
     colors = Array(RGBA{Float32}, 6)
     positions = Array(Point3f0, 6)
@@ -42,10 +42,10 @@ function gizmo(w, is_selected)
     end
     robj = visualize(
         positions, :linesegment,
-        color=colors,
-        prerender=()->glDisable(GL_DEPTH_TEST), # draw over other items
-        postrender=()->glEnable(GL_DEPTH_TEST),
-        thickness=10f0
+        color = colors,
+        prerender = ()->glDisable(GL_DEPTH_TEST), # draw over other items
+        postrender = ()->glEnable(GL_DEPTH_TEST),
+        thickness = 10f0
     ).children[]
     _view(robj, camera = :perspective)
     @materialize mouseposition, mouse_buttons_pressed, buttons_pressed = w.inputs
@@ -77,7 +77,7 @@ function gizmo(w, is_selected)
             origin = to_clip(Vec3f0(0), wh, pv)
             nv2d = nv2d-origin
             mv = -Vec2f0(diff).*10f0
-            return v0 + (uv*(dot(mv, normalize(nv2d))./(norm(wh))))
+            return v0 + (uv * (dot(mv, normalize(nv2d)) ./ (norm(wh))))
         end
         v0
     end
@@ -123,11 +123,13 @@ function is_editable(k, v_v)
         (isa(v, FixedVector) && eltype(v) <: Integer)
     )
 end
+
 function to_edit_dict(robj)
     filter(collect(robj.uniforms)) do kv
-        is_editable(kv...)
+        is_editable(kv[1], kv[2])
     end
 end
+
 function register_plot!(
         robj::RenderObject, screen = viewing_screen();
         create_gizmo = false

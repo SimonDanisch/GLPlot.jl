@@ -8,19 +8,21 @@ function handle_drop(files::Vector{String})
     end
 end
 
-toolbar_area(pa, toolbar_width) = SimpleRectangle{Int}(0, 0, toolbar_width, pa.h)
+toolbar_area(pa, toolbar_width) = IRect(0, 0, toolbar_width, pa.h)
 
 function viewing_area(area_l, area_r)
-    SimpleRectangle{Int}(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
+    IRect(area_l.x+area_l.w, 0, area_r.x-area_l.w, area_r.h)
 end
+
 function edit_rectangle(visible, area, tarea)
     w = visible ? 70mm : 1.5mm
-    x = area.w-w
-    SimpleRectangle{Int}(x, 0, w, area.h)
+    x = area.w - w
+    IRect(x, 0, w, area.h)
 end
+
 function edit_item_area(la, item_height, left_gap)
-    y = la.y-item_height-2
-    return SimpleRectangle{Int}(left_gap, y, la.w, item_height)
+    y = la.y - item_height-2
+    return IRect(left_gap, y, la.w, item_height)
 end
 
 layout_pos_ho(i) = map(icon_size()) do ip
@@ -29,8 +31,6 @@ end
 layout_pos_ver(i, border) = map(icon_size()) do ip
     SimpleRectangle{Float32}(i*ip + i*border, 0, ip, ip)
 end
-
-
 
 
 function save_record(frames)
@@ -55,25 +55,33 @@ function glplot_renderloop(window, compute_s, record_s)
     Reactive.stop()
     yield()
     record = false
+    record_io = Pipe()
+    buffer = zeros(RGB{N0f8}, 1, 1)
     while isopen(window)
         tic()
         GLWindow.poll_glfw() # GLFW poll
 
         if Base.n_avail(Reactive._messages) > 0
             GLWindow.poll_reactive() # reactive poll
-            GLWindow.poll_reactive() # two times for secondary signals
             record = !value(record_s)
             GLWindow.render_frame(window)
             GLWindow.swapbuffers(window)
         end
         if record
-            push!(frames, screenbuffer(window))
+            if !was_recording && record
+                pathext = get_screenshotpath()
+                path, ext = splitext(pathext)
+                path = path * ".mkv"
+                record_io, buffer = GLVisualize.create_video_stream(
+                    path, viewing_screen()
+                )
+            end
+            GLVisualize.add_frame!(record_io, viewing_screen(), buffer)
         elseif was_recording && !record
-            save_record(frames)
-            frames = []
+            close(record_io)
         end
         yield()
-        diff = (1/60) - toq()
+        diff = (1 / 60) - toq()
         while diff >= 0.001
             tic()
             sleep(0.001) # sleep for the minimal amount of time
@@ -82,14 +90,32 @@ function glplot_renderloop(window, compute_s, record_s)
         was_recording = record
     end
     GLWindow.destroy!(window)
-
 end
 
 const _icon_size = Signal(10mm)
+icon_size() = _icon_size
 
-function icon_size()
-    _icon_size
+global set_screenshotpath!, get_screenshotpath
+
+let
+
+    const screenshotpath = Ref(joinpath(homedir(), "Desktop", "glplot.png"))
+    """
+    Sets the current screen shot/recording path. Default is on users desktop
+    """
+    function set_screenshotpath!(path)
+        screenshotpath[] = path
+    end
+
+    """
+    Gets the current screen shot/recording path. Default is on users desktop
+    """
+    function get_screenshotpath()
+        screenshotpath[]
+    end
+
 end
+
 
 function init()
     if !isempty(plotting_screens) && isopen(first(plotting_screens))
@@ -110,8 +136,8 @@ function init()
     button_width = 1.5mm
     edit_screen_show_button = visualize(
         (SimpleRectangle{Float32}(0, 0, button_width, button_width*2), button_pos),
-        offset=Vec2f0(0, -button_width),
-        color=RGBA{Float32}(0.6,0.6,0.6,1)
+        offset = Vec2f0(0, -button_width),
+        color = RGBA{Float32}(0.6,0.6,0.6,1)
     )
     tarea = map(toolbar_area, w.area, icon_size())
 
@@ -124,12 +150,12 @@ function init()
     viewing_screen = Screen(w,
         name = Symbol("Viewing Screen"),
         area = map(viewing_area, tarea, edit_screen_area),
-        color = RGBA{Float32}(1,1,1,1)
+        color = RGBA{Float32}(1,1,1)
     )
     toolbar_screen = Screen(w, area = tarea)
     edit_screen = Screen(
         w, area = edit_screen_area,
-        color = RGBA{Float32}(0.9,0.9,0.9,1)
+        color = RGBA{Float32}(0.9, 0.9, 0.9)
     )
     push!(plotting_screens, viewing_screen)
     push!(plotting_screens, edit_screen)
@@ -139,6 +165,7 @@ function init()
     play_record, record_sig = toggle_button(imload("record.png"), imload("break.png"), w)
     compute_record, compute_sig = toggle_button(imload("play.png"), imload("break.png"), w)
     persp_ortho, persp_ortho_toggle_sig = toggle_button(imload("perspective.png"), imload("ortho.png"), w)
+
     persp_ortho_sig = map(persp_ortho_toggle_sig) do isp
         isp && return GLAbstraction.PERSPECTIVE
         GLAbstraction.ORTHOGRAPHIC
@@ -146,7 +173,7 @@ function init()
     cube = cubecamera(viewing_screen, persp_ortho_sig)
 
     image_names = ["center", "screenshot"]
-    tools = Matrix{BGRA{U8}}[imload("$name.png") for name in image_names]
+    tools = Matrix{BGRA{N0f8}}[imload("$name.png") for name in image_names]
     center_b, center_s = button(tools[1], w)
     screenshot_b, screenshot_s = button(tools[2], w)
 
@@ -168,7 +195,7 @@ function init()
     end)
     preserve(map(screenshot_s) do pressed
         if pressed
-            screenshot(viewing_screen, path = joinpath(homedir(), "Desktop", "glplot.png"))
+            screenshot(viewing_screen, path = get_screenshotpath())
         end
         nothing
     end)
@@ -187,12 +214,16 @@ function init()
     end
     scroll = filterwhen(should_scroll, value(scroll), scroll)
     edit_screen.inputs[:menu_scroll] = foldp(0, scroll) do v0, s
-        v0+(ceil(Int, s[2])*15)
+        v0 + (ceil(Int, s[2]) * 15)
     end
     global _renderloop_task = @async glplot_renderloop(w, compute_sig, record_sig)
     viewing_screen
 end
 
+"""
+Blocks the julia process as long as a window is open.
+Usefull when running a GLPlot script not within some REPL.
+"""
 function block()
     global _renderloop_task
     wait(_renderloop_task)

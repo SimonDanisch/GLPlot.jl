@@ -1,9 +1,9 @@
 using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes, Plots, FileIO
-using Reactive, GLWindow
+using Reactive, GLWindow, NIfTI
 GLPlot.init()
 glvisualize()
 # load a volume
-vol = load(joinpath(homedir(), "Desktop", "brain.nii")).raw;
+vol = niread(joinpath(homedir(), "Desktop", "lesson", "volume.nii")).raw;
 vol = vol ./ maximum(vol);
 
 # plot it with blue colormap
