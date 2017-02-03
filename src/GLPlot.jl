@@ -2,13 +2,14 @@ __precompile__(true)
 module GLPlot
 
 # GLVisualize Packages
-using GLVisualize, GLWindow, GeometryTypes, GLAbstraction, GLFW
+using GLVisualize, GLWindow, GeometryTypes, GLAbstraction, GLFW, FixedSizeArrays
 
 # dependencies
 using Reactive, Colors, FixedPointNumbers, Images, FileIO
 
+import GLAbstraction: N0f8
 import GLVisualize: toggle_button, toggle, button
-import GLVisualize: mm, extract_edit_menu, IRect, N0f8
+import GLVisualize: mm, extract_edit_menu, IRect
 
 # Some not officially supported file formats from FileIO
 # FileIO.load(file::File{format"Julia"}) = include(filename(file))
