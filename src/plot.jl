@@ -98,12 +98,14 @@ function is_editable(k, v_v)
         k == :instances ||
         k == Symbol("position.multiplicator") ||
         k == Symbol("position.dims") ||
+        k == Symbol("spatialorder") ||
         k == Symbol("resolution") ||
         k == Symbol("fxaa") ||
         k == Symbol("light") ||
         k == Symbol("light") ||
         k == Symbol("doc_string") ||
         k == Symbol("faces") ||
+        k == Symbol("image") ||
         k == Symbol("vertices") ||
         k == Symbol("texturecoordinates") ||
         k == Symbol("ranges") ||
@@ -157,17 +159,22 @@ function register_plot!(
     preserve(foldp((false, value(item_height)), edit_signal) do v0, edit
         if edit
             if !v0[1] # only do this at the first time
-                vis, signal_dict = extract_edit_menu(
-                    to_edit_dict(robj),
-                    edit_item_screen,
-                    edit_signal,
-                )
-                for (k, v) in signal_dict
-                    robj.uniforms[k] = v
+                dict = to_edit_dict(robj)
+                nh = if !isempty(dict)
+                    vis, signal_dict = extract_edit_menu(
+                        dict,
+                        edit_item_screen,
+                        edit_signal,
+                    )
+                    for (k, v) in signal_dict
+                        robj.uniforms[k] = v
+                    end
+                    _view(vis, edit_item_screen, camera = :fixed_pixel)
+                    new_heights = widths(value(boundingbox(vis)))[2]
+                    ceil(Int, new_heights)
+                else
+                    0
                 end
-                _view(vis, edit_item_screen, camera = :fixed_pixel)
-                new_heights = widths(value(boundingbox(vis)))[2]
-                nh = ceil(Int, new_heights)
                 push!(item_height, nh)
                 return true, nh
             else
