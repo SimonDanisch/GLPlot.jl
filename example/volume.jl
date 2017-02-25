@@ -1,34 +1,28 @@
-using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes, Plots, FileIO
+using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes, FileIO
 using Reactive, GLWindow, NIfTI
-GLPlot.init()
-glvisualize()
-# load a volume
-vol = niread(joinpath(homedir(), "Desktop", "lesson", "volume.nii")).raw;
-vol = vol ./ maximum(vol);
+window = GLPlot.init()
 
-# plot it with blue colormap
-p1 = plot(vol, fill = colormap("Blues", 7))
+layout = [
+    ["Volume Plot", "Slice X"],
+    ["Slice Y", "Slice Z"]
+]
 
-# prepare the slices
-axes = ntuple(i-> linspace(0, 1, size(vol, i)), 3);
-p2 = heatmap(vol[100, : , :], title = "X Slice", labels = false);
-p3 = heatmap(vol[:, 100 , :], title = "Y Slice", labels = false);
-p4 = heatmap(vol[:, : , 100], title = "Z Slice", labels = false);
+screens = GLVisualize.layoutscreens(window, layout)
+vol = niread(joinpath(homedir(), "Desktop", "brain.nii")).raw;
+vol = vol ./ maximum(vol)
+const If0 = GLVisualize.Intensity{1, Float32}
 
-plt = plot(p1, p2, p3, p4);
-gui()
-
-for i=1:3
-    # since plots updating mechanism still doesn't work perfectly with GLVisualize
-    # we need to get the raw visualization objects and gpu objects from the plots.
-    # This will be exposed by a more straightforward API in the future!
-    robj = plt[i+1].o.renderlist[1][end]
-    tex = robj[:intensity] # image slice residing on the GPU
+# to change color_map use the interactive edit menu or pass an array of color
+# via color_map = Vector{Colorant}
+p1 = glplot(vol, screen = screens[2][1])
+slice_screens = vcat(screens[2][2], screens[1]...)
+for i = 1:3
     range_s = play_widget(1:size(vol, i))
-    preserve(map(range_s) do slice_idx
-        idx = ntuple(d-> d==i ? slice_idx : (:), 3)
+    slice = map(range_s) do slice_idx
+        idx = ntuple(d-> d == i ? slice_idx : (:), 3)
         # This conversion is necessary but will be automatic soon!
-        slice = permutedims(map(Intensity{1, Float32}, vol[idx...]), (2,1))
-        GLAbstraction.update!(tex, slice) # upload to memory
-    end)
+        permutedims(If0.(view(vol, idx...)), (2, 1))
+    end
+    plot = glplot(slice, screen = slice_screens[i], camera = :orthographic_pixel)
+    center!(slice_screens[i],:orthographic_pixel)
 end
