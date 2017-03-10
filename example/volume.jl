@@ -1,5 +1,11 @@
-using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes, FileIO
-using Reactive, GLWindow, NIfTI
+using GLPlot, GLVisualize, GLAbstraction, Colors, GeometryTypes
+using Reactive, GLWindow
+
+if !isdefined(:vol)
+    using TestImages
+    vol = testimage("mri-stack")
+end
+
 window = GLPlot.init()
 
 layout = [
@@ -8,8 +14,6 @@ layout = [
 ]
 
 screens = GLVisualize.layoutscreens(window, layout)
-vol = niread(joinpath(homedir(), "Desktop", "brain.nii")).raw;
-vol = vol ./ maximum(vol)
 const If0 = GLVisualize.Intensity{1, Float32}
 
 # to change color_map use the interactive edit menu or pass an array of color
