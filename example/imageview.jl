@@ -131,13 +131,11 @@ module GLImshow
                 nothing
             end
             preserve(translate_s)
-            zoomies = Float64[]
             zoom_s = map(scroll) do x
                 zoom = Float32(x[2])
                 if zoom != 0
                     a = value(area)
                     z = 1 + (zoom * 0.10)
-                    push!(zoomies, z)
                     mp = value(mouseposition)
                     mp = (mp .* wscale(value(screen.area), a)) + minimum(a)
                     p1, p2 = minimum(a), maximum(a)
