@@ -49,36 +49,17 @@ edit_screen() = (init(); plotting_screens[2])
 tool_screen() = (init(); plotting_screens[3])
 
 function glplot_renderloop(window, compute_s, record_s)
-    was_recording = false
     frames = []
     i = 0
     Reactive.stop()
-    yield()
-    record = false
-    record_io = Pipe()
-    buffer = zeros(RGB{N0f8}, 1, 1)
     while isopen(window)
         tic()
         GLWindow.poll_glfw() # GLFW poll
-
         if Base.n_avail(Reactive._messages) > 0
             GLWindow.poll_reactive() # reactive poll
             record = !value(record_s)
             GLWindow.render_frame(window)
             GLWindow.swapbuffers(window)
-        end
-        if record
-            if !was_recording && record
-                pathext = get_screenshotpath()
-                path, ext = splitext(pathext)
-                path = path * ".mkv"
-                record_io, buffer = GLVisualize.create_video_stream(
-                    path, viewing_screen()
-                )
-            end
-            GLVisualize.add_frame!(record_io, viewing_screen(), buffer)
-        elseif was_recording && !record
-            close(record_io)
         end
         yield()
         diff = (1 / 60) - toq()
@@ -87,7 +68,7 @@ function glplot_renderloop(window, compute_s, record_s)
             sleep(0.001) # sleep for the minimal amount of time
             diff -= toq()
         end
-        was_recording = record
+        yield()
     end
     GLWindow.destroy!(window)
 end

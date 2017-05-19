@@ -100,17 +100,17 @@ function item_area(la, deleted, item_height)
 end
 
 function widget_screen!(parentscreen = edit_screen();
-        left_gap = 1.5mm, delete = Signal(false)
+        left_gap = 1.5mm, delete = Signal(false), height = icon_size()
     )
     scroll = parentscreen.inputs[:menu_scroll]
     if isempty(parentscreen.children)
-        last_area = map(parentscreen.area, icon_size(), scroll) do a, ih, s
+        last_area = map(parentscreen.area, height, scroll) do a, ih, s
             return IRect(left_gap, a.h-ih+s, a.w-left_gap, ih)
         end
     else
         last_area = last(parentscreen.children).area
     end
-    itemarea = map(GLPlot.item_area, last_area, delete, icon_size())
+    itemarea = map(GLPlot.item_area, last_area, delete, height)
     Screen(parentscreen, area = itemarea)
 end
 
